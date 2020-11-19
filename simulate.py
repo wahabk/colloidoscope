@@ -9,7 +9,6 @@ from math import sqrt
 import skimage
 #255x255x128
 
-
 @njit
 def draw_multiple_spheres(canvas, centers, r):
 	for center in centers:
@@ -21,12 +20,14 @@ def draw_multiple_spheres(canvas, centers, r):
 					canvas[i,j] = 255
 
 
-def make_random_centers(canvas, n, min_dist=25):
+def make_random_centers(canvas_size, n, zoom, min_dist=25):
 	'''
 	Generate random centers of particles
 
 	This is a place holder for bringing in simulated particle trajectories from dynamo
 	'''
+	canvas_size = [int(c/zoom) for c in canvas_size]
+	min_dist = min_dist/zoom
 	x = random.randint(0, canvas_size[0])
 	y = random.randint(0, canvas_size[1])
 	centers = [(x,y)] # make first particle
@@ -63,23 +64,27 @@ def simulate_img2d(canvas_size, centers, r, zoom, gauss):
 	canvas = ndimage.zoom(canvas, zoom)
 	canvas = ndimage.gaussian_filter(canvas, gauss)
 	canvas[canvas<0]=0
-	canvas = np.random.poisson(lam=canvas, size=None)
-	
+	# canvas = np.random.poisson(lam=canvas, size=None)
+	PEAK = 0.5
+	canvas[canvas<0]=0
+	poisson_noise = np.sqrt(canvas) * np.random.normal(0, 3, canvas.shape)
+	canvas = canvas + poisson_noise
+	canvas[canvas<0]=0
 
 	return canvas
 
 if __name__ == "__main__":
-	canvas_size = (1024,1024)
-	zoom = 0.80
-	n=500
-	r=20 # provide radius in nm?
-	min_dist = 25
+	canvas_size = (256,256)
+	zoom = 0.6
+	n=20
+	r=30 # provide radius in nm?
+	min_dist = r+5
 	gauss = (11,11)
 
 
-	centers = make_random_centers(canvas_size, n, min_dist)
+	centers = make_random_centers(canvas_size, n, zoom, min_dist)
 	canvas = simulate_img2d(canvas_size, centers, r, zoom, gauss)
-	print(np.mean(canvas), np.std(canvas), np.min(canvas))
+	print(np.mean(canvas), np.std(canvas), np.min(canvas), np.max(canvas))
 	plt.imshow(canvas)
 	plt.show()
 
