@@ -473,6 +473,7 @@ void read(char *filenamepath, double *psigma, int index)  // output single float
 
 	File.close();
 }
+
 void writexyz(char *filenamepath, double *x, double *y, double *z)  // output single float valued arrays
 {                                                // in gopenmol xyz format
 	ofstream File(filenamepath);  // Creates an ofstream object named myFile
@@ -558,7 +559,7 @@ int main()
 				etaNew = eta+ETADIFF;
 				printf("\n NPART %d ETA %.2f sidex %.3f  ", NPART, ETA, sidex);
 
-				if(ETA>0.31) {
+				if(ETA>0.31) { // start from complression
 					 sprintf(input, "coord_e%.4f_n%d_poly%.2f.xyz"  , ETA, NPART, POLYDISP);
 					 cout << " dense - reading in " << input << endl;
 					 readxyz(input, px, py, pz);
@@ -567,21 +568,27 @@ int main()
 					 read(input, psigma, NPART);
 				}
 
-				else{
-						makePolydisp(psigma, pmass);
-						initRandom(px, py, pz, psigma);
+				else{ 
+						makePolydisp(psigma, pmass); // set up diameter list
+						initRandom(px, py, pz, psigma); // fill box with coordinates subject to not overla[[oing]]
+						// psigma is list of diameters
 				}
 
 
 
 				while(eta<ETAFINAL){
-					
-					neighbours(px, py, pz, nNeighbour, neighbourList);
+					// business end
+					neighbours(px, py, pz, nNeighbour, neighbourList); // part of monte carlo
 					rejected = accepted = 0;
+					// adjust the step size to maintain acceptance rrate of 0.5
 					setq(q);
+					// move particles randomly using q array
 					for(int i=0; i<NPART; ++i){
 						advance(px, py, pz, &trialX, &trialY, &trialZ, q[i]);
+						// move particles using q scrambler
 						accept(px, py, pz, trialX, trialY, trialZ, q[i], nNeighbour, neighbourList, psigma);
+						// trial coords are temporary to be accepted
+						//accept if no overlap
 						//accept(px, py, pz, px[q[i]], py[q[i]], pz[q[i]], q[i], nNeighbour, neighbourList, psigma);
 					}
 					ratio = (double) accepted / (double) (rejected+accepted);
@@ -589,6 +596,7 @@ int main()
 					rScale = pow(eta/etaNew, 0.333333333);
 					//cout << " rScale " << rScale << endl;
 					energy = getEnergyAllFat(px, py, pz, psigma, rScale);
+					// energy is for soft spheres
 
 					if(energy<STEPHEIGHT && eta<ETAFINAL){
 						cout << " energy " << energy << " OK - lets squish - should be no overlaps " << endl;
@@ -601,6 +609,7 @@ int main()
 					}
 
 					overCheck(px, py, pz, psigma);
+					// double make sure no overlaps
 					++t;
 				}                                                           // end equilibration loop
 				sprintf(output, "coord_e%.5f_n%d_poly%.2f.xyz"  , ETAFINAL, NPART, POLYDISP);  writexyz(output, px, py, pz);
