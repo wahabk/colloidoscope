@@ -6,7 +6,6 @@ from mainviewer import mainViewer
 from concurrent.futures import ProcessPoolExecutor
 import random
 from math import sqrt
-import skimage
 from poisson_disc_sampling import poisson_disc_sampling
 import os
 #255x255x128
@@ -14,33 +13,21 @@ from concurrent.futures import ProcessPoolExecutor
 from skimage.util import random_noise
 import time
 
-def addgaussnoise(image, var):
-	row,col= image.shape
-	mean = 0
-	var = 0.1
-	sigma = var**0.5
-	gauss = np.random.normal(mean,sigma,(row,col))
-	gauss = gauss.reshape(row,col)
-	noisy = image + gauss
-	return noisy
-
 @njit
-def draw_slice(a):
-	s, z, centers, r = a
+def draw_slice(args):
+	s, z, centers, r = args
 	for i in range(s.shape[0]):
 		for j in range(s.shape[1]):
 			for center in centers:
 				cz, cy, cx = center
 				dist = (z - cz)**2 + (i - cy)**2 + (j - cx)**2
 				if dist <= r**2:
-					s[i,j] = (255 - (255*(dist)/r**2))
 					s[i,j] = 255
 	return s
 
 def draw_spheres_sliced(canvas, centers, r):
 	new_canvas = []
 
-	start = time.time()
 	args = [(s, z, centers, r) for z, s in enumerate(canvas)]
 
 	with ProcessPoolExecutor(max_workers=10) as pool:
@@ -50,7 +37,7 @@ def draw_spheres_sliced(canvas, centers, r):
 	canvas = np.array(canvas, dtype='uint8')
 	return canvas
 
-def simulate_img3d(canvas_size, r, min_dist, zoom, gauss, k=50):
+def simulate_img3d(canvas_size, r, min_dist, zoom, gauss, noise = 0.09, k=50):
 	'''
 	Simulate 3d image of colloids
 
@@ -62,28 +49,35 @@ def simulate_img3d(canvas_size, r, min_dist, zoom, gauss, k=50):
 	TODO add background
 	'''
 
-
-	if zoom:
-		zoom_out = [int(c/zoom) for c in canvas_size]
-		canvas = np.zeros(zoom_out, dtype='uint8')
-	else:
-		canvas = np.zeros(canvas_size, dtype='uint8')
-
-	centers = poisson_disc_sampling(min_dist, np.array(canvas.shape), k)
-
-
+	zoom_out = [int(c/zoom) for c in canvas_size]
+	canvas = np.zeros(zoom_out, dtype='uint8')
+	label = np.zeros(canvas_size, dtype='uint8')
+	centers = poisson_disc_sampling(min_dist, np.array(canvas_size), k)
+	
+	zoom_out_centers=[]
+	for c in centers:
+		x,y,z = c
+		new_c = [x/zoom,y/zoom,z/zoom]
+		zoom_out_centers.append(new_c)
+	zoom_out_centers = np.array(zoom_out_centers)
 	v = vol_frac(centers, r, canvas_size)
 	print('estimated volfrac: ', v)
 	print('Number of particles: ', len(centers))
 
-	canvas = draw_spheres_sliced(canvas, centers, r)
+	print('making image')
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r)
+	print('making label')
+	label = draw_spheres_sliced(label, centers, r)
 
-	if zoom: canvas = ndimage.zoom(canvas, zoom)
+	canvas = ndimage.zoom(canvas, zoom)
+	
 	if gauss: canvas = ndimage.gaussian_filter(canvas, gauss)
+	
 	# Add noise
-	canvas = [random_noise(img, mode='gaussian',var=0.09)*255 for img in canvas]
+	canvas = [random_noise(img, mode='gaussian',var=noise)*255 for img in canvas]
 	canvas = np.array(canvas,dtype='uint8')
-	return canvas, centers
+
+	return canvas, centers, label
 
 def vol_frac(centers, r, canvas_size):
 	vol = (4/3)*  np.pi * r**3
@@ -120,16 +114,17 @@ def get_gr(positions, cutoff, bins, minimum_gas_number=1e4):
 
 
 if __name__ == "__main__":
-	canvas_size=(50,255,255),
-	r = 10,
-	zoom = 0.75,
-	gauss = (7,3,3),
-	min_dist = r+7,
+	canvas_size=(32,256,256)
+	r = 10
+	zoom = 0.8
+	gauss = (7,3,3)
+	min_dist = 2*r
 	k = 30
 
 
-	canvas, positions = simulate_img3d(canvas_size, r, min_dist, zoom, gauss, k=30)
-	mainViewer(canvas)
+	canvas, positions, label = simulate_img3d(canvas_size, r, min_dist, zoom, gauss, k=30)
+	mainViewer(canvas, positions=positions)
+	mainViewer(label, positions=positions)
 
 	print(canvas.shape, np.mean(canvas), np.std(canvas), np.min(canvas), np.max(canvas))
 
@@ -159,48 +154,3 @@ if __name__ == "__main__":
 
 
 
-def make_random_centers_3d(canvas_size, n, zoom, min_dist):
-	'''
-	Generate random centers of particles
-
-	This is a place holder for bringing in simulated particle trajectories from dynamo
-	'''
-	canvas_size = [int(c/zoom) for c in canvas_size]
-	min_dist = min_dist/zoom
-	z = random.randint(0, canvas_size[0])
-	y = random.randint(0, canvas_size[1])
-	x = random.randint(0, canvas_size[2])
-	centers = [(z,y,x)] # make first particle
-	for i in range(n):
-		too_close = True
-		while too_close:
-			z = random.randint(0, canvas_size[0])
-			y = random.randint(0, canvas_size[1])
-			x = random.randint(0, canvas_size[2])
-			centers.append((z,y,x))
-			distances = spatial.distance.pdist(centers)
-			if all(i > min_dist for i in distances):
-				too_close = False
-				break
-			else:
-				centers.pop() # get rid of last element if too close
-	return centers
-
-def draw_sphere(canvas, center, r):
-	cz, cy, cx = center
-	for i in range(canvas.shape[0]):
-			for j in range(canvas.shape[1]):
-				for k in range(canvas.shape[2]):
-					if (i - cz)**2 + (j - cy)**2 + (k - cx)**2 <= r**2:
-						canvas[i,j,k] = 255
-	return canvas
-
-def draw_multiple_spheres(canvas, centers, r):
-	for center in centers:
-		cz, cy, cx = center
-		for i in range(canvas.shape[0]):
-				for j in range(canvas.shape[1]):
-					for k in range(canvas.shape[2]):
-						if (i - cz)**2 + (j - cy)**2 + (k - cx)**2 <= r**2:
-							canvas[i,j,k] = 255
-	return canvas

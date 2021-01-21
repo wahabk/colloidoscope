@@ -1,74 +1,132 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import datetime
-import os
 import time
-from segmentation_models import Unet
-import keras
-from keras import backend as K
+import segmentation_models_3D as sm
+import tensorflow.keras as keras
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
-from keras.layers import Input, Conv2D
-from keras.models import Model
 from tensorflow.keras.optimizers import Adam, schedules
-timestr = time.strftime("%Y-%m-%d")
+timestr = time.strftime("%Y-%m-%d-%H-%M")
+from make_dataset import *
+import tensorflow as tf
+from generator import customImageDataGenerator
 
-def dice_coef(y_true, y_pred):
-    smooth = 1
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = K.sum(y_true_f * y_pred_f)
-    return (2. * intersection +smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) +smooth)
+def lr_scheduler(epoch, learning_rate):
+    decay_rate = 0.1
+    decay_step = 8
+    if epoch % decay_step == 0 and epoch not in [0, 1]:
+        return learning_rate * decay_rate
+    return learning_rate
 
-def dice_coef_loss(y_true, y_pred):
-    return 1-dice_coef(y_true, y_pred)
+def dataGenie(batch_size, data_gen_args, dataset = 'Test', n_samples=30):
+    imagegen = customImageDataGenerator(**data_gen_args)
+    maskgen = customImageDataGenerator(**data_gen_args)
 
-data_gen_args = dict(rotation_range=0.01,
-                    width_shift_range=0.01,
-                    height_shift_range=0.09,
-                    shear_range=0.09,
-                    zoom_range=0.05,
-                    horizontal_flip=True,
-                    vertical_flip = True,
-                    fill_mode='constant',
-                    cval = 0)
+    while True:
+        scan_list, label_list = [], []
+        for n in n_samples:
+
+            scan = read_hdf5(dataset, n)
+            label = read_hdf5(dataset+'_labels', n)
+            scan_list.append(scan)
+            label_list.append(label)        
+        
+        scan_list = np.array(scan_list, dtype='float32')
+        label_list = np.array(label_list, dtype='float32')
+        
+        scan_list      = scan_list[:,:,:,:,np.newaxis] # add final axis to show datagens its grayscale
+        label_list   = label_list[:,:,:,:,np.newaxis] # add final axis to show datagens its grayscale
+        
+        print('[dataGenie] Initialising image and mask generators')
+        image_generator = imagegen.flow(scan_list,
+            batch_size = batch_size,
+            #save_to_dir = 'output/Keras/',
+            save_prefix = 'dataGenie',
+            seed = 1,
+            shuffle=False
+            )
+        mask_generator = maskgen.flow(label_list, 
+            batch_size = batch_size,
+            #save_to_dir = 'output/Keras/',
+            save_prefix = 'dataGenie',
+            seed = 1,
+            shuffle=False
+            )
+        print('Ready.')
+
+        datagen = zip(image_generator, mask_generator)
+        for x_batch, y_batch in datagen:
+            x_batch = x_batch/255
+            y_batch = y_batch/255
+            # print(x_batch[0].shape, x_batch[0].dtype, np.amax(x_batch[0]))
+            # print(y_batch[0].shape, y_batch[0].dtype, np.amax(y_batch[0]))
+            yield (x_batch, y_batch)
+
+def testGenie(n):
+	scan, positions = read_hdf5('Test', n, positions=True)
+	scan = scan/255
+	scan = scan[:,:,:,np.newaxis] # add final axis to show datagens its grayscale
+	return scan, positions
+if __name__ == "__main__":
+
+    data_gen_args = dict(rotation_range=0.05,
+                        width_shift_range=0.05,
+                        height_shift_range=0.05,
+                        shear_range=0.05,
+                        zoom_range=0.1,
+                        horizontal_flip=True,
+                        vertical_flip = True,
+                        fill_mode='constant',
+                        cval = 0)
+
+    BACKBONE = 'resnet34'
+    val_steps = 10
+    batch_size = 1
+    steps_per_epoch = 20
+    epochs = 1
+    lr = 1e-4
+    input_shape = [32,256,256,1]
+    dataset = 'Test'
+    n_samples = 30
+    modelpath = 'output/unet_checkpoints2.hdf5'
+
+    model_checkpoint = ModelCheckpoint(modelpath, 
+                                            monitor = 'loss', verbose = 1, save_best_only = True)
+
+    callbacks = [
+        keras.callbacks.LearningRateScheduler(lr_scheduler, verbose=1),
+        model_checkpoint
+    ]
+
+    datagenie = dataGenie(batch_size=batch_size,
+                            data_gen_args=data_gen_args,
+                            dataset=dataset,
+                            n_samples=range(1, 21))
+
+    valdatagenie = dataGenie(batch_size=batch_size,
+                            data_gen_args=data_gen_args,
+                            dataset=dataset,
+                            n_samples=range(21,31))
 
 
-val_steps = 8
-batch_size = 8
-steps_per_epoch = 8
-epochs = 1
-lr = 1e-4
-callbacks=[]
-input_shape = [512,512,100]
 
-datagenie = dataGenie(batch_size = batch_size,
-                        data_gen_args = data_gen_args,
-                        fish_nums = sample)
+    opt = Adam(lr=lr)
+    model = sm.Unet(BACKBONE, encoder_weights=None, input_shape=input_shape, classes=1, activation='sigmoid')
 
-valdatagenie = dataGenie(batch_size = batch_size,
-                        data_gen_args = data_gen_args,
-                        fish_nums = val_sample)
+    # model.load_weights(modelpath)
+    model.compile(optimizer='adam', loss=sm.losses.DiceLoss(), metrics=[sm.losses.DiceLoss()])
+    history = model.fit(datagenie, validation_data=valdatagenie, steps_per_epoch = steps_per_epoch, 
+                        epochs = epochs, callbacks=callbacks, validation_steps=val_steps)
 
-
-
-opt = Adam(lr=lr)
-base_model = Unet('vgg16', encoder_weights=None, input_shape=(128, 128, 3), classes=1, activation='sigmoid')
-inp = Input(shape=(None, None, 1))
-l1 = Conv2D(3, (1, 1))(inp) # map N channels data to 3 channels
-out = base_model(l1)
-model = Model(inp, out, name=base_model.name)
-
-model.compile(optimizer='adam', loss=dice_coef_loss, metrics=[dice_coef])
-history = model.fit(datagenie, validation_data=valdatagenie, steps_per_epoch = steps_per_epoch, 
-                    epochs = epochs, callbacks=callbacks, validation_steps=val_steps)
-
-
-# summarize history for loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title(f'Unet loss (lr={lr})')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.ylim(0,1)
-plt.legend(['train', 'val'], loc='upper left')
-plt.savefig(f'output/Model/loss_curves/{timestr}_loss.png')
+    test, positions = testGenie(1)
+    print(test.shape)
+    results = model.predict(test, batch_size=1) # read about this one
+    print(results.shapes)
+    # summarize history for loss
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title(f'Unet loss (lr={lr})')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.ylim(0,1)
+    plt.legend(['train', 'val'], loc='upper left')
+    plt.savefig(f'output/loss_curves/{timestr}_loss.png')

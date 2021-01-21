@@ -4,12 +4,14 @@ from qtpy.QtCore import Qt, QTimer
 import qtpy.QtCore as QtCore
 import numpy as np
 import sys
+import cv2
 
 class mainView(QMainWindow):
 
-	def __init__(self, stack, label = None, thresh = False):
+	def __init__(self, stack, positions = False, label = None):
 		super().__init__()
-		self.thresh = thresh
+		self.thresh = False
+		self.positions = positions
 		self.label = label
 		# convert 16 bit grayscale to 8 bit
 		# by mapping the data range to 0 - 255
@@ -27,7 +29,7 @@ class mainView(QMainWindow):
 		self.setWindowTitle('CTFishPy')
 		self.statusBar().showMessage('Status bar: Ready')
 
-		self.viewer = Viewer(self.stack, label = self.label, parent = self, thresh = self.thresh)
+		self.viewer = Viewer(self.stack, label = self.label, positions = self.positions, parent=self)
 		self.setCentralWidget(self.viewer)
 		#widget.findChildren(QWidget)[0]
 
@@ -46,30 +48,36 @@ class mainView(QMainWindow):
 
 class Viewer(QWidget):
 
-	def __init__(self, stack, label = None, thresh = False, stride = 1, parent = None):
+	def __init__(self, stack, label = None, positions = None, parent=None):
 		super().__init__()
 
 		# init variables
 		if np.max(stack) == 1: stack = stack*255 #fix labels so you can view them if are main stack
 		self.ogstack = stack
 		self.stack_size = stack.shape[0]
-		self.stride = stride
 		self.slice = 0
-		self.parent = parent
 		self.min_thresh = 0
 		self.max_thresh = 150
-		self.thresh = thresh
+		self.thresh = False # turn off for now
 		self.label = label
 		self.pad = 20
+		self.positions = positions
+		self.parent = parent
+		# unpack images to convert each one to grayscale
+		self.ogstack = np.array([np.stack((img,)*3, axis=-1) for img in self.ogstack])
 
 		# label stack
 		if self.label is not None:
 			self.thresh == False
-			# unpack images to convert each one to grayscale
-			self.ogstack = np.array([np.stack((img,)*3, axis=-1) for img in self.ogstack])
-			# change pixels to red if in label
-			self.ogstack[label == 1, :] = [255, 0, 0]
 
+			# change pixels to red if in label
+			self.ogstack[label == 255, :] = [255, 69, 0]
+
+		if self.positions is not None:
+			for z, y, x in self.positions:
+				z, y, x = int(z), int(y), int(x)
+				cv2.rectangle(self.ogstack[z], (x - 2, y - 2), (x + 2, y + 2), (255,69,0), -1)
+				cv2.circle(self.ogstack[z], (x, y), 10, (0, 255, 0), 2)
 		#if self.ogstack.shape[0] == self.ogstack.shape[1]: self.is_single_image = True
 		if len(self.ogstack.shape) == 2: self.is_single_image = True
 		else: self.is_single_image = False
@@ -128,7 +136,7 @@ class Viewer(QWidget):
 	def wheelEvent(self, event):
 		if self.is_single_image: return
 		#scroll through slices and go to beginning if reached max
-		self.slice = self.slice + int(event.angleDelta().y()/120)*self.stride
+		self.slice = self.slice + int(event.angleDelta().y()/120)
 		if self.slice > self.stack_size-1: 	self.slice = 0
 		if self.slice < 0: 					self.slice = self.stack_size-1
 		self.slider.setValue(self.slice)
@@ -186,9 +194,9 @@ class Viewer(QWidget):
 		self.update()
 
 
-def mainViewer(stack, label=None, thresh=False):
+def mainViewer(stack, positions=None, labels=None):
 	app = QApplication(sys.argv)
-	win = mainView(stack, label, thresh)
+	win = mainView(stack, positions, labels)
 	win.show()
 	app.exec_()
 	return
