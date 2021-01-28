@@ -22,17 +22,17 @@ def read_hdf5(dataset, n, positions=False):
 
 
 if __name__ == "__main__":
-	canvas_size=(32,256,256)
+	canvas_size=(16,128,128)
 	r = 10
 	zoom = 0.75
 	gauss = (7,3,3)
 	min_dist = 2*r
-	k = 30
-	dataset = 'Test'
+	k = 50
+	dataset = 'First'
 
-	for n in range(1,31):
+	for n in range(1,71):
 		print(n)
-		canvas, positions, label = simulate_img3d(canvas_size, r, min_dist, zoom, gauss, k=30)
+		canvas, positions, label = simulate_img3d(canvas_size, r, min_dist, zoom, gauss, k=k)
 		write_hdf5(dataset, n, canvas, positions)
 		write_hdf5(dataset+'_labels', n, label)
 		

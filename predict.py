@@ -29,18 +29,23 @@ datagenie = dataGenie(batch_size=1,
                         n_samples=range(1, 3))
 
 model = sm.Unet(BACKBONE, encoder_weights=None, input_shape=input_shape, classes=1, activation='sigmoid')
-# model.load_weights(modelpath)
+model.load_weights(modelpath)
 test_list = []
 position_list = []
+
 for n in range(1, 5):
 	test, positions = testGenie(1)
 	test_list.append(test)
 	position_list.append(positions)
+
 test_list = np.array(test_list)
 print(test_list.shape)
+
+
 results = model.predict(test_list, batch_size=1) # read about this one
 result = results[0]*255
 print(result.shape, np.max(result), np.mean(result), np.min(result))
 result = np.squeeze(result.astype('uint8'), axis = 3)
 # test = np.squeeze(test.astype('int8'), axis = 3)
 mainViewer(result, positions=position_list[0])
+

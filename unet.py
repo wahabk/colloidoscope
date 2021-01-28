@@ -66,13 +66,15 @@ def testGenie(n):
 	scan = scan/255
 	scan = scan[:,:,:,np.newaxis] # add final axis to show datagens its grayscale
 	return scan, positions
+
+
 if __name__ == "__main__":
 
-    data_gen_args = dict(rotation_range=0.05,
-                        width_shift_range=0.05,
-                        height_shift_range=0.05,
-                        shear_range=0.05,
-                        zoom_range=0.1,
+    data_gen_args = dict(rotation_range=25,
+                        width_shift_range=20,
+                        height_shift_range=20,
+                        shear_range=10,
+                        zoom_range=0.5,
                         horizontal_flip=True,
                         vertical_flip = True,
                         fill_mode='constant',
@@ -83,13 +85,17 @@ if __name__ == "__main__":
     batch_size = 1
     steps_per_epoch = 20
     epochs = 1
+    nclasses = 1
     lr = 1e-4
-    input_shape = [32,256,256,1]
-    dataset = 'Test'
+    input_shape = [32,128,128,1]
+    dataset = 'First'
     n_samples = 30
-    modelpath = 'output/unet_checkpoints2.hdf5'
+    weightspath = 'output/unet_checkpoints2.hdf5'
+    encoder_weights = 'imagenet'
+    encoder_freeze = True
+    activation = 'sigmoid'
 
-    model_checkpoint = ModelCheckpoint(modelpath, 
+    model_checkpoint = ModelCheckpoint(weightspath, 
                                             monitor = 'loss', verbose = 1, save_best_only = True)
 
     callbacks = [
@@ -109,18 +115,23 @@ if __name__ == "__main__":
 
 
 
-    opt = Adam(lr=lr)
-    model = sm.Unet(BACKBONE, encoder_weights=None, input_shape=input_shape, classes=1, activation='sigmoid')
+    optimizer = Adam(lr=lr)
+    dice_loss = sm.losses.DiceLoss() 
 
-    # model.load_weights(modelpath)
-    model.compile(optimizer='adam', loss=sm.losses.DiceLoss(), metrics=[sm.losses.DiceLoss()])
+
+    optimizer = Adam(learning_rate=lr)
+
+    model = sm.Unet(BACKBONE, input_shape=input_shape, encoder_weights=None, classes=nclasses, activation=activation, encoder_freeze=False)
+
+    model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=[])
+    # model.load_weights(weightspath)
     history = model.fit(datagenie, validation_data=valdatagenie, steps_per_epoch = steps_per_epoch, 
                         epochs = epochs, callbacks=callbacks, validation_steps=val_steps)
 
     test, positions = testGenie(1)
     print(test.shape)
     results = model.predict(test, batch_size=1) # read about this one
-    print(results.shapes)
+    print(results.shape)
     # summarize history for loss
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])

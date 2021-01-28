@@ -7,7 +7,9 @@
 #include <fstream>
 #include <time.h>
 #include <math.h>
-
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+namespace py = pybind11;
 using namespace std;
 
 #define PI 3.141592654
@@ -528,99 +530,139 @@ void write(char *filenamepath, double *psigma, int index)  // output single floa
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
+void crush(double *ox, double *oy, double *oz)
+{
+	double r, rScale;                                                       // scaling factor
+	double realTime=0.0, tBrown;                                            // accepted time, brownian time
+	long t=0;
+	double ratio;
+	int q[NPART];                                                           // particle order
+	double px[NPART], py[NPART], pz[NPART];                                 // particle locations
+	double px0[NPART], py0[NPART], pz0[NPART];                              // particle locations at start of production run
+	double psigma[NPART], pmass[NPART];                                     // particle diameter and mass - mass not yet used
+	double trialX, trialY, trialZ;
+	double energy;
+	double eta=ETA, etaNew;                                                 // current and new eta
+	int *neighbourList;                                                     // neighbour list
+	int nNeighbour[NPART];                                                  // # neighbours
+	long seed;
+	char input[1000], output[1000], outputXmol[1000], outputDat[1000];
+
+	//randomize();                                                            // seed sran2 off the clock
+	seed    = (long) (rand() * 10000);
+	sran2(seed);
+
+	cout    << " \n Paddy Royall Feb 2008 \n HS one component polydisp crushing \n ";
+	cout    << " \n FATTING \n ";
+
+	neighbourList = new int[NPART*NEIGHBOURS];
+	sidez = sidex = sidey = pow((double)NPART/rho, 0.333333);
+	invSidez = invSidex = invSidey = 1.0/sidex;
+	etaNew = eta+ETADIFF;
+	printf("\n NPART %d ETA %.2f sidex %.3f  ", NPART, ETA, sidex);
+
+	if(ETA>0.31) { // start from complression
+			sprintf(input, "coord_e%.4f_n%d_poly%.2f.xyz"  , ETA, NPART, POLYDISP);
+			cout << " dense - reading in " << input << endl;
+			readxyz(input, px, py, pz);
+			sprintf(input, "sigma_e%.2f_n%d_poly%.2f.dat"  , ETA, NPART, POLYDISP);
+			cout << " and for sigma - reading in " << input << endl;
+			read(input, psigma, NPART);
+	}
+
+	else{ 
+			makePolydisp(psigma, pmass); // set up diameter list
+			initRandom(px, py, pz, psigma); // fill box with coordinates subject to not overla[[oing]]
+			// psigma is list of diameters
+	}
+
+
+
+	while(eta<ETAFINAL){
+		// business end
+		neighbours(px, py, pz, nNeighbour, neighbourList); // part of monte carlo
+		rejected = accepted = 0;
+		// adjust the step size to maintain acceptance rrate of 0.5
+		setq(q);
+		// move particles randomly using q array
+		for(int i=0; i<NPART; ++i){
+			advance(px, py, pz, &trialX, &trialY, &trialZ, q[i]);
+			// move particles using q scrambler
+			accept(px, py, pz, trialX, trialY, trialZ, q[i], nNeighbour, neighbourList, psigma);
+			// trial coords are temporary to be accepted
+			//accept if no overlap
+			//accept(px, py, pz, px[q[i]], py[q[i]], pz[q[i]], q[i], nNeighbour, neighbourList, psigma);
+		}
+		ratio = (double) accepted / (double) (rejected+accepted);
+		setStep();
+		rScale = pow(eta/etaNew, 0.333333333);
+		//cout << " rScale " << rScale << endl;
+		energy = getEnergyAllFat(px, py, pz, psigma, rScale);
+		// energy is for soft spheres
+
+		if(energy<STEPHEIGHT && eta<ETAFINAL){
+			cout << " energy " << energy << " OK - lets squish - should be no overlaps " << endl;
+			sidex     = sidey    = sidez    = (sidex * rScale);
+			invSidex  = invSidey = invSidez = (invSidex / rScale);
+			scaleXYZ(px, py, pz, rScale);
+			eta    = etaNew;
+			etaNew = eta+ETADIFF;
+			cout << " now eta " << eta <<  " rScale " << rScale  << endl;
+		}
+
+		overCheck(px, py, pz, psigma);
+		// double make sure no overlaps
+		++t;
+	}                                                           // end equilibration loop
+	sprintf(output, "coord_e%.5f_n%d_poly%.2f.xyz"  , ETAFINAL, NPART, POLYDISP);  
+	// writexyz(output, px, py, pz);
+	sprintf(output, "sigma_e%.5f_n%d_poly%.2f.dat"  , ETAFINAL, NPART, POLYDISP);  
+	// write(output, psigma, NPART);
+
+	sprintf(output, "d0_coord_input.xyz");  
+	// writexyz(output, px, py, pz);
+	sprintf(output, "d0_sigma_input.dat"); 
+	// write(output, psigma, NPART);
+
+
+	cout << "\n\n FIN \n\n";
+
+	ox = px;
+	oy = py;
+	oz = pz;
+}
+
 int main()
 {
-				double r, rScale;                                                       // scaling factor
-				double realTime=0.0, tBrown;                                            // accepted time, brownian time
-				long t=0;
-				double ratio;
-				int q[NPART];                                                           // particle order
-				double px[NPART], py[NPART], pz[NPART];                                 // particle locations
-				double px0[NPART], py0[NPART], pz0[NPART];                              // particle locations at start of production run
-				double psigma[NPART], pmass[NPART];                                     // particle diameter and mass - mass not yet used
-				double trialX, trialY, trialZ;
-				double energy;
-				double eta=ETA, etaNew;                                                 // current and new eta
-				int *neighbourList;                                                     // neighbour list
-				int nNeighbour[NPART];                                                  // # neighbours
-				long seed;
-				char input[1000], output[1000], outputXmol[1000], outputDat[1000];
+	double ox[NPART], oy[NPART], oz[NPART];
+	crush(ox, oy, oz);
 
-				//randomize();                                                            // seed sran2 off the clock
-				seed    = (long) (rand() * 10000);
-				sran2(seed);
+}
 
-				cout    << " \n Paddy Royall Feb 2008 \n HS one component polydisp crushing \n ";
-				cout    << " \n FATTING \n ";
+py::class_<Matrix>(m, "Matrix", py::buffer_protocol())
+   .def_buffer([](Matrix &m) -> py::buffer_info {
+        return py::buffer_info(
+            m.data(),                               /* Pointer to buffer */
+            sizeof(float),                          /* Size of one scalar */
+            py::format_descriptor<float>::format(), /* Python struct-style format descriptor */
+            2,                                      /* Number of dimensions */
+            { m.rows(), m.cols() },                 /* Buffer dimensions */
+            { sizeof(float) * m.cols(),             /* Strides (in bytes) for each index */
+              sizeof(float) }
+        );
+    });
 
-				neighbourList = new int[NPART*NEIGHBOURS];
-				sidez = sidex = sidey = pow((double)NPART/rho, 0.333333);
-				invSidez = invSidex = invSidey = 1.0/sidex;
-				etaNew = eta+ETADIFF;
-				printf("\n NPART %d ETA %.2f sidex %.3f  ", NPART, ETA, sidex);
-
-				if(ETA>0.31) { // start from complression
-					 sprintf(input, "coord_e%.4f_n%d_poly%.2f.xyz"  , ETA, NPART, POLYDISP);
-					 cout << " dense - reading in " << input << endl;
-					 readxyz(input, px, py, pz);
-					 sprintf(input, "sigma_e%.2f_n%d_poly%.2f.dat"  , ETA, NPART, POLYDISP);
-					 cout << " and for sigma - reading in " << input << endl;
-					 read(input, psigma, NPART);
-				}
-
-				else{ 
-						makePolydisp(psigma, pmass); // set up diameter list
-						initRandom(px, py, pz, psigma); // fill box with coordinates subject to not overla[[oing]]
-						// psigma is list of diameters
-				}
+PYBIND11_MODULE(Crusher, m) {
+    m.doc() = 
+	"Paddy code to create positions of dense colloids"; // optional module docstring
 
 
+	m.def("generate", &main, "
+	
+	parameters
+	None for now
 
-				while(eta<ETAFINAL){
-					// business end
-					neighbours(px, py, pz, nNeighbour, neighbourList); // part of monte carlo
-					rejected = accepted = 0;
-					// adjust the step size to maintain acceptance rrate of 0.5
-					setq(q);
-					// move particles randomly using q array
-					for(int i=0; i<NPART; ++i){
-						advance(px, py, pz, &trialX, &trialY, &trialZ, q[i]);
-						// move particles using q scrambler
-						accept(px, py, pz, trialX, trialY, trialZ, q[i], nNeighbour, neighbourList, psigma);
-						// trial coords are temporary to be accepted
-						//accept if no overlap
-						//accept(px, py, pz, px[q[i]], py[q[i]], pz[q[i]], q[i], nNeighbour, neighbourList, psigma);
-					}
-					ratio = (double) accepted / (double) (rejected+accepted);
-					setStep();
-					rScale = pow(eta/etaNew, 0.333333333);
-					//cout << " rScale " << rScale << endl;
-					energy = getEnergyAllFat(px, py, pz, psigma, rScale);
-					// energy is for soft spheres
-
-					if(energy<STEPHEIGHT && eta<ETAFINAL){
-						cout << " energy " << energy << " OK - lets squish - should be no overlaps " << endl;
-						sidex     = sidey    = sidez    = (sidex * rScale);
-						invSidex  = invSidey = invSidez = (invSidex / rScale);
-						scaleXYZ(px, py, pz, rScale);
-						eta    = etaNew;
-						etaNew = eta+ETADIFF;
-						cout << " now eta " << eta <<  " rScale " << rScale  << endl;
-					}
-
-					overCheck(px, py, pz, psigma);
-					// double make sure no overlaps
-					++t;
-				}                                                           // end equilibration loop
-				sprintf(output, "coord_e%.5f_n%d_poly%.2f.xyz"  , ETAFINAL, NPART, POLYDISP);  writexyz(output, px, py, pz);
-				sprintf(output, "sigma_e%.5f_n%d_poly%.2f.dat"  , ETAFINAL, NPART, POLYDISP);  write(output, psigma, NPART);
-
-				sprintf(output, "d0_coord_input.xyz");  writexyz(output, px, py, pz);
-				sprintf(output, "d0_sigma_input.dat");  write(output, psigma, NPART);
-
-
-				cout << "\n\n FIN \n\n";
-
-				return 0;
-
+	returns
+	px, py, pz
+	")
 }
