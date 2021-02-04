@@ -2,13 +2,17 @@ from sim3d import simulate_img3d
 import h5py
 from mainviewer import mainViewer
 import numpy as np
-from array2gif import write_gif
 import cv2
 from moviepy.editor import ImageSequenceClip
+from random import randrange, uniform
+import math
+from skimage.util.shape import view_as_blocks
+from skimage import io
+
 
 def write_hdf5(dataset, n, canvas, positions=False, metadata=None):
 	path = f'Data/{dataset}.hdf5'
-	with h5py.File(path, "a") as f:
+	with h5py.File(path, "w") as f:
 		dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype='uint8', data = canvas, compression=1)
 		if positions: dset.attrs['positions'] = positions
 
@@ -22,13 +26,14 @@ def read_hdf5(dataset, n, positions=False):
 		else: 
 			return np.array(canvas)
 
-def make_gif(canvas, file_name, fps = 7, positions=None, scale=300):
+def make_gif(canvas, file_name, fps = 7, positions=None, scale=None):
 	#decompose grayscale numpy array into RGB
 	new_canvas = np.array([np.stack((img,)*3, axis=-1) for img in canvas])
 
 	if positions is not None:
 		for z, y, x in positions:
-			z, y, x = int(z), int(y), int(x)
+			z, y, x = math.floor(z), int(y), int(x)
+			if z==31:z=30
 			cv2.rectangle(new_canvas[z], (x - 2, y - 2), (x + 2, y + 2), (250,0,0), -1)
 			cv2.circle(new_canvas[z], (x, y), 10, (0, 250, 0), 2)
 
@@ -52,26 +57,25 @@ def make_gif(canvas, file_name, fps = 7, positions=None, scale=300):
 
 if __name__ == "__main__":
 	canvas_size=(32,128,128)
-	r = 10
-	zoom = 0.75
-	gauss = (7,3,3)
-	min_dist = 2*r+1
-	k = 100
-	dataset = 'First'
+	
+	dataset = 'Simulated'
 
-	# for n in range(1,101):
-	# 	print(n)
-	# 	canvas, positions, label = simulate_img3d(canvas_size, r, min_dist, zoom, gauss, k=k)
-	# 	write_hdf5(dataset, n, canvas, positions)
-	# 	write_hdf5(dataset+'_labels', n, label)
+	for n in range(1,101):
+
+		k = randrange(30,100)
+		zoom = 0.75
+		xykernel = randrange(1,6,2)
+		gauss = (randrange(5,12,2),xykernel,xykernel)
+		noise = uniform(0.01,0.03)
+
+		print(n)
+		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, k=k, noise=noise)
+		canvas, positions, label = None, None, None
+		# write_hdf5(dataset, n, canvas, positions)
+		# write_hdf5(dataset+'_labels', n, label)
 		
-	for n in range(1,2):
+	for n in range(1,6):
 		canvas, positions = read_hdf5(dataset, n, positions=True)
 		label = read_hdf5(dataset+'_labels', n)
-		make_gif(canvas, 'scan.gif', fps = 7, positions=positions, scale=300)
-		make_gif(label, 'scan_labels.gif', fps = 7, positions=positions, scale=300)
-
-		# mainViewer(canvas)
-		# mainViewer(label)
-		# print(len(positions), positions)
-		# print(canvas.shape, label.shape)
+		make_gif(canvas, f'output/Example/{n}_scan.gif', fps = 7, positions=positions, scale=200)
+		make_gif(label, f'output/Example/{n}_scan_labels.gif', fps = 7, positions=positions, scale=200)

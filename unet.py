@@ -10,12 +10,14 @@ from make_dataset import *
 import tensorflow as tf
 from generator import customImageDataGenerator
 
+
 def lr_scheduler(epoch, learning_rate):
 	decay_rate = 1
 	decay_step = 8
 	if epoch % decay_step == 0 and epoch not in [0, 1]:
 		return learning_rate * decay_rate
 	return learning_rate
+
 
 def dataGenie(batch_size, data_gen_args, dataset = 'Test', n_samples=30):
 	imagegen = customImageDataGenerator(**data_gen_args)
@@ -61,6 +63,7 @@ def dataGenie(batch_size, data_gen_args, dataset = 'Test', n_samples=30):
 			# print(y_batch[0].shape, y_batch[0].dtype, np.amax(y_batch[0]))
 			yield (x_batch, y_batch)
 
+
 def testGenie(n, dataset = 'First'):
 	scan, positions = read_hdf5(dataset, n, positions=True)
 	labels = read_hdf5(f'{dataset}_labels', n, positions=False)
@@ -91,8 +94,9 @@ if __name__ == "__main__":
 	input_shape = [32,128,128,1]
 	dataset = 'First'
 	n_samples = 30
-	weightspath = 'output/unet_checkpoints2.hdf5'
+	weightspath = 'output/Second.hdf5'
 	activation = 'sigmoid'
+	metrics = [sm.metrics.IOUScore(threshold=0.5)]
 
 	model_checkpoint = ModelCheckpoint(weightspath, 
 											monitor = 'loss', verbose = 1, save_best_only = True)
@@ -108,7 +112,7 @@ if __name__ == "__main__":
 							n_samples=range(1, 71))
 
 	valdatagenie = dataGenie(batch_size=batch_size,
-							data_gen_args=data_gen_args,
+							data_gen_args=dict(),
 							dataset=dataset,
 							n_samples=range(71,100))
 
@@ -122,7 +126,7 @@ if __name__ == "__main__":
 
 	model = sm.Unet(BACKBONE, input_shape=input_shape, encoder_weights=None, classes=nclasses, activation=activation, encoder_freeze=False)
 
-	model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=[])
+	model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=metrics)
 
 	# # model.load_weights(weightspath)
 	history = model.fit(datagenie, validation_data=valdatagenie, steps_per_epoch = steps_per_epoch, 
