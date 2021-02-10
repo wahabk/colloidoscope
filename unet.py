@@ -87,12 +87,12 @@ if __name__ == "__main__":
 	BACKBONE = 'resnet34'
 	val_steps = 19
 	batch_size = 1
-	steps_per_epoch = 80
+	steps_per_epoch = 70
 	epochs = 40
 	nclasses = 1
 	lr = 1e-5
 	input_shape = [32,128,128,1]
-	dataset = 'First'
+	dataset = 'Simulated'
 	n_samples = 30
 	weightspath = 'output/Second.hdf5'
 	activation = 'sigmoid'

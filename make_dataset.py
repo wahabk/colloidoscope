@@ -12,7 +12,7 @@ from skimage import io
 
 def write_hdf5(dataset, n, canvas, positions=False, metadata=None):
 	path = f'Data/{dataset}.hdf5'
-	with h5py.File(path, "w") as f:
+	with h5py.File(path, "a") as f:
 		dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype='uint8', data = canvas, compression=1)
 		if positions: dset.attrs['positions'] = positions
 
@@ -24,7 +24,7 @@ def read_hdf5(dataset, n, positions=False):
 			positions = f[str(n)].attrs['positions']
 			return np.array(canvas), np.array(positions)
 		else: 
-			return np.array(canvas)
+			return np.array(canvas)				
 
 def make_gif(canvas, file_name, fps = 7, positions=None, scale=None):
 	#decompose grayscale numpy array into RGB
@@ -37,7 +37,6 @@ def make_gif(canvas, file_name, fps = 7, positions=None, scale=None):
 			cv2.rectangle(new_canvas[z], (x - 2, y - 2), (x + 2, y + 2), (250,0,0), -1)
 			cv2.circle(new_canvas[z], (x, y), 10, (0, 250, 0), 2)
 
-	
 	if scale is not None:
 		im = new_canvas[0]
 		width = int(im.shape[1] * scale / 100)
@@ -67,15 +66,15 @@ if __name__ == "__main__":
 		xykernel = randrange(1,6,2)
 		gauss = (randrange(5,12,2),xykernel,xykernel)
 		noise = uniform(0.01,0.03)
-
-		print(n)
 		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, k=k, noise=noise)
+		
+		write_hdf5(dataset, n, canvas, positions)
+		write_hdf5(dataset+'_labels', n, label)
 		canvas, positions, label = None, None, None
-		# write_hdf5(dataset, n, canvas, positions)
-		# write_hdf5(dataset+'_labels', n, label)
 		
 	for n in range(1,6):
 		canvas, positions = read_hdf5(dataset, n, positions=True)
 		label = read_hdf5(dataset+'_labels', n)
 		make_gif(canvas, f'output/Example/{n}_scan.gif', fps = 7, positions=positions, scale=200)
 		make_gif(label, f'output/Example/{n}_scan_labels.gif', fps = 7, positions=positions, scale=200)
+

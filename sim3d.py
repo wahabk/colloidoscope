@@ -16,18 +16,20 @@ import random
 import os
 
 print(os.cpu_count())
+
 @njit()
 def draw_slice(args):
 	s, z, radii, centers, brightness = args
+	new_slice = s
 	for i in range(s.shape[0]):
 		for j in range(s.shape[1]):
-			for i, center in enumerate(centers):
-				r = radii[i]
+			for k, center in enumerate(centers):
+				r = radii[k]
 				cz, cy, cx = center
 				dist = (z - cz)**2 + (i - cy)**2 + (j - cx)**2
 				if dist <= r**2:
-					s[i,j] = 255
-	return s
+					new_slice[i,j] = 255
+	return new_slice
 
 def draw_spheres_sliced(canvas, centers, radii, is_label=False):
 	new_canvas = []
@@ -37,7 +39,7 @@ def draw_spheres_sliced(canvas, centers, radii, is_label=False):
 
 	args = [(s, z, radii, centers, brightness) for z, s in enumerate(canvas)]
 
-	with ProcessPoolExecutor(max_workers=10) as pool:
+	with ProcessPoolExecutor(max_workers=12) as pool:
 		for i in pool.map(draw_slice, args):
 			new_canvas.append(i)
 
@@ -117,7 +119,7 @@ def get_gr(positions, cutoff, bins, minimum_gas_number=1e4):
 	distances = pdist(positions).ravel()
 
 	if positions.shape[0] < minimum_gas_number:
-		rg_hists = []
+		rg_hists = []None, None, None, k=k, noise=noise)
 		for i in range(int(minimum_gas_number) // positions.shape[0] + 2):
 			random_gas = np.random.random(positions.shape) * np.array([positions.max(axis=0)])
 			rg_hist = np.histogram(pdist(random_gas), bins=bins)[0]
