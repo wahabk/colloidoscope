@@ -63,8 +63,8 @@ if __name__ == "__main__":
 
 		k = randrange(30,100)
 		zoom = 0.75
-		xykernel = randrange(1,6,2)
-		gauss = (randrange(5,12,2),xykernel,xykernel)
+		xykernel = randrange(1,3,2)
+		gauss = (randrange(5,9,2),xykernel,xykernel)
 		noise = uniform(0.01,0.03)
 		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, k=k, noise=noise)
 		

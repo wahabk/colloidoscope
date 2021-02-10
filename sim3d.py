@@ -119,7 +119,7 @@ def get_gr(positions, cutoff, bins, minimum_gas_number=1e4):
 	distances = pdist(positions).ravel()
 
 	if positions.shape[0] < minimum_gas_number:
-		rg_hists = []None, None, None, k=k, noise=noise)
+		rg_hists = []
 		for i in range(int(minimum_gas_number) // positions.shape[0] + 2):
 			random_gas = np.random.random(positions.shape) * np.array([positions.max(axis=0)])
 			rg_hist = np.histogram(pdist(random_gas), bins=bins)[0]
