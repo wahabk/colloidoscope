@@ -35,7 +35,7 @@ def draw_spheres_sliced(canvas, centers, radii, is_label=False):
 	new_canvas = []
 
 	if is_label: brightness = 255
-	else: brightness = random.randrange(100,255)
+	else: brightness = random.randrange(50,250)
 
 	args = [(s, z, radii, centers, brightness) for z, s in enumerate(canvas)]
 
@@ -64,7 +64,11 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	if polydisperse:
 		min_dist = 10*2
 	else:
+<<<<<<< HEAD
 		r = random.randrange(5,20)
+=======
+		r = random.randrange(5,16)
+>>>>>>> c9b2ecb91585e984a21a3b7ca8d7dc1cc1f971c1
 		min_dist=r*2
 
 	zoom_out = [int(c/zoom) for c in canvas_size]
@@ -74,7 +78,11 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	
 	if polydisperse:
 		# half the time polydisperse, make particles of diff sizes
+<<<<<<< HEAD
 		radii = [random.randrange(7,10) for i in range(len(centers))]
+=======
+		radii = [random.randrange(6,11) for i in range(len(centers))]
+>>>>>>> c9b2ecb91585e984a21a3b7ca8d7dc1cc1f971c1
 	else:
 		# half the time keep all colloid 
 		radii = [r for i in range(len(centers))]

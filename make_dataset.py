@@ -69,9 +69,9 @@ if __name__ == "__main__":
 		noise = uniform(0.01,0.4)
 		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, k=k, noise=noise)
 		
-		# mainViewer(canvas, positions=positions)
-		write_hdf5(dataset, n, canvas, positions)
-		write_hdf5(dataset+'_labels', n, label)
+		mainViewer(canvas, positions=positions)
+		# write_hdf5(dataset, n, canvas, positions)
+		# write_hdf5(dataset+'_labels', n, label)
 		canvas, positions, label = None, None, None
 		
 	for n in range(1,6):
