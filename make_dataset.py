@@ -61,15 +61,16 @@ if __name__ == "__main__":
 
 	for n in range(1,101):
 
-		k = randrange(30,100)
+		k = randrange(450,500)
 		zoom = 0.75
-		xykernel = randrange(1,3,2)
-		gauss = (randrange(5,9,2),xykernel,xykernel)
+		xykernel = randrange(1,6,2)
+		gauss = (randrange(3,11,2),xykernel,xykernel)
 		noise = uniform(0.01,0.03)
 		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, k=k, noise=noise)
 		
-		write_hdf5(dataset, n, canvas, positions)
-		write_hdf5(dataset+'_labels', n, label)
+		mainViewer(canvas, positions=positions)
+		# write_hdf5(dataset, n, canvas, positions)
+		# write_hdf5(dataset+'_labels', n, label)
 		canvas, positions, label = None, None, None
 		
 	for n in range(1,6):

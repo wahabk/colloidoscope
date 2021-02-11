@@ -62,11 +62,10 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	''' make half polydisperse '''
 	polydisperse = bool(random.getrandbits(1)) #random bool
 	if polydisperse:
-		min_dist = 13
+		min_dist = 11*2
 	else:
 		r = random.randrange(7,13)
-		min_dist=r
-	
+		min_dist=r*2
 
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
@@ -75,7 +74,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	
 	if polydisperse:
 		# half the time polydisperse, make particles of diff sizes
-		radii = [random.randrange(7,13) for i in range(len(centers))]
+		radii = [random.randrange(7,11) for i in range(len(centers))]
 	else:
 		# half the time keep all colloid 
 		radii = [r for i in range(len(centers))]
