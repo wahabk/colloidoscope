@@ -57,5 +57,5 @@ for i, result in enumerate(results):
 	result = np.squeeze(result.astype('uint8'), axis = 3)
 	test = np.squeeze(test.astype('uint8'), axis = 3)
 	# test = np.squeeze(test.astype('int8'), axis = 3)
-	make_gif(result, f'output/predictions/pred_{i}_label.gif')
-	make_gif(test, f'output/predictions/pred_{i}_scan.gif')
+	make_gif(result, f'output/predictions/pred_{i}_label.gif', scale = 300)
+	make_gif(test, f'output/predictions/pred_{i}_scan.gif', scale = 300)

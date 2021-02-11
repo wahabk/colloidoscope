@@ -38,7 +38,7 @@ def dataGenie(batch_size, data_gen_args, dataset = 'Test', n_samples=30):
 		scan_list      = scan_list[:,:,:,:,np.newaxis] # add final axis to show datagens its grayscale
 		label_list   = label_list[:,:,:,:,np.newaxis] # add final axis to show datagens its grayscale
 		
-		print('[dataGenie] Initialising image and mask generators')
+		print(f'[dataGenie] Initialising image and mask generators \n Number of samples: {len(scan_list)}')
 		image_generator = imagegen.flow(scan_list,
 			batch_size = batch_size,
 			#save_to_dir = 'output/Keras/',
@@ -76,19 +76,17 @@ def testGenie(n, dataset = 'First'):
 
 if __name__ == "__main__":
 
-	data_gen_args = dict(rotation_range=0.1,
-						shear_range=0.1,
-						zoom_range=0.1,
+	data_gen_args = dict(zoom_range=0.1,
 						horizontal_flip=True,
 						vertical_flip = True,
 						fill_mode='constant',
 						cval = 0)
 
 	BACKBONE = 'resnet34'
-	val_steps = 19
+	val_steps = 30
 	batch_size = 1
-	steps_per_epoch = 70
-	epochs = 40
+	steps_per_epoch = 170
+	epochs = 20
 	nclasses = 1
 	lr = 1e-5
 	input_shape = [32,128,128,1]
@@ -114,7 +112,7 @@ if __name__ == "__main__":
 	valdatagenie = dataGenie(batch_size=batch_size,
 							data_gen_args=dict(),
 							dataset=dataset,
-							n_samples=range(71,100))
+							n_samples=range(71,101))
 
 
 
@@ -128,7 +126,7 @@ if __name__ == "__main__":
 
 	model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=metrics)
 
-	# # model.load_weights(weightspath)
+	# model.load_weights(weightspath)
 	history = model.fit(datagenie, validation_data=valdatagenie, steps_per_epoch = steps_per_epoch, 
 						epochs = epochs, callbacks=callbacks, validation_steps=val_steps)
 

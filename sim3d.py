@@ -28,7 +28,7 @@ def draw_slice(args):
 				cz, cy, cx = center
 				dist = (z - cz)**2 + (i - cy)**2 + (j - cx)**2
 				if dist <= r**2:
-					new_slice[i,j] = 255
+					new_slice[i,j] = brightness
 	return new_slice
 
 def draw_spheres_sliced(canvas, centers, radii, is_label=False):
@@ -62,9 +62,9 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	''' make half polydisperse '''
 	polydisperse = bool(random.getrandbits(1)) #random bool
 	if polydisperse:
-		min_dist = 11*2
+		min_dist = 10*2
 	else:
-		r = random.randrange(7,13)
+		r = random.randrange(5,20)
 		min_dist=r*2
 
 	zoom_out = [int(c/zoom) for c in canvas_size]
@@ -74,7 +74,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	
 	if polydisperse:
 		# half the time polydisperse, make particles of diff sizes
-		radii = [random.randrange(7,11) for i in range(len(centers))]
+		radii = [random.randrange(7,10) for i in range(len(centers))]
 	else:
 		# half the time keep all colloid 
 		radii = [r for i in range(len(centers))]
