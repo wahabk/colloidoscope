@@ -40,7 +40,7 @@ model.load_weights(weightspath)
 test_list = []
 position_list = []
 
-for n in range(1,400, 50):
+for n in range(1,300, 50):
 	test = testGenie(n, dataset)
 	test_list.append(test)
 
@@ -57,5 +57,5 @@ for i, result in enumerate(results):
 	result = np.squeeze(result.astype('uint8'), axis = 3)
 	test = np.squeeze(test.astype('uint8'), axis = 3)
 	# test = np.squeeze(test.astype('int8'), axis = 3)
-	make_gif(result, f'output/predictions/{i}prediction.gif')
-	make_gif(test, f'output/predictions/{i}locations.gif')
+	make_gif(result, f'output/predictions/pred_{i}_label.gif')
+	make_gif(test, f'output/predictions/pred_{i}_scan.gif')

@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
 	for i, canvas in enumerate(tiles):
 		print(i)
-		write_hdf5(dataset, i+100, canvas)
+		write_hdf5(dataset, i, canvas)
 
 	# for i, canvas in enumerate(tiles[0:6]):
 	# 	print(i)
