@@ -1,15 +1,15 @@
-
+//cppimport
 #include <iostream>
-//#include <iostream.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fstream>
 #include <time.h>
 #include <math.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
+#include "../extern/pybind11/include/pybind11/pybind11.h" // <pybind11/pybind11.h>
+#include "../extern/pybind11/include/pybind11/numpy.h"
 namespace py = pybind11;
+
 using namespace std;
 
 #define PI 3.141592654
@@ -530,7 +530,7 @@ void write(char *filenamepath, double *psigma, int index)  // output single floa
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void crush(double *ox, double *oy, double *oz)
+void crush(double *ox, double *oy, double *oz, double myFinalEta)
 {
 	double r, rScale;                                                       // scaling factor
 	double realTime=0.0, tBrown;                                            // accepted time, brownian time
@@ -547,7 +547,7 @@ void crush(double *ox, double *oy, double *oz)
 	int nNeighbour[NPART];                                                  // # neighbours
 	long seed;
 	char input[1000], output[1000], outputXmol[1000], outputDat[1000];
-
+	
 	//randomize();                                                            // seed sran2 off the clock
 	seed    = (long) (rand() * 10000);
 	sran2(seed);
@@ -578,7 +578,7 @@ void crush(double *ox, double *oy, double *oz)
 
 
 
-	while(eta<ETAFINAL){
+	while(eta<myFinalEta){
 		// business end
 		neighbours(px, py, pz, nNeighbour, neighbourList); // part of monte carlo
 		rejected = accepted = 0;
@@ -600,7 +600,7 @@ void crush(double *ox, double *oy, double *oz)
 		energy = getEnergyAllFat(px, py, pz, psigma, rScale);
 		// energy is for soft spheres
 
-		if(energy<STEPHEIGHT && eta<ETAFINAL){
+		if(energy<STEPHEIGHT && eta<myFinalEta){
 			cout << " energy " << energy << " OK - lets squish - should be no overlaps " << endl;
 			sidex     = sidey    = sidez    = (sidex * rScale);
 			invSidex  = invSidey = invSidez = (invSidex / rScale);
@@ -614,9 +614,9 @@ void crush(double *ox, double *oy, double *oz)
 		// double make sure no overlaps
 		++t;
 	}                                                           // end equilibration loop
-	sprintf(output, "coord_e%.5f_n%d_poly%.2f.xyz"  , ETAFINAL, NPART, POLYDISP);  
+	sprintf(output, "coord_e%.5f_n%d_poly%.2f.xyz"  , myFinalEta, NPART, POLYDISP);  
 	// writexyz(output, px, py, pz);
-	sprintf(output, "sigma_e%.5f_n%d_poly%.2f.dat"  , ETAFINAL, NPART, POLYDISP);  
+	sprintf(output, "sigma_e%.5f_n%d_poly%.2f.dat"  , myFinalEta, NPART, POLYDISP);  
 	// write(output, psigma, NPART);
 
 	sprintf(output, "d0_coord_input.xyz");  
@@ -632,37 +632,30 @@ void crush(double *ox, double *oy, double *oz)
 	oz = pz;
 }
 
+void pycrush(double myFinalEta = 0.31) {
+	double ox[NPART], oy[NPART], oz[NPART];
+	crush(ox, oy, oz, myFinalEta);
+	return ox, oy, oz;
+}
+
+
+
+PYBIND11_MODULE(crusher, m) {
+    // optional module docstring
+    m.doc() = "pybind11 paddy code wrapper";
+
+    // define function
+    m.def("pycrush", &pycrush, "Paddy monte-carlo crusher, returns x,y,z");
+
+
+}
+
 int main()
 {
-	double ox[NPART], oy[NPART], oz[NPART];
-	crush(ox, oy, oz);
+	pycrush();
 
 }
 
-py::class_<Matrix>(m, "Matrix", py::buffer_protocol())
-   .def_buffer([](Matrix &m) -> py::buffer_info {
-        return py::buffer_info(
-            m.data(),                               /* Pointer to buffer */
-            sizeof(float),                          /* Size of one scalar */
-            py::format_descriptor<float>::format(), /* Python struct-style format descriptor */
-            2,                                      /* Number of dimensions */
-            { m.rows(), m.cols() },                 /* Buffer dimensions */
-            { sizeof(float) * m.cols(),             /* Strides (in bytes) for each index */
-              sizeof(float) }
-        );
-    });
-
-PYBIND11_MODULE(Crusher, m) {
-    m.doc() = 
-	"Paddy code to create positions of dense colloids"; // optional module docstring
-
-
-	m.def("generate", &main, "
-	
-	parameters
-	None for now
-
-	returns
-	px, py, pz
-	")
-}
+<%
+setup_pybind11(cfg)
+%>
