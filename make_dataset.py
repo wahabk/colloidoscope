@@ -58,15 +58,15 @@ if __name__ == "__main__":
 	canvas_size=(32,128,128)
 	
 	dataset = 'Simulated'
+	n_samples = 100
 
-	for n in range(1,200):
-
-		k = randrange(450,600)
-		print(k)
+	for n in range(1,n_samples+1):
+		print(f'{n}/{n_samples}')
+		k = randrange(450,700)
 		zoom = 0.75
-		xykernel = randrange(1,8,2)
-		gauss = (randrange(5,11,2),xykernel,xykernel)
-		noise = uniform(0.01,0.09)
+		xykernel = randrange(1,6,2)
+		gauss = (randrange(7,14,2),xykernel,xykernel)
+		noise = uniform(0.01,0.4)
 		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, k=k, noise=noise)
 		
 		mainViewer(canvas, positions=positions)
