@@ -65,6 +65,15 @@ class Viewer(QWidget):
 		self.parent = parent
 		# unpack images to convert each one to grayscale
 		self.ogstack = np.array([np.stack((img,)*3, axis=-1) for img in self.ogstack])
+		self.scale = 300
+		im = self.ogstack[0]
+		width = int(im.shape[1] * self.scale / 100)
+		height = int(im.shape[0] * self.scale / 100)
+		dim = (width, height)
+		# resize image
+		resized = [cv2.resize(img, dim, interpolation = cv2.INTER_AREA) for img in self.ogstack]
+		self.ogstack = np.array(resized)
+
 
 		# label stack
 		if self.label is not None:

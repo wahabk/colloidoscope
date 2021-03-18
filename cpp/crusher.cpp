@@ -288,10 +288,10 @@ int overCheck(double *px, double *py, double *pz, double *psigma)
 	for(int i=0; i<NPART; ++i){
 		for(int j=i+1; j<NPART; ++j){
 			if(getSepPeriodic(px, py, pz, i,j) < 0.5*(psigma[i]+psigma[j])){
-				cout << " i " << i << " j " << j << " sep " << pow(getSepPeriodic2(px, py, pz, i,j),0.5);
-				cout << " sep2 " << getSepPeriodic2(px, py, pz, i,j) << endl;
-				cout << " psigma[i] "  << psigma[i] << " psigma[j] "  << psigma[j] << " sum / 2 " << 0.5*(psigma[i]+psigma[j]) << endl;
-				cout << " px[i] " << px[i] << " px[j] " << px[j] << endl;
+				// cout << " i " << i << " j " << j << " sep " << pow(getSepPeriodic2(px, py, pz, i,j),0.5);
+				// cout << " sep2 " << getSepPeriodic2(px, py, pz, i,j) << endl;
+				// cout << " psigma[i] "  << psigma[i] << " psigma[j] "  << psigma[j] << " sum / 2 " << 0.5*(psigma[i]+psigma[j]) << endl;
+				// cout << " px[i] " << px[i] << " px[j] " << px[j] << endl;
 				Error("\n particles overlapped ! \n");
 				}
 	}}
@@ -345,7 +345,7 @@ double getEnergy(double x, double y, double z, double *px, double *py, double *p
 				r = sqrt(r2);
 				if(r<psigmaij+STEPRANGE) energy+=STEPHEIGHT;
 				else if(r-psigmaij+1.0 < 1.0){
-					cout << " r " << r << " psigmaij " << psigmaij << endl;
+					// cout << " r " << r << " psigmaij " << psigmaij << endl;
 					Error("too close"); }
 				}
 			//cout << " p " << p << " i " << i << " r " << r << " psigmaij " << psigmaij << " psigmap ";
@@ -530,7 +530,7 @@ void write(char *filenamepath, double *psigma, int index)  // output single floa
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void crush(double *ox, double *oy, double *oz, double myFinalEta)
+void crush(vector<double> &ox, vector<double> &oy, vector<double> &oz, double myFinalEta)
 {
 	double r, rScale;                                                       // scaling factor
 	double realTime=0.0, tBrown;                                            // accepted time, brownian time
@@ -552,8 +552,8 @@ void crush(double *ox, double *oy, double *oz, double myFinalEta)
 	seed    = (long) (rand() * 10000);
 	sran2(seed);
 
-	cout    << " \n Paddy Royall Feb 2008 \n HS one component polydisp crushing \n ";
-	cout    << " \n FATTING \n ";
+	// cout    << " \n Paddy Royall Feb 2008 \n HS one component polydisp crushing \n ";
+	// cout    << " \n FATTING \n ";
 
 	neighbourList = new int[NPART*NEIGHBOURS];
 	sidez = sidex = sidey = pow((double)NPART/rho, 0.333333);
@@ -562,10 +562,10 @@ void crush(double *ox, double *oy, double *oz, double myFinalEta)
 	printf("\n NPART %d ETA %.2f sidex %.3f  ", NPART, ETA, sidex);
 
 	if(ETA>0.31) { // start from complression
-			sprintf(input, "coord_e%.4f_n%d_poly%.2f.xyz"  , ETA, NPART, POLYDISP);
+			// sprintf(input, "coord_e%.4f_n%d_poly%.2f.xyz"  , ETA, NPART, POLYDISP);
 			cout << " dense - reading in " << input << endl;
 			readxyz(input, px, py, pz);
-			sprintf(input, "sigma_e%.2f_n%d_poly%.2f.dat"  , ETA, NPART, POLYDISP);
+			// sprintf(input, "sigma_e%.2f_n%d_poly%.2f.dat"  , ETA, NPART, POLYDISP);
 			cout << " and for sigma - reading in " << input << endl;
 			read(input, psigma, NPART);
 	}
@@ -601,7 +601,7 @@ void crush(double *ox, double *oy, double *oz, double myFinalEta)
 		// energy is for soft spheres
 
 		if(energy<STEPHEIGHT && eta<myFinalEta){
-			cout << " energy " << energy << " OK - lets squish - should be no overlaps " << endl;
+			// cout << " energy " << energy << " OK - lets squish - should be no overlaps " << endl;
 			sidex     = sidey    = sidez    = (sidex * rScale);
 			invSidex  = invSidey = invSidez = (invSidex / rScale);
 			scaleXYZ(px, py, pz, rScale);
@@ -614,28 +614,54 @@ void crush(double *ox, double *oy, double *oz, double myFinalEta)
 		// double make sure no overlaps
 		++t;
 	}                                                           // end equilibration loop
-	sprintf(output, "coord_e%.5f_n%d_poly%.2f.xyz"  , myFinalEta, NPART, POLYDISP);  
+	// sprintf(output, "coord_e%.5f_n%d_poly%.2f.xyz"  , myFinalEta, NPART, POLYDISP);  
 	// writexyz(output, px, py, pz);
-	sprintf(output, "sigma_e%.5f_n%d_poly%.2f.dat"  , myFinalEta, NPART, POLYDISP);  
+	// sprintf(output, "sigma_e%.5f_n%d_poly%.2f.dat"  , myFinalEta, NPART, POLYDISP);  
 	// write(output, psigma, NPART);
 
-	sprintf(output, "d0_coord_input.xyz");  
+	// sprintf(output, "d0_coord_input.xyz");  
 	// writexyz(output, px, py, pz);
-	sprintf(output, "d0_sigma_input.dat"); 
+	// sprintf(output, "d0_sigma_input.dat"); 
 	// write(output, psigma, NPART);
 
+	std::vector<double> ix(px, px + sizeof px / sizeof px[0]);
+	std::vector<double> iy(py, py + sizeof py / sizeof py[0]);
+	std::vector<double> iz(pz, pz + sizeof pz / sizeof pz[0]);
+	ox = ix;
+	oy = iy;
+	oz = iz;
+	cout << "\n\n FIN \n\n" ;
 
-	cout << "\n\n FIN \n\n";
 
-	ox = px;
-	oy = py;
-	oz = pz;
 }
 
-void pycrush(double myFinalEta = 0.31) {
-	double ox[NPART], oy[NPART], oz[NPART];
+py::array_t<double> pycrush(double myFinalEta = 0.31) {
+	vector<double> ox, oy, oz;
 	crush(ox, oy, oz, myFinalEta);
-	return ox, oy, oz;
+
+	py::array_t<double> result = py::array_t<double>(
+        NPART * 3  // create a flattened 1D numpy array to contain all numbers
+    );
+    // the two lines are standard format to get a pointer to the numpy array
+    auto buffer_result = result.request();
+    auto *ptr_result = (double *) buffer_result.ptr;
+    // fill the arrays with the data
+    double p = 0;
+    for (int i = 0; i < NPART; i++){
+        for (int d = 0; d < 3; d++){
+            if (d == 0){
+                p = ox[i];
+            } else if (d == 1){
+                p = oy[i];
+            } else if (d == 2){
+                p = oz[i];
+            }
+            ptr_result[i * 3 + d] = p;
+        }
+    }
+    //  resize the array to shape (number, 3)
+    result.resize({NPART, 3});
+	return result;
 }
 
 

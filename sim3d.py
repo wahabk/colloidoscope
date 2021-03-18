@@ -14,6 +14,7 @@ from skimage.util import random_noise
 import time
 import random
 import os
+from cpp import pycrusher
 
 print(os.cpu_count())
 
@@ -35,7 +36,7 @@ def draw_spheres_sliced(canvas, centers, radii, is_label=False):
 	new_canvas = []
 
 	if is_label: brightness = 255
-	else: brightness = random.randrange(50,250)
+	else: brightness = random.randrange(200,250)
 
 	args = [(s, z, radii, centers, brightness) for z, s in enumerate(canvas)]
 
@@ -60,32 +61,15 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	'''
 	
 	''' make half polydisperse '''
-	polydisperse = bool(random.getrandbits(1)) #random bool
-	if polydisperse:
-		min_dist = 10*2
-	else:
-<<<<<<< HEAD
-		r = random.randrange(5,20)
-=======
-		r = random.randrange(5,16)
->>>>>>> c9b2ecb91585e984a21a3b7ca8d7dc1cc1f971c1
-		min_dist=r*2
-
+	r = 5
+	min_dist=r*2
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	label = np.zeros(canvas_size, dtype='uint8')
-	centers = poisson_disc_sampling(min_dist, np.array(canvas_size), k)
+	#centers = poisson_disc_sampling(min_dist, np.array(canvas_size), k)
+	centers = pycrusher.gen_rand_centers(volfrac=0.3, canvas_size=canvas_size,  diameter=10)
 	
-	if polydisperse:
-		# half the time polydisperse, make particles of diff sizes
-<<<<<<< HEAD
-		radii = [random.randrange(7,10) for i in range(len(centers))]
-=======
-		radii = [random.randrange(6,11) for i in range(len(centers))]
->>>>>>> c9b2ecb91585e984a21a3b7ca8d7dc1cc1f971c1
-	else:
-		# half the time keep all colloid 
-		radii = [r for i in range(len(centers))]
+	radii = [r for i in range(len(centers))]
 	
 	zoom_out_centers=[]
 	for c in centers:

@@ -6,8 +6,8 @@
 #include <fstream>
 #include <time.h>
 #include <math.h>
-#include "../extern/pybind11/include/pybind11/pybind11.h" // <pybind11/pybind11.h>
-#include "../extern/pybind11/include/pybind11/numpy.h"
+#include "extern/pybind11/include/pybind11/pybind11.h" // <pybind11/pybind11.h>
+#include "extern/pybind11/include/pybind11/numpy.h"
 namespace py = pybind11;
 
 using namespace std;
@@ -17,7 +17,7 @@ using namespace std;
 // paddy royall may 2006
 // towards portablity
 
-#define NPART       	512 // 2048
+#define NPART       	1024 // 2048
 #define ETA         	0.28
 #define ETAFINAL	    0.51
 #define ETADIFF	        0.001
@@ -607,7 +607,7 @@ void crush(vector<double> &ox, vector<double> &oy, vector<double> &oz, double my
 			scaleXYZ(px, py, pz, rScale);
 			eta    = etaNew;
 			etaNew = eta+ETADIFF;
-			cout << " now eta " << eta <<  " rScale " << rScale  << endl;
+			// cout << " now eta " << eta <<  " rScale " << rScale  << endl;
 		}
 
 		overCheck(px, py, pz, psigma);
@@ -682,3 +682,6 @@ int main()
 
 }
 
+<%
+setup_pybind11(cfg)
+%>
