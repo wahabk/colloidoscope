@@ -61,7 +61,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	'''
 	
 	''' make half polydisperse '''
-	r = 5
+	r = 10
 	min_dist=r*2
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
