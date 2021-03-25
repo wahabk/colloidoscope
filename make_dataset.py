@@ -57,19 +57,22 @@ def make_gif(canvas, file_name, fps = 7, positions=None, scale=None):
 if __name__ == "__main__":
 	canvas_size=(32,128,128)
 	
-	dataset = 'Simulated'
-	n_samples = 100
+	dataset = 'TF'
+	n_samples = 50
 
 	for n in range(1,n_samples+1):
 		print(f'{n}/{n_samples}')
-		k = randrange(450,700)
 		zoom = 0.75
 		xykernel = randrange(1,4,2)
-		gauss = (randrange(7,10,2),xykernel,xykernel)
-		noise = 0.01
-		canvas, positions, label = simulate_img3d(canvas_size, zoom, (5,1,1), k=k, noise=noise)
+		
+		gauss = (randrange(5,8,2),xykernel,xykernel)
+		gauss = (5,1,1)
+		brightness = randrange(180,250)
+		noise = uniform(0.002, 0.008)
+		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3)
 		
 		mainViewer(canvas, positions=positions)
+		mainViewer(label, positions=positions)
 		# write_hdf5(dataset, n, canvas, positions)
 		# write_hdf5(dataset+'_labels', n, label)
 		canvas, positions, label = None, None, None

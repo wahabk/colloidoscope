@@ -17,7 +17,7 @@ using namespace std;
 // paddy royall may 2006
 // towards portablity
 
-#define NPART       	1024 // 2048
+#define NPART       	1200 // 2048
 #define ETA         	0.28
 #define ETAFINAL	    0.51
 #define ETADIFF	        0.001

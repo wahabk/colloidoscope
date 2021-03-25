@@ -5,6 +5,8 @@ import segmentation_models_3D as sm
 import tensorflow.keras as keras
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from tensorflow.keras.optimizers import Adam, schedules
+from tensorflow.keras.layers import Input, Conv2D
+from tensorflow.keras.models import Model
 timestr = time.strftime("%Y-%m-%d-%H-%M")
 from make_dataset import *
 import tensorflow as tf
@@ -122,7 +124,11 @@ if __name__ == "__main__":
 
 	optimizer = Adam(learning_rate=lr)
 
-	model = sm.Unet(BACKBONE, input_shape=input_shape, encoder_weights=None, classes=nclasses, activation=activation, encoder_freeze=False)
+	inp = sm.Unet(BACKBONE, input_shape=input_shape, encoder_weights=None, classes=nclasses, activation=activation, encoder_freeze=False)
+	out = dsnt(inp)
+
+	model = Model(inp, out, name=base_model.name)
+
 
 	model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=metrics)
 

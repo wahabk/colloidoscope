@@ -20,25 +20,24 @@ print(os.cpu_count())
 
 @njit()
 def draw_slice(args):
-	s, z, radii, centers, brightness = args
+	s, z, r, centers, brightness, is_label = args
 	new_slice = s
 	for i in range(s.shape[0]):
 		for j in range(s.shape[1]):
 			for k, center in enumerate(centers):
-				r = radii[k]
 				cz, cy, cx = center
 				dist = (z - cz)**2 + (i - cy)**2 + (j - cx)**2
 				if dist <= r**2:
-					new_slice[i,j] = brightness
+					if is_label:
+						new_slice[i,j] = (1-(dist/r**2))*255
+					else:
+						new_slice[i,j] = brightness
 	return new_slice
 
-def draw_spheres_sliced(canvas, centers, radii, is_label=False):
+def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False):
 	new_canvas = []
 
-	if is_label: brightness = 255
-	else: brightness = random.randrange(200,250)
-
-	args = [(s, z, radii, centers, brightness) for z, s in enumerate(canvas)]
+	args = [(s, z, r, centers, brightness, is_label) for z, s in enumerate(canvas)]
 
 	with ProcessPoolExecutor(max_workers=12) as pool:
 		for i in pool.map(draw_slice, args):
@@ -48,7 +47,16 @@ def draw_spheres_sliced(canvas, centers, radii, is_label=False):
 	canvas = np.array(canvas, dtype='uint8')
 	return canvas
 
-def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
+def shake(centers, magnitude):
+	new_centers = []
+	for cz, cy, cx in centers:
+		cz = cz + random.uniform(-magnitude, magnitude)
+		cy = cy + random.uniform(-magnitude, magnitude)
+		cx = cx + random.uniform(-magnitude, magnitude)
+		new_centers.append([cz, cy, cx])
+	return np.array(new_centers)
+
+def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	'''
 	Simulate 3d image of colloids
 
@@ -61,15 +69,11 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	'''
 	
 	''' make half polydisperse '''
-	r = 10
-	min_dist=r*2
+	r = random.randrange(5,6)
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	label = np.zeros(canvas_size, dtype='uint8')
-	#centers = poisson_disc_sampling(min_dist, np.array(canvas_size), k)
-	centers = pycrusher.gen_rand_centers(volfrac=0.3, canvas_size=canvas_size,  diameter=10)
-	
-	radii = [r for i in range(len(centers))]
+	centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2)
 	
 	zoom_out_centers=[]
 	for c in centers:
@@ -81,17 +85,18 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, k=50):
 	print('Number of particles: ', len(centers))
 
 	print('making image')
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, radii)
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r)
 	print('making label')
-	label = draw_spheres_sliced(label, centers, radii, is_label=True)
+	label = draw_spheres_sliced(label, centers, r, is_label=True)
 
 	canvas = ndimage.zoom(canvas, zoom)
 	
 	if gauss: canvas = ndimage.gaussian_filter(canvas, gauss)
-	
+	# label = ndimage.gaussian_filter(canvas, [3,3,3])
 	# Add noise
 	canvas = [random_noise(img, mode='gaussian',var=noise)*255 for img in canvas]
 	canvas = np.array(canvas,dtype='uint8')
+	label = np.array(label,dtype='uint8')
 
 	return canvas, centers, label
 
