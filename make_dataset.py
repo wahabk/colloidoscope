@@ -59,24 +59,24 @@ if __name__ == "__main__":
 	dataset = 'TF'
 	n_samples = 2
 
-	for n in range(1,n_samples+1):
-		print(f'{n}/{n_samples}')
-		zoom = 0.75
-		xykernel = randrange(1,4,2)
+	# for n in range(1,n_samples+1):
+	# 	print(f'{n}/{n_samples}')
+	# 	zoom = 0.75
+	# 	xykernel = randrange(1,4,2)
 		
-		gauss = (randrange(5,8,2),xykernel,xykernel)
-		gauss = (5,1,1)
-		brightness = randrange(180,250)
-		noise = uniform(0.002, 0.008)
-		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3)
+	# 	gauss = (randrange(5,8,2),xykernel,xykernel)
+	# 	gauss = (5,1,1)
+	# 	brightness = randrange(180,250)
+	# 	noise = uniform(0.002, 0.008)
+	# 	canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3)
 		
-		# mainViewer(canvas, positions=positions)
-		# mainViewer(label, positions=positions)
-		# write_hdf5(dataset, n, canvas, positions)
-		# write_hdf5(dataset+'_labels', n, label)
-		canvas, positions, label = None, None, None
+	# 	# mainViewer(canvas, positions=positions)
+	# 	# mainViewer(label, positions=positions)
+	# 	# write_hdf5(dataset, n, canvas, positions)
+	# 	# write_hdf5(dataset+'_labels', n, label)
+	# 	canvas, positions, label = None, None, None
 		
-	for n in range(1,2):
+	for n in range(1,4):
 		canvas, positions = read_hdf5(dataset, n, positions=True)
 		label = read_hdf5(dataset+'_labels', n)
 		make_gif(canvas, f'output/Example/{dataset}_scan_{n}.gif', fps = 7, scale=300)
