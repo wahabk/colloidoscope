@@ -83,15 +83,16 @@ if __name__ == "__main__":
 						cval = 0)
 
 	BACKBONE = 'resnet34'
-	val_steps = 30
-	batch_size = 1
-	steps_per_epoch = 170
-	epochs = 20
+	
+	batch_size = 2
+	epochs = 150
 	nclasses = 1
 	lr = 1e-5
 	input_shape = [32,128,128,1]
-	dataset = 'Simulated'
+	dataset = 'TF'
 	n_samples = 30
+	val_steps = 20
+	steps_per_epoch = n_samples / batch_size
 	weightspath = 'output/Second.hdf5'
 	activation = 'sigmoid'
 	metrics = [sm.metrics.IOUScore(threshold=0.5)]
@@ -107,12 +108,12 @@ if __name__ == "__main__":
 	datagenie = dataGenie(batch_size=batch_size,
 							data_gen_args=data_gen_args,
 							dataset=dataset,
-							n_samples=range(1, 71))
+							n_samples=range(1, 31))
 
 	valdatagenie = dataGenie(batch_size=batch_size,
 							data_gen_args=dict(),
 							dataset=dataset,
-							n_samples=range(71,101))
+							n_samples=range(31,51))
 
 
 

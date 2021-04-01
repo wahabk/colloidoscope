@@ -10,7 +10,8 @@ from make_dataset import *
 import tensorflow as tf
 from mainviewer import mainViewer
 from unet import dataGenie
-import trackpy
+import trackpy as tp
+import scipy
 
 def testGenie(n, dataset):
 	scan = read_hdf5(dataset, n)
@@ -27,9 +28,9 @@ epochs = 40
 nclasses = 1
 lr = 1e-5
 input_shape = [32,128,128,1]
-dataset = 'Real'
+dataset = 'TF'
 n_samples = 30
-weightspath = 'output/unet_checkpoints2.hdf5'
+weightspath = 'output/Second.hdf5'
 activation = 'sigmoid'
 
 
@@ -40,15 +41,30 @@ model.load_weights(weightspath)
 test_list = []
 position_list = []
 
-for n in range(1,300, 50):
+# for n in range(1,300, 50):
+# 	test = testGenie(n, dataset)
+# 	test_list.append(test)
+for n in range(1,10):
 	test = testGenie(n, dataset)
 	test_list.append(test)
-
 test_list = np.array(test_list)
 print(test_list.shape)
 
 
 results = model.predict(test_list, batch_size=1) # read about this one
+
+
+str_3D=np.array([[[0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]],
+
+   [[0, 1, 0],
+    [1, 1, 1],
+    [0, 1, 0]],
+
+   [[0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]]], dtype='uint8')
 
 for i, result in enumerate(results):
 	result = results[i]*255
@@ -56,6 +72,25 @@ for i, result in enumerate(results):
 	print(result.shape, np.max(result), np.mean(result), np.min(result))
 	result = np.squeeze(result.astype('uint8'), axis = 3)
 	test = np.squeeze(test.astype('uint8'), axis = 3)
+	resultLabel = result/255
+	resultLabel[resultLabel<0.5] = 0
+	resultLabel[resultLabel>0.5] = 1
+	make_gif(resultLabel*255, f'output/predictions/000label.gif')
+	resultLabel = scipy.ndimage.label(resultLabel, structure=str_3D)
+	# import pdb; pdb.set_trace()
+	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
+	
+
+
+	# positions = tp.locate(result, 9, threshold=150)
+	# positions = np.array([[positions.iloc[i]['z'], positions.iloc[i]['y'], positions.iloc[i]['x']] for i in range(1, len(positions))])
+	# positions = [list(positions[:]['z']), list(positions[:]['y']), list(positions[:]['x'])]
+	# print(type(positions), len(positions))
+	# import pdb; pdb.set_trace()
+
+	# mainViewer(test, labels=result)
 	# test = np.squeeze(test.astype('int8'), axis = 3)
-	make_gif(result, f'output/predictions/pred_{i}_label.gif', scale = 300)
-	make_gif(test, f'output/predictions/pred_{i}_scan.gif', scale = 300)
+	make_gif(result, f'output/predictions/{i}_label.gif', positions=positions, scale = 300)
+	make_gif(test, f'output/predictions/{i}_scan.gif', positions=positions, scale = 300)
+
+

@@ -5,7 +5,7 @@ from scipy import ndimage, spatial
 from mainviewer import mainViewer
 from concurrent.futures import ProcessPoolExecutor
 import random
-from math import sqrt
+from math import sqrt, log
 from poisson_disc_sampling import poisson_disc_sampling
 import os
 #255x255x128
@@ -14,7 +14,7 @@ from skimage.util import random_noise
 import time
 import random
 import os
-from cpp import pycrusher
+import pycrusher
 
 print(os.cpu_count())
 
@@ -29,7 +29,7 @@ def draw_slice(args):
 				dist = (z - cz)**2 + (i - cy)**2 + (j - cx)**2
 				if dist <= r**2:
 					if is_label:
-						new_slice[i,j] = (1-(dist/r**2))*255
+						new_slice[i,j] = (1-(dist/r**2))**2 * 255
 					else:
 						new_slice[i,j] = brightness
 	return new_slice
@@ -70,6 +70,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	
 	''' make half polydisperse '''
 	r = random.randrange(5,6)
+	brightness = random.randrange(200,250)
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	label = np.zeros(canvas_size, dtype='uint8')
@@ -85,7 +86,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	print('Number of particles: ', len(centers))
 
 	print('making image')
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r)
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness)
 	print('making label')
 	label = draw_spheres_sliced(label, centers, r, is_label=True)
 

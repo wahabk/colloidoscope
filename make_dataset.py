@@ -9,7 +9,6 @@ import math
 from skimage.util.shape import view_as_blocks
 from skimage import io
 
-
 def write_hdf5(dataset, n, canvas, positions=False, metadata=None):
 	path = f'Data/{dataset}.hdf5'
 	with h5py.File(path, "a") as f:
@@ -34,8 +33,8 @@ def make_gif(canvas, file_name, fps = 7, positions=None, scale=None):
 		for z, y, x in positions:
 			z, y, x = math.floor(z), int(y), int(x)
 			if z==31:z=30
-			cv2.rectangle(new_canvas[z], (x - 2, y - 2), (x + 2, y + 2), (250,0,0), -1)
-			cv2.circle(new_canvas[z], (x, y), 10, (0, 250, 0), 2)
+			cv2.rectangle(new_canvas[z], (x - 1, y - 1), (x + 1, y + 1), (250,0,0), -1)
+			# cv2.circle(new_canvas[z], (x, y), 5, (0, 250, 0), 1)
 
 	if scale is not None:
 		im = new_canvas[0]
@@ -58,7 +57,7 @@ if __name__ == "__main__":
 	canvas_size=(32,128,128)
 	
 	dataset = 'TF'
-	n_samples = 50
+	n_samples = 2
 
 	for n in range(1,n_samples+1):
 		print(f'{n}/{n_samples}')
@@ -71,15 +70,15 @@ if __name__ == "__main__":
 		noise = uniform(0.002, 0.008)
 		canvas, positions, label = simulate_img3d(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3)
 		
-		mainViewer(canvas, positions=positions)
-		mainViewer(label, positions=positions)
+		# mainViewer(canvas, positions=positions)
+		# mainViewer(label, positions=positions)
 		# write_hdf5(dataset, n, canvas, positions)
 		# write_hdf5(dataset+'_labels', n, label)
 		canvas, positions, label = None, None, None
 		
-	# for n in range(1,2):
-	# 	canvas, positions = read_hdf5(dataset, n, positions=True)
-	# 	label = read_hdf5(dataset+'_labels', n)
-	# 	make_gif(canvas, f'output/Example/scan_{n}.gif', fps = 7, positions=positions, scale=200)
-	# 	make_gif(label, f'output/Example/scan_{n}labels.gif', fps = 7, positions=positions, scale=200)
+	for n in range(1,2):
+		canvas, positions = read_hdf5(dataset, n, positions=True)
+		label = read_hdf5(dataset+'_labels', n)
+		make_gif(canvas, f'output/Example/{dataset}_scan_{n}.gif', fps = 7, positions=positions, scale=300)
+		make_gif(label, f'output/Example/{dataset}_scan_{n}labels.gif', fps = 7, positions=positions, scale=300)
 
