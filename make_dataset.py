@@ -79,6 +79,6 @@ if __name__ == "__main__":
 	for n in range(1,2):
 		canvas, positions = read_hdf5(dataset, n, positions=True)
 		label = read_hdf5(dataset+'_labels', n)
-		make_gif(canvas, f'output/Example/{dataset}_scan_{n}.gif', fps = 7, positions=positions, scale=300)
-		make_gif(label, f'output/Example/{dataset}_scan_{n}labels.gif', fps = 7, positions=positions, scale=300)
+		make_gif(canvas, f'output/Example/{dataset}_scan_{n}.gif', fps = 7, scale=300)
+		make_gif(label, f'output/Example/{dataset}_scan_{n}labels.gif', fps = 7, scale=300)
 
