@@ -15,6 +15,7 @@ import time
 import random
 import os
 import pycrusher
+from scipy.spatial.distance import pdist
 
 print(os.cpu_count())
 
