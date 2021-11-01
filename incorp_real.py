@@ -1,4 +1,3 @@
-from mainviewer import mainViewer
 from make_dataset import *
 import numpy as np
 import cv2

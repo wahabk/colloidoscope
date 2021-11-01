@@ -1,12 +1,7 @@
 from numba import njit
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy import ndimage, spatial
-from mainviewer import mainViewer
 from concurrent.futures import ProcessPoolExecutor
 import random
-from math import sqrt, log
-from poisson_disc_sampling import poisson_disc_sampling
 import os
 #255x255x128
 from concurrent.futures import ProcessPoolExecutor
@@ -14,8 +9,7 @@ from skimage.util import random_noise
 import time
 import random
 import os
-import pycrusher
-from scipy.spatial.distance import pdist
+from crusher import pycrusher
 
 print(os.cpu_count())
 
@@ -102,37 +96,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 
 	return canvas, centers, label
 
-def vol_frac(centers, r, canvas_size):
-	vol = (4/3)*  np.pi * r**3
-	num = len(centers)
-	z, x, y = canvas_size
-	volsys = z*x*y
-	volfrac = (vol * num) / volsys
-	return volfrac
 
-def get_gr(positions, cutoff, bins, minimum_gas_number=1e4):
-	# from yushi yang
-	bins = np.linspace(0, cutoff, bins)
-	drs = bins[1:] - bins[:-1]
-	distances = pdist(positions).ravel()
-
-	if positions.shape[0] < minimum_gas_number:
-		rg_hists = []
-		for i in range(int(minimum_gas_number) // positions.shape[0] + 2):
-			random_gas = np.random.random(positions.shape) * np.array([positions.max(axis=0)])
-			rg_hist = np.histogram(pdist(random_gas), bins=bins)[0]
-			rg_hists.append(rg_hist)
-		rg_hist = np.mean(rg_hists, 0)
-
-	else:
-		random_gas = np.random.random(positions.shape) * np.array([positions.max(axis=0)])
-		rg_hist = np.histogram(pdist(random_gas), bins=bins)[0]
-
-	hist = np.histogram(distances, bins=bins)[0]
-	hist = hist / rg_hist # pdfs
-	hist[np.isnan(hist)] = 0
-	bin_centres = (bins[1:] + bins[:-1]) / 2
-	return bin_centres, hist # as x, y
 
 
 
