@@ -3,7 +3,6 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 import random
 import os
-#255x255x128
 from concurrent.futures import ProcessPoolExecutor
 from skimage.util import random_noise
 import time

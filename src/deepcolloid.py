@@ -35,6 +35,12 @@ class DeepColloid:
 		volfrac = (vol * num) / volsys
 		return volfrac
 
+	def view(self, array):
+		pass
+
+	def simulate(self, array):
+		pass
+
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
 		bins = np.linspace(0, cutoff, bins)
