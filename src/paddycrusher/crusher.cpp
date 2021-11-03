@@ -1,4 +1,4 @@
-//cppimport
+// cppimport
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,8 +6,8 @@
 #include <fstream>
 #include <time.h>
 #include <math.h>
-#include "extern/pybind11/include/pybind11/pybind11.h" // <pybind11/pybind11.h>
-#include "extern/pybind11/include/pybind11/numpy.h"
+#include "../../extern/pybind11/include/pybind11/pybind11.h" // <pybind11/pybind11.h>
+#include "../../extern/pybind11/include/pybind11/numpy.h"
 namespace py = pybind11;
 
 using namespace std;
@@ -682,6 +682,8 @@ int main()
 
 }
 
+/*
 <%
 setup_pybind11(cfg)
 %>
+*/

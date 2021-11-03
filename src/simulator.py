@@ -8,7 +8,7 @@ from skimage.util import random_noise
 import time
 import random
 import os
-from crusher import pycrusher
+from .paddycrusher import pycrusher
 from scipy import ndimage
 
 print(os.cpu_count())

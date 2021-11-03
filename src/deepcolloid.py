@@ -4,28 +4,85 @@ import random
 import napari
 import h5py
 from scipy.spatial.distance import pdist
-
+from moviepy.editor import ImageSequenceClip
+import cv2
+import math
+from copy import deepcopy
+from .simulator import *
 
 class DeepColloid:
-	def __init__(self) -> None:
-		pass
+	def __init__(self, dataset_path) -> None:
+		self.dataset_path = dataset_path
 
-
-	def read_hdf5(self, dataset: str, n: int, positions: bool =False,) -> None:
-		path = f'Data/{dataset}.hdf5'
+	def read_hdf5(self, dataset: str, n: int, return_positions: bool=False,) -> np.ndarray:
+		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "r") as f:
 			canvas = f[str(n)]
-			if positions: 
+			if return_positions: 
 				positions = f[str(n)].attrs['positions']
 				return np.array(canvas), np.array(positions)
 			else: 
 				return np.array(canvas)		
 	
 	def write_hdf5(self, dataset: np.ndarray, n: int, canvas: np.ndarray, positions: bool=False, metadata: bool=None,) -> np.ndarray:
-		path = f'Data/{dataset}.hdf5'
+		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype='uint8', data = canvas, compression=1)
 			if positions: dset.attrs['positions'] = positions
+
+	def get_hdf5_keys(self, dataset) -> list:
+		path = f'{self.dataset_path}/{dataset}.hdf5'
+		with h5py.File(path, "r") as f:
+			keys = list(f.keys())
+		nums = [int(n) for n in list(keys)]
+		return nums
+
+	def view(self, array:np.ndarray, positions:np.ndarray=None) -> None:
+		if positions is not None:
+			array = self.label_scan(array, positions)
+
+		napari.view_image(array)
+
+	def label_scan(self, array: np.ndarray, positions: list) -> np.ndarray:
+		canvas = deepcopy(array)
+		#decompose grayscale numpy array into RGB
+		canvas = np.array([np.stack((img,)*3, axis=-1) for img in canvas])
+		
+		for z, y, x in positions:
+			z, y, x = math.floor(z), int(y), int(x)
+			cv2.rectangle(canvas[z], (x - 1, y - 1), (x + 1, y + 1), (250,0,0), -1)
+			cv2.circle(canvas[z], (x, y), 5, (0, 250, 0), 1)
+		
+		return canvas
+
+	def simulate(self, *args, **kwargs):
+		return simulate_img3d(*args, **kwargs)
+
+
+	def make_gif(self, canvas, file_name, fps = 7, positions=None, scale=None):
+		#decompose grayscale numpy array into RGB
+		new_canvas = np.array([np.stack((img,)*3, axis=-1) for img in canvas])
+
+		if positions is not None:
+			for z, y, x in positions:
+				z, y, x = math.floor(z), int(y), int(x)
+				if z==31:z=30
+				cv2.rectangle(new_canvas[z], (x - 1, y - 1), (x + 1, y + 1), (250,0,0), -1)
+				# cv2.circle(new_canvas[z], (x, y), 5, (0, 250, 0), 1)
+
+		if scale is not None:
+			im = new_canvas[0]
+			width = int(im.shape[1] * scale / 100)
+			height = int(im.shape[0] * scale / 100)
+			dim = (width, height)
+
+			# resize image
+			resized = [cv2.resize(img, dim, interpolation = cv2.INTER_AREA) for img in new_canvas]
+			new_canvas = resized
+	
+		
+		clip = ImageSequenceClip(list(new_canvas), fps=fps)
+		clip.write_gif(file_name, fps=fps)
 
 	def vol_frac(self, centers, r, canvas_size):
 		vol = (4/3)*  np.pi * r**3
@@ -34,12 +91,6 @@ class DeepColloid:
 		volsys = z*x*y
 		volfrac = (vol * num) / volsys
 		return volfrac
-
-	def view(self, array):
-		pass
-
-	def simulate(self, array):
-		pass
 
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
@@ -65,4 +116,3 @@ class DeepColloid:
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 
-		
