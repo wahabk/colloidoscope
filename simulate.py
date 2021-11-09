@@ -6,10 +6,11 @@ from random import randrange, uniform
 
 
 if __name__ == '__main__':
-	dc = DeepColloid('/home/wahab/Data/HDD/Colloids')
+	# dc = DeepColloid('/home/wahab/Data/HDD/Colloids')
+	dc = DeepColloid('/mnt/storage/scratch/Colloids')
 
 	canvas_size=(32,128,128)
-	dataset = 'TF'
+	dataset = 'test'
 	n_samples = 2
 
 	for n in range(1,n_samples+1):
@@ -26,9 +27,7 @@ if __name__ == '__main__':
 		dc.view(canvas, positions)
 		napari.run()
 
-		# mainViewer(canvas, positions=positions)
-		# mainViewer(label, positions=positions)
-		# write_hdf5(dataset, n, canvas, positions)
-		# write_hdf5(dataset+'_labels', n, label)
+		dc.write_hdf5(dataset, n, canvas, positions)
+		dc.write_hdf5(dataset+'_labels', n, label)
 		canvas, positions, label = None, None, None
 		

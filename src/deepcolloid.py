@@ -10,6 +10,7 @@ import math
 from copy import deepcopy
 from .simulator import *
 
+
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
 		self.dataset_path = dataset_path

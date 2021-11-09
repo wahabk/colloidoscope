@@ -6,7 +6,7 @@ import napari
 if __name__ == '__main__':
 	dc = DeepColloid('/home/wahab/Data/HDD/Colloids')
 
-	dataset = 'First'
+	dataset = 'test'
 	n=1
 
 	nums = dc.get_hdf5_keys(dataset)

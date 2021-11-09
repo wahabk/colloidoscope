@@ -1,15 +1,15 @@
 from numba import njit
 import numpy as np
-from concurrent.futures import ProcessPoolExecutor
 import random
 import os
-from concurrent.futures import ProcessPoolExecutor
 from skimage.util import random_noise
 import time
 import random
 import os
 from .paddycrusher import pycrusher
 from scipy import ndimage
+from concurrent.futures import ProcessPoolExecutor
+from mpi4py.futures import MPIPoolExecutor
 
 print(os.cpu_count())
 
@@ -33,6 +33,10 @@ def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False):
 	new_canvas = []
 
 	args = [(s, z, r, centers, brightness, is_label) for z, s in enumerate(canvas)]
+
+	# with MPIPoolExecutor() as executor:
+	# 	for i in executor.map(draw_slice, args):
+	# 		new_canvas.append(i)
 
 	with ProcessPoolExecutor(max_workers=12) as pool:
 		for i in pool.map(draw_slice, args):
