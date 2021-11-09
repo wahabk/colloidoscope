@@ -14,7 +14,7 @@ from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric
 from monai.transforms import Activations, AddChannel, AsDiscrete, Compose, RandRotate90, RandSpatialCrop, ScaleIntensity, EnsureType
 from monai.visualize import plot_2d_or_3d_image
-
+torch.cuda.is_available()
 
 class Dataset(torch.utils.data.Dataset):
   'Characterizes a dataset for PyTorch'

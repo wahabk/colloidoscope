@@ -29,18 +29,20 @@ def draw_slice(args):
 						new_slice[i,j] = brightness
 	return new_slice
 
-def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False):
+def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False, debug=False):
 	new_canvas = []
 
 	args = [(s, z, r, centers, brightness, is_label) for z, s in enumerate(canvas)]
 
-	# with MPIPoolExecutor() as executor:
-	# 	for i in executor.map(draw_slice, args):
-	# 		new_canvas.append(i)
+	if debug:
+		with ProcessPoolExecutor(max_workers=12) as pool:
+			for i in pool.map(draw_slice, args):
+				new_canvas.append(i)
 
-	with ProcessPoolExecutor(max_workers=12) as pool:
-		for i in pool.map(draw_slice, args):
-			new_canvas.append(i)
+	else:
+		with MPIPoolExecutor() as executor:
+			for i in executor.map(draw_slice, args):
+				new_canvas.append(i)
 
 	canvas = list(new_canvas)
 	canvas = np.array(canvas, dtype='uint8')
@@ -55,7 +57,7 @@ def shake(centers, magnitude):
 		new_centers.append([cz, cy, cx])
 	return np.array(new_centers)
 
-def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
+def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=False):
 	'''
 	Simulate 3d image of colloids
 
@@ -73,7 +75,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	label = np.zeros(canvas_size, dtype='uint8')
-	centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2)
+	centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2, debug=debug)
 	
 	zoom_out_centers=[]
 	for c in centers:
