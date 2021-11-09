@@ -40,7 +40,7 @@ def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False, debu
 				new_canvas.append(i)
 
 	else:
-		with MPIPoolExecutor() as executor:
+		with MPIPoolExecutor(max_workers=12) as executor:
 			for i in executor.map(draw_slice, args):
 				new_canvas.append(i)
 
