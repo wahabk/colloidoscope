@@ -7,7 +7,7 @@ from random import randrange, uniform
 
 if __name__ == '__main__':
 	# dc = DeepColloid('/home/wahab/Data/HDD/Colloids')
-	dc = DeepColloid('/mnt/storage/scratch/Colloids')
+	dc = DeepColloid('/mnt/storage/home/ak18001/scratch/Colloids/')
 
 	canvas_size=(32,128,128)
 	dataset = 'test'
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 		gauss = (5,1,1)
 		brightness = randrange(180,250)
 		noise = uniform(0.002, 0.008)
-		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3)
+		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3, debug=False)
 		
 		dc.view(canvas, positions)
 		napari.run()
