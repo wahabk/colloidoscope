@@ -136,4 +136,4 @@ dmypy.json
 Data
 .zip
 .xmol
-.gsd
+*.gsd
