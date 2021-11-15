@@ -75,7 +75,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	label = np.zeros(canvas_size, dtype='uint8')
-	centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2, debug=debug)
+	centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2)
 	
 	zoom_out_centers=[]
 	for c in centers:
@@ -87,9 +87,9 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 	print('Number of particles: ', len(centers))
 
 	print('making image')
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness)
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness, debug=debug)
 	print('making label')
-	label = draw_spheres_sliced(label, centers, r, is_label=True)
+	label = draw_spheres_sliced(label, centers, r, is_label=True, debug=debug)
 
 	canvas = ndimage.zoom(canvas, zoom)
 	

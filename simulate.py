@@ -22,10 +22,10 @@ if __name__ == '__main__':
 		gauss = (5,1,1)
 		brightness = randrange(180,250)
 		noise = uniform(0.002, 0.008)
-		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3, debug=False)
+		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3, debug=True)
 		
-		dc.view(canvas, positions)
-		napari.run()
+		# dc.view(canvas, positions)
+		# napari.run()
 
 		dc.write_hdf5(dataset, n, canvas, positions)
 		dc.write_hdf5(dataset+'_labels', n, label)
