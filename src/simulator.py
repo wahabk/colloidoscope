@@ -10,6 +10,7 @@ from .paddycrusher import pycrusher
 from scipy import ndimage
 from concurrent.futures import ProcessPoolExecutor
 from mpi4py.futures import MPIPoolExecutor
+from .hoomd.hoomd_sim_positions import hooomd_sim_positions
 
 print(os.cpu_count())
 
@@ -71,11 +72,12 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 	
 	''' make half polydisperse '''
 	r = random.randrange(5,6)
-	brightness = random.randrange(200,250)
+	brightness = random.randrange(150,250)
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	label = np.zeros(canvas_size, dtype='uint8')
-	centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2)
+	# centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2)
+	centers = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size, diameter=r*2)
 	
 	zoom_out_centers=[]
 	for c in centers:

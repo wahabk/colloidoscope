@@ -30,6 +30,7 @@ class DeepColloid:
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype='uint8', data = canvas, compression=1)
 			if positions: dset.attrs['positions'] = positions
+		return
 
 	def get_hdf5_keys(self, dataset) -> list:
 		path = f'{self.dataset_path}/{dataset}.hdf5'

@@ -6,8 +6,8 @@ from random import randrange, uniform
 
 
 if __name__ == '__main__':
-	# dc = DeepColloid('/home/wahab/Data/HDD/Colloids')
-	dc = DeepColloid('/mnt/storage/home/ak18001/scratch/Colloids/')
+	dc = DeepColloid('/home/wahab/Data/HDD/Colloids')
+	# dc = DeepColloid('/mnt/storage/home/ak18001/scratch/Colloids')
 
 	canvas_size=(32,128,128)
 	dataset = 'test'
@@ -24,8 +24,8 @@ if __name__ == '__main__':
 		noise = uniform(0.002, 0.008)
 		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3, debug=True)
 		
-		# dc.view(canvas, positions)
-		# napari.run()
+		dc.view(canvas, positions)
+		napari.run()
 
 		dc.write_hdf5(dataset, n, canvas, positions)
 		dc.write_hdf5(dataset+'_labels', n, label)
