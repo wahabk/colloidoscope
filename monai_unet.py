@@ -9,34 +9,54 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 import monai
-from monai.data import ImageDataset, create_test_image_3d, decollate_batch
+from monai.data import ImageDataset, decollate_batch
 from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric
 from monai.transforms import Activations, AddChannel, AsDiscrete, Compose, RandRotate90, RandSpatialCrop, ScaleIntensity, EnsureType
 from monai.visualize import plot_2d_or_3d_image
-torch.cuda.is_available()
+from src.deepcolloid import DeepColloid
+print(torch.cuda.is_available())
 
-class Dataset(torch.utils.data.Dataset):
-  'Characterizes a dataset for PyTorch'
-  def __init__(self, list_IDs):
-        'Initialization'
-        self.labels = labels
-        self.list_IDs = list_IDs
 
-  def __len__(self):
-        'Denotes the total number of samples'
-        return len(self.list_IDs)
+class ColloidsDatasetSimulated(torch.utils.data.Dataset):
+	"""
+	
+	Torch Dataset for simulated colloids
 
-  def __getitem__(self, index):
-        'Generates one sample of data'
-        # Select sample
-        ID = self.list_IDs[index]
+	transform is augmentation function
 
-        # Load data and get label
-        X = torch.load('data/' + ID + '.pt')
-        y = self.labels[ID]
+	"""	
 
-        return X, y
+	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None):
+		super().__init__()
+		self.dataset_path = dataset_path
+		self.dataset_name = dataset_name
+		self.indices = indices
+		self.transform = transform
+		self.label_transform = label_transform
+
+
+	def __len__(self):
+		return len(self.indices)
+
+	def __getitem__(self, index):
+		dc = DeepColloid(self.dataset_path)
+		# Select sample
+		i = self.indices[index]
+
+		X, positions = dc.read_hdf5(self.dataset_name, i, return_positions=True)
+		# TODO make arg return_positions = True for use in DSNT
+		y = dc.read_hdf5(self.dataset_name+'_labels', i)
+
+		if self.transform:
+			X = self.transform(X)
+		if self.label_transform:
+			X = self.label_transform(X)
+
+		del dc
+		return X, y
+
+
 
 
 if __name__ == '__main__':
@@ -44,15 +64,26 @@ if __name__ == '__main__':
 	monai.config.print_config()
 	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-	# create a temporary directory and 40 random image, mask pairs
-	print(f"generating synthetic data to {tempdir} (this may take a while)")
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
+	dc = DeepColloid(dataset_path)
+	# dc = DeepColloid(dataset_path)
+
+	roiSize = (32,128,128)
+	train_data = [1]
+	val_data = [1]
+	dataset_name = 'test'
+	batch_size = 1
+	num_workers = 2
+	epochs=2
+
 
 	# define transforms for image and segmentation
 	train_imtrans = Compose(
 		[
 			ScaleIntensity(),
 			AddChannel(),
-			RandSpatialCrop((96, 96, 96), random_size=False),
+			RandSpatialCrop(roiSize, random_size=False),
 			RandRotate90(prob=0.5, spatial_axes=(0, 2)),
 			EnsureType(),
 		]
@@ -60,7 +91,7 @@ if __name__ == '__main__':
 	train_segtrans = Compose(
 		[
 			AddChannel(),
-			RandSpatialCrop((96, 96, 96), random_size=False),
+			RandSpatialCrop(roiSize, random_size=False),
 			RandRotate90(prob=0.5, spatial_axes=(0, 2)),
 			EnsureType(),
 		]
@@ -69,16 +100,16 @@ if __name__ == '__main__':
 	val_segtrans = Compose([AddChannel(), EnsureType()])
 
 	# define image dataset, data loader
-	check_ds = ImageDataset(images, segs, transform=train_imtrans, seg_transform=train_segtrans)
+	check_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, train_data, transform=train_segtrans) 
 	check_loader = DataLoader(check_ds, batch_size=10, num_workers=2, pin_memory=torch.cuda.is_available())
 	im, seg = monai.utils.misc.first(check_loader)
 	print(im.shape, seg.shape)
 
 	# create a training data loader
-	train_ds = ImageDataset(images[:20], segs[:20], transform=train_imtrans, seg_transform=train_segtrans)
+	train_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, train_data, transform=train_segtrans, label_transform=train_segtrans) 
 	train_loader = DataLoader(train_ds, batch_size=4, shuffle=True, num_workers=8, pin_memory=torch.cuda.is_available())
 	# create a validation data loader
-	val_ds = ImageDataset(images[-20:], segs[-20:], transform=val_imtrans, seg_transform=val_segtrans)
+	val_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, val_data, transform=val_imtrans, label_transform=val_segtrans) 
 	val_loader = DataLoader(val_ds, batch_size=1, num_workers=4, pin_memory=torch.cuda.is_available())
 	dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
 	post_trans = Compose([EnsureType(), Activations(sigmoid=True), AsDiscrete(threshold_values=True)])
@@ -103,7 +134,7 @@ if __name__ == '__main__':
 	epoch_loss_values = list()
 	metric_values = list()
 	writer = SummaryWriter()
-	for epoch in range(5):
+	for epoch in range(epochs):
 		print("-" * 10)
 		print(f"epoch {epoch + 1}/{5}")
 		model.train()
@@ -133,9 +164,8 @@ if __name__ == '__main__':
 				val_outputs = None
 				for val_data in val_loader:
 					val_images, val_labels = val_data[0].to(device), val_data[1].to(device)
-					roi_size = (96, 96, 96)
-					sw_batch_size = 4
-					val_outputs = sliding_window_inference(val_images, roi_size, sw_batch_size, model)
+					sw_batch_size = 2
+					val_outputs = sliding_window_inference(val_images, roiSize, sw_batch_size, model)
 					val_outputs = [post_trans(i) for i in decollate_batch(val_outputs)]
 					# compute metric for current iteration
 					dice_metric(y_pred=val_outputs, y=val_labels)

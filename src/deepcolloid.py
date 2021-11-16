@@ -17,6 +17,7 @@ class DeepColloid:
 
 	def read_hdf5(self, dataset: str, n: int, return_positions: bool=False,) -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
+		print(f'Reading hdf5 dataset: {path}')
 		with h5py.File(path, "r") as f:
 			canvas = f[str(n)]
 			if return_positions: 
