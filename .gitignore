@@ -138,4 +138,4 @@ Data
 .xmol
 *.gsd
 runs/
-&.pth
+*.pth
