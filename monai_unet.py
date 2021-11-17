@@ -95,7 +95,8 @@ if __name__ == '__main__':
 	# monai.config.print_config()
 	# logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 	# dc = DeepColloid(dataset_path)

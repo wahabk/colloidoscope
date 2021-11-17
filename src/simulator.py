@@ -6,11 +6,11 @@ from skimage.util import random_noise
 import time
 import random
 import os
-from .paddycrusher import pycrusher
 from scipy import ndimage
 from concurrent.futures import ProcessPoolExecutor
 from mpi4py.futures import MPIPoolExecutor
 from .hoomd.hoomd_sim_positions import hooomd_sim_positions
+# from .paddycrusher import pycrusher
 
 print(os.cpu_count())
 
