@@ -1,14 +1,9 @@
-# For more information, please refer to https://aka.ms/vscode-docker-python
 FROM pytorch/pytorch
 
 # RUN apt-get install libgl1 -y
-
-# ENV PATH="/root/miniconda3/bin:$PATH"
-# ARG PATH="/root/miniconda3/bin:$PATH"
 RUN apt-get update -y \
 	&& apt-get install wget -y
 RUN echo 'export PATH=/root/miniconda3/bin:$PATH' >> /root/.bashrc 
-
 
 # RUN apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
@@ -36,12 +31,8 @@ RUN python -m pip install -r requirements.txt
 
 # CMD ["apt-get", "install", "libgl1", "-y"]
 
-# COPY . /ctfishpy
-# COPY .env /ctfishpy/
-
 WORKDIR /deepcolloid
 
-# CMD ["python3", "train3dunet.py"]
 
 # docker run -it \
 # 	-v /home/ak18001/Data/HDD:/home/ak18001/Data/HDD \
