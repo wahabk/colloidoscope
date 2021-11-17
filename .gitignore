@@ -137,3 +137,5 @@ Data
 .zip
 .xmol
 *.gsd
+runs/
+&.pth

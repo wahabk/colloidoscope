@@ -17,7 +17,7 @@ class DeepColloid:
 
 	def read_hdf5(self, dataset: str, n: int, return_positions: bool=False,) -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
-		print(f'Reading hdf5 dataset: {path}')
+		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
 			canvas = f[str(n)]
 			if return_positions: 
@@ -26,11 +26,11 @@ class DeepColloid:
 			else: 
 				return np.array(canvas)		
 	
-	def write_hdf5(self, dataset: np.ndarray, n: int, canvas: np.ndarray, positions: bool=False, metadata: bool=None,) -> np.ndarray:
+	def write_hdf5(self, dataset: np.ndarray, n: int, canvas: np.ndarray, positions: np.ndarray=False, metadata: bool=None,) -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype='uint8', data = canvas, compression=1)
-			if positions: dset.attrs['positions'] = positions
+			if positions is not None: dset.attrs['positions'] = positions
 		return
 
 	def get_hdf5_keys(self, dataset) -> list:

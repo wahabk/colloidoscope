@@ -16,7 +16,7 @@ from monai.transforms import Activations, AddChannel, AsDiscrete, Compose, RandR
 from monai.visualize import plot_2d_or_3d_image
 from src.deepcolloid import DeepColloid
 print(torch.cuda.is_available())
-
+import napari
 
 class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 	"""
@@ -48,84 +48,123 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# TODO make arg return_positions = True for use in DSNT
 		y = dc.read_hdf5(self.dataset_name+'_labels', i)
 
+		# dc.view(X)
+		# napari.run()
+
+		X = np.array(X/255, dtype=np.float32)
+		y = np.array(y , dtype=np.float32)
+		# print('x', np.min(X), np.max(X), X.shape)
+		# print('y', np.min(y), np.max(y), y.shape)
+
+
+		#fopr reshaping"
+		X = np.expand_dims(X, 0)      # if numpy array
+		y = np.expand_dims(y, 0)
+		# tensor = tensor.unsqueeze(1)  # if torch tensor
+
 		if self.transform:
-			X = self.transform(X)
-		if self.label_transform:
-			X = self.label_transform(X)
+			X, y = self.transform(X), self.label_transform(y)
+		# if self.label_transform:
+		# 	y = self.label_transform(X)
+
+
 
 		del dc
 		return X, y
 
 
+def compute_max_depth(shape= 1920, max_depth=10, print_out=True):
+    shapes = []
+    shapes.append(shape)
+    for level in range(1, max_depth):
+        if shape % 2 ** level == 0 and shape / 2 ** level > 1:
+            shapes.append(shape / 2 ** level)
+            if print_out:
+                print(f'Level {level}: {shape / 2 ** level}')
+        else:
+            if print_out:
+                print(f'Max-level: {level - 1}')
+            break
+
+	#out = compute_max_depth(shape, print_out=True, max_depth=10)
+    return shapes
 
 
 if __name__ == '__main__':
 	
-	monai.config.print_config()
-	logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+	# monai.config.print_config()
+	# logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 	dataset_path = '/home/wahab/Data/HDD/Colloids'
-	dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
+	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 	# dc = DeepColloid(dataset_path)
 
 	roiSize = (32,128,128)
-	train_data = [1]
-	val_data = [1]
-	dataset_name = 'test'
-	batch_size = 1
+	train_data = range(1,9)
+	val_data = range(9,11)
+	dataset_name = 'replicate'
+	batch_size = 2
 	num_workers = 2
-	epochs=2
+	epochs=10
+	n_classes=1
+	lr = 3e-5
 
 
 	# define transforms for image and segmentation
-	train_imtrans = Compose(
-		[
-			ScaleIntensity(),
-			AddChannel(),
-			RandSpatialCrop(roiSize, random_size=False),
-			RandRotate90(prob=0.5, spatial_axes=(0, 2)),
-			EnsureType(),
-		]
-	)
-	train_segtrans = Compose(
-		[
-			AddChannel(),
-			RandSpatialCrop(roiSize, random_size=False),
-			RandRotate90(prob=0.5, spatial_axes=(0, 2)),
-			EnsureType(),
-		]
-	)
-	val_imtrans = Compose([ScaleIntensity(), AddChannel(), EnsureType()])
-	val_segtrans = Compose([AddChannel(), EnsureType()])
+	train_imtrans = Compose([
+		# AddChannel(),
+		ScaleIntensity(),
+		# RandRotate90(prob=0.5, spatial_axes=(0, 2)),
+		EnsureType(),
+	])
+	train_segtrans = Compose([
+		# AddChannel(),
+		# RandRotate90(prob=0.5, spatial_axes=(0, 2)),
+		EnsureType(),
+	])
+	val_imtrans = Compose([
+		ScaleIntensity(), 
+		# AddChannel(), 
+		EnsureType(),
+		])
+	val_segtrans = Compose([
+		# AddChannel(), 
+		EnsureType(),
+	])
 
 	# define image dataset, data loader
-	check_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, train_data, transform=train_segtrans) 
-	check_loader = DataLoader(check_ds, batch_size=10, num_workers=2, pin_memory=torch.cuda.is_available())
+	check_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, train_data, transform=train_imtrans, label_transform=train_segtrans) 
+	check_loader = DataLoader(check_ds, batch_size=batch_size, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 	im, seg = monai.utils.misc.first(check_loader)
 	print(im.shape, seg.shape)
 
 	# create a training data loader
 	train_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, train_data, transform=train_segtrans, label_transform=train_segtrans) 
-	train_loader = DataLoader(train_ds, batch_size=4, shuffle=True, num_workers=8, pin_memory=torch.cuda.is_available())
+	train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 	# create a validation data loader
 	val_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, val_data, transform=val_imtrans, label_transform=val_segtrans) 
-	val_loader = DataLoader(val_ds, batch_size=1, num_workers=4, pin_memory=torch.cuda.is_available())
+	val_loader = DataLoader(val_ds, batch_size=batch_size, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 	dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
 	post_trans = Compose([EnsureType(), Activations(sigmoid=True), AsDiscrete(threshold_values=True)])
 
 	# create UNet, DiceLoss and Adam optimizer
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	print('-'*10)
+	print(f'training on {device}')
 	model = monai.networks.nets.UNet(
 		spatial_dims=3,
 		in_channels=1,
-		out_channels=1,
+		out_channels=n_classes,
 		channels=(16, 32, 64, 128, 256),
 		strides=(2, 2, 2, 2),
 		num_res_units=2,
+		# act=torch.nn.activation.ReLU(),
 	).to(device)
-	loss_function = monai.losses.DiceLoss(sigmoid=True)
-	optimizer = torch.optim.Adam(model.parameters(), 1e-3)
+	# loss_function = monai.losses.DiceLoss(sigmoid=True)
+	loss_function = torch.nn.BCEWithLogitsLoss()
+	
+	optimizer = torch.optim.Adam(model.parameters(), lr)
 
 	# start a typical PyTorch training
 	val_interval = 2
@@ -143,6 +182,7 @@ if __name__ == '__main__':
 		for batch_data in train_loader:
 			step += 1
 			inputs, labels = batch_data[0].to(device), batch_data[1].to(device)
+			# print('DataSet shape: ', inputs.shape, labels.shape)
 			optimizer.zero_grad()
 			outputs = model(inputs)
 			loss = loss_function(outputs, labels)
