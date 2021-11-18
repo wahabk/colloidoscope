@@ -1,10 +1,11 @@
-# Deep Colloid
+# Colloidoscope!
 
 A project to attempt tracking colloids using confocal and deep learning.
 
-$ conda install -c conda-forge hoomd
+Please make sure you use python 3.8
 
-$ conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+$ conda install -c conda-forge hoomd -y
+
 
 docker build . --tag=colloids 
 docker build . --tag=colloids --network=host # if you're on vpn
