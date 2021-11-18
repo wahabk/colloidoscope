@@ -2,7 +2,8 @@ FROM pytorch/pytorch
 
 # RUN apt-get install libgl1 -y
 RUN apt-get update -y \
-	&& apt-get install wget -y
+	&& apt-get install wget -y \
+    && apt-get install libopenmpi-dev -y
 RUN echo 'export PATH=/root/miniconda3/bin:$PATH' >> /root/.bashrc 
 
 # RUN apt-get install -y wget && rm -rf /var/lib/apt/lists/*
@@ -34,10 +35,6 @@ RUN python -m pip install -r requirements.txt
 WORKDIR /deepcolloid
 
 
-# docker run -it \
-# 	-v /home/ak18001/Data/HDD:/home/ak18001/Data/HDD \
-# 	-v /home/ak18001/code/deepcolloid:/deepcolloid \
-# 	--gpus all \
-# 	test \
+
 
 # TODO use buildkit https://stackoverflow.com/questions/58018300/using-a-pip-cache-directory-in-docker-builds

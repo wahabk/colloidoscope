@@ -6,11 +6,12 @@ $ conda install -c conda-forge hoomd
 
 $ conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 
-run docker build .
+docker build . --tag=colloids 
+docker build . --tag=colloids --network=host # if you're on vpn
 and then run 
 
 docker run -it \
 	-v /home/ak18001/Data/HDD:/home/ak18001/Data/HDD \
-	-v /home/ak18001/code/deepcolloid:/ctfishpy \
+	-v /home/ak18001/code/deepcolloid:/deepcolloid \
 	--gpus all \
-	test \
+	colloids \
