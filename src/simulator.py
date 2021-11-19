@@ -8,7 +8,7 @@ import random
 import os
 from scipy import ndimage
 from concurrent.futures import ProcessPoolExecutor
-from mpi4py.futures import MPIPoolExecutor
+# from mpi4py.futures import MPIPoolExecutor
 from .hoomd.hoomd_sim_positions import hooomd_sim_positions
 # from .paddycrusher import pycrusher
 
@@ -40,10 +40,10 @@ def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False, debu
 			for i in pool.map(draw_slice, args):
 				new_canvas.append(i)
 
-	else:
-		with MPIPoolExecutor(max_workers=12) as executor:
-			for i in executor.map(draw_slice, args):
-				new_canvas.append(i)
+	# else:
+	# 	with MPIPoolExecutor(max_workers=12) as executor:
+	# 		for i in executor.map(draw_slice, args):
+	# 			new_canvas.append(i)
 
 	canvas = list(new_canvas)
 	canvas = np.array(canvas, dtype='uint8')

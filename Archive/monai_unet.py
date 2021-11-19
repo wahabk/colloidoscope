@@ -102,8 +102,8 @@ if __name__ == '__main__':
 	# dc = DeepColloid(dataset_path)
 
 	roiSize = (32,128,128)
-	train_data = range(1,9)
-	val_data = range(9,11)
+	train_data = range(1,39)
+	val_data = range(39,51)
 	dataset_name = 'replicate'
 	batch_size = 2
 	num_workers = 2

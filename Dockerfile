@@ -1,10 +1,13 @@
 FROM pytorch/pytorch
 
+ENV PATH="/root/miniconda3/bin:$PATH"
+ARG PATH="/root/miniconda3/bin:$PATH"
+
 # RUN apt-get install libgl1 -y
 RUN apt-get update -y \
 	&& apt-get install wget -y \
     && apt-get install libopenmpi-dev -y
-RUN echo 'export PATH=/root/miniconda3/bin:$PATH' >> /root/.bashrc 
+# RUN echo 'export PATH=/root/miniconda3/bin:$PATH' >> /root/.bashrc 
 
 # RUN apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 
@@ -15,27 +18,29 @@ RUN wget \
     && rm -f Miniconda3-latest-Linux-x86_64.sh 
 RUN conda --version
 
-RUN . /root/.bashrc && \
-    /root/miniconda3/bin/conda init bash && \
-    /root/miniconda3/bin/conda create -n colloids python=3.8 anaconda && \
-    /root/miniconda3/bin/conda install -c conda-forge hoomd -y
-    # /root/miniconda3/bin/conda activate colloids
+COPY environment.yml .
+# from https://stackoverflow.com/questions/55123637/activate-conda-environment-in-docker
+RUN conda init bash \
+    && . ~/.bashrc \
+    && conda env create -f environment.yml \
+    && conda activate colloids \
+    && pip install ipython
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-
-# CMD ["apt-get", "install", "libgl1", "-y"]
+# COPY tests/test_gpu.py .
+# ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "colloids", "python3", "tests/test_gpu.py"]
+# ENTRYPOINT ["conda", "activate", "colloids"]
 
 WORKDIR /deepcolloid
-
 # Update pip
-RUN pip3 install --upgrade pip
+# RUN pip3 install --upgrade pip
 # # Install pip requirements
-COPY requirements.txt .
-RUN python -m pip install -r requirements.txt
+# COPY requirements.txt .
+# RUN python -m pip install -r requirements.txt
 
 
 

@@ -15,4 +15,5 @@ docker run -it \
 	-v /home/ak18001/Data/HDD:/home/ak18001/Data/HDD \
 	-v /home/ak18001/code/deepcolloid:/deepcolloid \
 	--gpus all \
+	--network=host \
 	colloids \
