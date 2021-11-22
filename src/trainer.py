@@ -119,10 +119,101 @@ class Trainer:
 
         batch_iter.close()
 
+class LearningRateFinder:
+    """
+    Train a model using different learning rates within a range to find the optimal learning rate.
+    """
+
+    def __init__(self,
+                 model: nn.Module,
+                 criterion,
+                 optimizer,
+                 device
+                 ):
+        self.model = model
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.loss_history = {}
+        self._model_init = model.state_dict()
+        self._opt_init = optimizer.state_dict()
+        self.device = device
+
+    def fit(self,
+            data_loader: torch.utils.data.DataLoader,
+            steps=100,
+            min_lr=1e-7,
+            max_lr=1,
+            constant_increment=False
+            ):
+        """
+        Trains the model for number of steps using varied learning rate and store the statistics
+        """
+        self.loss_history = {}
+        self.model.train()
+        current_lr = min_lr
+        steps_counter = 0
+        epochs = math.ceil(steps / len(data_loader))
+
+        progressbar = trange(epochs, desc='Progress')
+        for epoch in progressbar:
+            batch_iter = tqdm(enumerate(data_loader), 'Training', total=len(data_loader),
+                              leave=False)
+
+            for i, (x, y) in batch_iter:
+                x, y = x.to(self.device), y.to(self.device)
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = current_lr
+                self.optimizer.zero_grad()
+                out = self.model(x)
+                loss = self.criterion(out, y)
+                loss.backward()
+                self.optimizer.step()
+                self.loss_history[current_lr] = loss.item()
+
+                steps_counter += 1
+                if steps_counter > steps:
+                    break
+
+                if constant_increment:
+                    current_lr += (max_lr - min_lr) / steps
+                else:
+                    current_lr = current_lr * (max_lr / min_lr) ** (1 / steps)
+
+    def plot(self,
+             smoothing=True,
+             clipping=True,
+             smoothing_factor=0.1
+             ):
+        """
+        Shows loss vs learning rate(log scale) in a matplotlib plot
+        """
+        loss_data = pd.Series(list(self.loss_history.values()))
+        lr_list = list(self.loss_history.keys())
+        if smoothing:
+            loss_data = loss_data.ewm(alpha=smoothing_factor).mean()
+            loss_data = loss_data.divide(pd.Series(
+                [1 - (1.0 - smoothing_factor) ** i for i in range(1, loss_data.shape[0] + 1)]))  # bias correction
+        if clipping:
+            loss_data = loss_data[10:-5]
+            lr_list = lr_list[10:-5]
+        plt.figure()
+        plt.plot(lr_list, loss_data)
+        plt.xscale('log')
+        plt.title('Loss vs Learning rate')
+        plt.xlabel('Learning rate (log scale)')
+        plt.ylabel('Loss (exponential moving average)')
+        plt.savefig('output/learning_rate_finder.png')
+
+    def reset(self):
+        """
+        Resets the model and optimizer to its initial state
+        """
+        self.model.load_state_dict(self._model_init)
+        self.optimizer.load_state_dict(self._opt_init)
+        print('Model and optimizer in initial state.')
 
 def plot_training(training_losses,
                   validation_losses,
-                  learning_rate,
                   gaussian=True,
                   sigma=2,
                   figsize=(8, 6)
@@ -135,20 +226,14 @@ def plot_training(training_losses,
     from matplotlib import gridspec
     from scipy.ndimage import gaussian_filter
 
+    fig = plt.figure(figsize=figsize)
+
+
     list_len = len(training_losses)
     x_range = list(range(1, list_len + 1))  # number of x values
 
-    fig = plt.figure(figsize=figsize)
-    grid = gridspec.GridSpec(ncols=2, nrows=1, figure=fig)
-
-    subfig1 = fig.add_subplot(grid[0, 0])
-    subfig2 = fig.add_subplot(grid[0, 1])
-
-    subfigures = fig.get_axes()
-
-    for i, subfig in enumerate(subfigures, start=1):
-        subfig.spines['top'].set_visible(False)
-        subfig.spines['right'].set_visible(False)
+    fig.spines['top'].set_visible(False)
+    fig.spines['right'].set_visible(False)
 
     if gaussian:
         training_losses_gauss = gaussian_filter(training_losses, sigma=sigma)
@@ -167,24 +252,18 @@ def plot_training(training_losses,
         alpha = 1.0
 
     # Subfig 1
-    subfig1.plot(x_range, training_losses, linestyle_original, color=color_original_train, label='Training',
+    fig.plot(x_range, training_losses, linestyle_original, color=color_original_train, label='Training',
                  alpha=alpha)
-    subfig1.plot(x_range, validation_losses, linestyle_original, color=color_original_valid, label='Validation',
+    fig.plot(x_range, validation_losses, linestyle_original, color=color_original_valid, label='Validation',
                  alpha=alpha)
     if gaussian:
-        subfig1.plot(x_range, training_losses_gauss, '-', color=color_smooth_train, label='Training', alpha=0.75)
-        subfig1.plot(x_range, validation_losses_gauss, '-', color=color_smooth_valid, label='Validation', alpha=0.75)
-    subfig1.title.set_text('Training & validation loss')
-    subfig1.set_xlabel('Epoch')
-    subfig1.set_ylabel('Loss')
+        fig.plot(x_range, training_losses_gauss, '-', color=color_smooth_train, label='Training', alpha=0.75)
+        fig.plot(x_range, validation_losses_gauss, '-', color=color_smooth_valid, label='Validation', alpha=0.75)
+    fig.title.set_text('Training & validation loss')
+    fig.set_xlabel('Epoch')
+    fig.set_ylabel('Loss')
 
-    subfig1.legend(loc='upper right')
-
-    # Subfig 2
-    subfig2.plot(x_range, learning_rate, color='black')
-    subfig2.title.set_text('Learning rate')
-    subfig2.set_xlabel('Epoch')
-    subfig2.set_ylabel('LR')
+    fig.legend(loc='upper right')
 
     return fig
 

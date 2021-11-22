@@ -6,7 +6,6 @@ import sys
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
 import monai
 from monai.data import ImageDataset, decollate_batch
@@ -68,7 +67,6 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# 	y = self.label_transform(X)
 
 
-
 		del dc
 		return X, y
 
@@ -110,7 +108,6 @@ if __name__ == '__main__':
 	epochs=10
 	n_classes=1
 	lr = 3e-5
-
 
 	# define transforms for image and segmentation
 	train_imtrans = Compose([

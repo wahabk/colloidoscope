@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import random
 import napari
 import h5py
 from scipy.spatial.distance import pdist
@@ -60,7 +59,6 @@ class DeepColloid:
 
 	def simulate(self, *args, **kwargs):
 		return simulate_img3d(*args, **kwargs)
-
 
 	def make_gif(self, canvas, file_name, fps = 7, positions=None, scale=None):
 		#decompose grayscale numpy array into RGB

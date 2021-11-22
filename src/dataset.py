@@ -11,7 +11,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 
 	"""	
 
-	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None):
+	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None):	
 		super().__init__()
 		self.dataset_path = dataset_path
 		self.dataset_name = dataset_name

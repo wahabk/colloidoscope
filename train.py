@@ -1,11 +1,12 @@
 import torch
 import numpy as np
-from src.trainer import Trainer, plot_training
+from src.trainer import Trainer, plot_training, LearningRateFinder
 from src.unet import UNet
 import torchio as tio
 from src.dataset import ColloidsDatasetSimulated
 from src.deepcolloid import DeepColloid
 import matplotlib.pyplot as plt
+
 
 dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/home/wahab/Data/HDD/Colloids'
@@ -18,16 +19,14 @@ train_data = range(1,39)
 val_data = range(39,51)
 dataset_name = 'replicate'
 batch_size = 2
-num_workers = 
+num_workers = 2
 epochs=50
 n_classes=1
 lr = 3e-5
-
-#TODO add torchio transforms
-
+random_seed = 42
 
 train_imtrans = tio.Compose([
-    tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
+    # tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
     # tio.CropOrPad(roiSize),            # tight crop around brain
     tio.RandomFlip(axes=(0,1,2), flip_probability=0.75)
 ])
@@ -70,20 +69,24 @@ criterion = torch.nn.BCEWithLogitsLoss()
 # optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 optimizer = torch.optim.Adam(model.parameters(), lr)
 
-# trainer
-trainer = Trainer(model=model,
-                  device=device,
-                  criterion=criterion,
-                  optimizer=optimizer,
-                  training_DataLoader=train_loader,
-                  validation_DataLoader=val_loader,
-                  lr_scheduler=None,
-                  epochs=epochs,
-                  epoch=0,
-                  notebook=False)
+# find learning rate
+lrf = LearningRateFinder(model, criterion, optimizer, device)
+lrf.fit(train_loader, steps=1000)
+lrf.plot()
 
-# start training
-training_losses, validation_losses, lr_rates = trainer.run_trainer()
+# # trainer
+# trainer = Trainer(model=model,
+#                   device=device,
+#                   criterion=criterion,
+#                   optimizer=optimizer,
+#                   training_DataLoader=train_loader,
+#                   validation_DataLoader=val_loader,
+#                   lr_scheduler=None,
+#                   epochs=epochs,
+#                   )
 
-fig = plot_training(training_losses, validation_losses, lr_rates)
-plt.show()
+# # start training
+# training_losses, validation_losses, lr_rates = trainer.run_trainer()
+
+# fig = plot_training(training_losses, validation_losses)
+# plt.show()

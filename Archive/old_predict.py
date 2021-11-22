@@ -55,7 +55,8 @@ print(test_list.shape)
 results = model.predict(test_list, batch_size=1) # read about this one
 
 
-str_3D=np.array([[[0, 0, 0],
+str_3D=np.array([[
+	[0, 0, 0],
     [0, 1, 0],
     [0, 0, 0]],
 
