@@ -1,10 +1,11 @@
 import torch
 import numpy as np
-from src.trainer import Trainer
+from src.trainer import Trainer, plot_training
 from src.unet import UNet
 import torchio as tio
 from src.dataset import ColloidsDatasetSimulated
 from src.deepcolloid import DeepColloid
+import matplotlib.pyplot as plt
 
 dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/home/wahab/Data/HDD/Colloids'
@@ -17,8 +18,8 @@ train_data = range(1,39)
 val_data = range(39,51)
 dataset_name = 'replicate'
 batch_size = 2
-num_workers = 2
-epochs=10
+num_workers = 
+epochs=50
 n_classes=1
 lr = 3e-5
 
@@ -84,3 +85,5 @@ trainer = Trainer(model=model,
 # start training
 training_losses, validation_losses, lr_rates = trainer.run_trainer()
 
+fig = plot_training(training_losses, validation_losses, lr_rates)
+plt.show()
