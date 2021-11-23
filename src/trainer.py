@@ -6,6 +6,7 @@ from torch import nn
 from matplotlib import pyplot as plt
 from tqdm import tqdm, trange
 import math
+import neptune.new as neptune
 
 class Trainer:
     def __init__(self,
@@ -18,7 +19,7 @@ class Trainer:
                  lr_scheduler: torch.optim.lr_scheduler = None,
                  epochs: int = 100,
                  epoch: int = 0,
-                 notebook: bool = False
+                 notebook: bool = False,
                  ):
 
         self.model = model

@@ -6,7 +6,12 @@ import torchio as tio
 from src.dataset import ColloidsDatasetSimulated
 from src.deepcolloid import DeepColloid
 import matplotlib.pyplot as plt
+import neptune.new as neptune
 
+run = neptune.init(
+    project="wahabk/Fishnet",
+    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
+)  # your credentials
 
 dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/home/wahab/Data/HDD/Colloids'
@@ -70,23 +75,24 @@ criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr)
 
 # find learning rate
-lrf = LearningRateFinder(model, criterion, optimizer, device)
-lrf.fit(train_loader, steps=1000)
-lrf.plot()
+# lrf = LearningRateFinder(model, criterion, optimizer, device)
+# lrf.fit(train_loader, steps=1000)
+# lrf.plot()
 
-# # trainer
-# trainer = Trainer(model=model,
-#                   device=device,
-#                   criterion=criterion,
-#                   optimizer=optimizer,
-#                   training_DataLoader=train_loader,
-#                   validation_DataLoader=val_loader,
-#                   lr_scheduler=None,
-#                   epochs=epochs,
-#                   )
+# trainer
+trainer = Trainer(model=model,
+                  device=device,
+                  criterion=criterion,
+                  optimizer=optimizer,
+                  training_DataLoader=train_loader,
+                  validation_DataLoader=val_loader,
+                  lr_scheduler=None,
+                  epochs=epochs,
+                  )
 
-# # start training
-# training_losses, validation_losses, lr_rates = trainer.run_trainer()
+# start training
+training_losses, validation_losses, lr_rates = trainer.run_trainer()
 
-# fig = plot_training(training_losses, validation_losses)
-# plt.show()
+fig = plot_training(training_losses, validation_losses)
+plt.show()
+plt.savefig('output/loss_curve.png')
