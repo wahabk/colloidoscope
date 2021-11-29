@@ -20,6 +20,7 @@ class Trainer:
                  epochs: int = 100,
                  epoch: int = 0,
                  notebook: bool = False,
+                 logger=None,
                  ):
 
         self.model = model

@@ -30,6 +30,25 @@ n_classes=1
 lr = 3e-5
 random_seed = 42
 
+# hyper-parameters
+params = {
+    "BATCH_SIZE": 8,
+    "DEPTH": 4,
+    "ACTIVATION": "relu",
+    "NORMALIZATION": "group8",
+    "UPSAMPLING": "transposed",
+    "LR": 0.0001,
+    "WEIGTH_CE": torch.tensor((0.2, 0.8)),
+    "WEIGTH_DICE": torch.tensor((0.0, 1.0)),
+    "PRECISION": 32,
+    "LR_FINDER": False,
+    "INPUT_SIZE": (128, 128),
+    "CLASSES": 2,
+    "SEED": 42,
+    "EXPERIMENT": "carvana",
+    "MAXEPOCHS": 10,
+}
+
 train_imtrans = tio.Compose([
     # tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
     # tio.CropOrPad(roiSize),            # tight crop around brain
@@ -88,6 +107,7 @@ trainer = Trainer(model=model,
                   validation_DataLoader=val_loader,
                   lr_scheduler=None,
                   epochs=epochs,
+                  logger=run,
                   )
 
 # start training
@@ -96,3 +116,6 @@ training_losses, validation_losses, lr_rates = trainer.run_trainer()
 fig = plot_training(training_losses, validation_losses)
 plt.show()
 plt.savefig('output/loss_curve.png')
+
+
+run.stop()
