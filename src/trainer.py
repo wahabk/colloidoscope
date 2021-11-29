@@ -33,6 +33,7 @@ class Trainer:
         self.epochs = epochs
         self.epoch = epoch
         self.notebook = notebook
+        self.logger = logger
 
         self.training_loss = []
         self.validation_loss = []
@@ -84,6 +85,7 @@ class Trainer:
             loss = self.criterion(out, target)  # calculate loss
             loss_value = loss.item()
             train_losses.append(loss_value)
+            if self.logger: self.logger['train/loss'].log(loss_value)
             loss.backward()  # one backward pass
             self.optimizer.step()  # update the parameters
 
@@ -114,7 +116,7 @@ class Trainer:
                 loss = self.criterion(out, target)
                 loss_value = loss.item()
                 valid_losses.append(loss_value)
-
+                if self.logger: self.logger['val/loss'].log(loss_value)
                 batch_iter.set_description(f'Validation: (loss {loss_value:.4f})')
 
         self.validation_loss.append(np.mean(valid_losses))
@@ -234,8 +236,6 @@ def plot_training(training_losses,
     list_len = len(training_losses)
     x_range = list(range(1, list_len + 1))  # number of x values
 
-    fig.spines['top'].set_visible(False)
-    fig.spines['right'].set_visible(False)
 
     if gaussian:
         training_losses_gauss = gaussian_filter(training_losses, sigma=sigma)

@@ -139,3 +139,6 @@ Data
 *.gsd
 runs/
 *.pth
+.neptune/
+*.pth
+output/weights/
