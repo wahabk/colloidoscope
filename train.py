@@ -81,6 +81,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f'training on {device}')
 
 # model
+#TODO add model params to neptune
 model = UNet(in_channels=1,
              out_channels=params['n_classes'],
              n_blocks=4,

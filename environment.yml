@@ -40,12 +40,17 @@ dependencies:
     - attrs==21.2.0
     - babel==2.9.1
     - backcall==0.2.0
+    - boto3==1.20.15
+    - botocore==1.23.15
+    - bravado==11.0.3
+    - bravado-core==5.17.0
     - brotlipy==0.7.0
     - cached-property==1.5.2
     - cachetools==4.2.4
     - cachey==0.2.1
     - cffi==1.15.0
     - charset-normalizer==2.0.7
+    - click==8.0.3
     - cloudpickle==2.0.0
     - cppimport==21.3.7
     - cycler==0.11.0
@@ -53,11 +58,15 @@ dependencies:
     - dataclasses==0.6
     - debugpy==1.5.1
     - decorator==4.4.2
+    - deprecated==1.2.13
     - docstring-parser==0.12
     - docutils==0.17.1
     - entrypoints==0.3
     - freetype-py==2.2.0
     - fsspec==2021.11.0
+    - future==0.18.2
+    - gitdb==4.0.9
+    - gitpython==3.1.24
     - google-auth==2.3.3
     - google-auth-oauthlib==0.4.6
     - grpcio==1.42.0
@@ -65,6 +74,7 @@ dependencies:
     - h5py==2.10.0
     - heapdict==1.0.1
     - hsluv==5.0.2
+    - humanize==3.12.0
     - idna==3.3
     - imageio==2.10.3
     - imageio-ffmpeg==0.4.5
@@ -78,7 +88,10 @@ dependencies:
     - isort==4.3.21
     - jedi==0.18.0
     - jinja2==3.0.3
-    - jsonschema==4.2.1
+    - jmespath==0.10.0
+    - jsonpointer==2.2
+    - jsonref==0.2
+    - jsonschema==3.2.0
     - jupyter-client==7.0.6
     - jupyter-core==4.9.1
     - kiwisolver==1.3.1
@@ -93,16 +106,20 @@ dependencies:
     - matplotlib-inline==0.1.3
     - mccabe==0.6.1
     - monai==0.7.0
+    - monotonic==1.6
     - moviepy==1.0.3
     - mpi4py==3.1.2
+    - msgpack==1.0.3
     - napari==0.4.12
     - napari-console==0.0.4
     - napari-plugin-engine==0.2.0
     - napari-svg==0.1.5
+    - neptune-client==0.13.3
     - nest-asyncio==1.5.1
     - networkx==2.5.1
+    - nibabel==3.2.1
     - numba==0.54.1
-    - numpy==1.19.0
+    - numpy==1.20.0
     - numpydoc==1.1.0
     - oauthlib==3.1.1
     - opencv-python-headless==4.5.4.58
@@ -129,6 +146,7 @@ dependencies:
     - pycparser==2.21
     - pydantic==1.8.2
     - pygments==2.10.0
+    - pyjwt==2.3.0
     - pylint==2.5.2
     - pyopengl==3.1.5
     - pyparsing==2.4.7
@@ -146,10 +164,15 @@ dependencies:
     - qtpy==1.11.2
     - requests==2.26.0
     - requests-oauthlib==1.3.0
+    - rfc3987==1.3.8
     - rsa==4.7.2
+    - s3transfer==0.5.0
     - scikit-image==0.17.2
     - scipy==1.7.2
+    - simpleitk==2.1.1
+    - simplejson==3.17.6
     - six==1.16.0
+    - smmap==5.0.0
     - snowballstemmer==2.2.0
     - sphinx==4.2.0
     - sphinxcontrib-applehelp==1.0.2
@@ -158,7 +181,9 @@ dependencies:
     - sphinxcontrib-jsmath==1.0.1
     - sphinxcontrib-qthelp==1.0.3
     - sphinxcontrib-serializinghtml==1.1.5
+    - strict-rfc3339==0.7
     - superqt==0.2.4
+    - swagger-spec-validator==2.7.4
     - tensorboard==2.7.0
     - tensorboard-data-server==0.6.1
     - tensorboard-plugin-wit==1.8.0
@@ -166,6 +191,8 @@ dependencies:
     - toml==0.10.1
     - toolz==0.11.2
     - torch==1.10.0
+    - torch-tb-profiler==0.3.1
+    - torchio==0.18.67
     - tornado==6.1
     - tqdm==4.62.3
     - traitlets==5.1.1
@@ -173,6 +200,8 @@ dependencies:
     - urllib3==1.26.7
     - vispy==0.9.3
     - wcwidth==0.2.5
+    - webcolors==1.11.1
+    - websocket-client==1.2.1
     - werkzeug==2.0.2
     - wrapt==1.13.3
     - zipp==3.6.0

@@ -9,7 +9,7 @@ $ conda install -c conda-forge hoomd -y
 
 docker build . --tag=colloids 
 docker build . --tag=colloids --network=host # if you're on vpn
-and then run 
+and then run :
 
 docker run -it \
 	-v /home/ak18001/Data/HDD:/home/ak18001/Data/HDD \

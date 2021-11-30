@@ -10,14 +10,17 @@ import neptune.new as neptune
 
 def predict(array, threshold, model, weights_path, device, return_positions=False):
     
-    model_weights = torch.load(weights_path)
-    model.load_state_dict(model_weights)
+    model_weights = torch.load(weights_path) # read trained weights
+    model.load_state_dict(model_weights) # add weights to model
 
+    array = np.array(array/255, dtype=np.float32)
+    array = np.expand_dims(array, 0)      # if numpy array
     x = torch.from_numpy(array).to(device)  # to torch, send to device
+
     with torch.no_grad():
         out = model(x)  # send through model/network
 
-    out_sigmoid = torch.sigmoid(out, dim=3)  # perform softmax on output
+    out_sigmoid = torch.sigmoid(out, dim=3)  # perform sigmoid on output
     label = out_sigmoid > threshold
     
     # post process to numpy array
@@ -33,36 +36,28 @@ dataset_path = '/home/ak18001/Data/HDD/Colloids'
 dc = DeepColloid(dataset_path)
 # dc = DeepColloid(dataset_path)
 
-
-roiSize = (32,128,128)
-batch_size = 2
-num_workers = 2
-
-
-# device
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-else:
-    torch.device('cpu')
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f'predict on {device}')
 
 # model
-model = UNet(in_channels=3,
-             out_channels=2,
+model = UNet(in_channels=1,
+             out_channels=1,
              n_blocks=4,
              start_filters=32,
              activation='relu',
              normalization='batch',
              conv_mode='same',
-             dim=2).to(device)
+             dim=3).to(device)
 
-
+roiSize = (32,128,128)
+batch_size = 2
+num_workers = 2
+threshold = 0.5
 weights_path =  'output/weights/unet.pt'
+dataset_name = 'replicate'
 
+array = dc.read_hdf5(dataset_name, 45)
 
+label = predict(array, threshold, model, weights_path, device, return_positions=False)
 
-predict(array, threshold, model, weights_path, device, return_positions=False)
-
-
+dc.make_gif(label, 'output/pytorch_predict.gif')
