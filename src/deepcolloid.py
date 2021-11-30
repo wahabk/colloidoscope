@@ -41,6 +41,7 @@ class DeepColloid:
 
 	def view(self, array:np.ndarray, positions:np.ndarray=None) -> None:
 		if positions is not None:
+			array = np.array([np.stack((img,)*3, axis=-1) for img in array])
 			array = self.label_scan(array, positions)
 
 		napari.view_image(array)
@@ -48,7 +49,6 @@ class DeepColloid:
 	def label_scan(self, array: np.ndarray, positions: list) -> np.ndarray:
 		canvas = deepcopy(array)
 		#decompose grayscale numpy array into RGB
-		canvas = np.array([np.stack((img,)*3, axis=-1) for img in canvas])
 		
 		for z, y, x in positions:
 			z, y, x = math.floor(z), int(y), int(x)
@@ -60,16 +60,23 @@ class DeepColloid:
 	def simulate(self, *args, **kwargs):
 		return simulate_img3d(*args, **kwargs)
 
-	def make_gif(self, canvas, file_name, fps = 7, positions=None, scale=None):
+	def make_gif(self, canvas, file_name, fps = 7, positions=[], scale=None):
 		#decompose grayscale numpy array into RGB
+		if np.max(canvas) < 2: canvas *= 255
 		new_canvas = np.array([np.stack((img,)*3, axis=-1) for img in canvas])
 
-		if positions is not None:
-			for z, y, x in positions:
-				z, y, x = math.floor(z), int(y), int(x)
-				if z==31:z=30
-				cv2.rectangle(new_canvas[z], (x - 1, y - 1), (x + 1, y + 1), (250,0,0), -1)
-				# cv2.circle(new_canvas[z], (x, y), 5, (0, 250, 0), 1)
+		print(np.shape(new_canvas), type(new_canvas))
+
+		for z, y, x in positions:
+			z, y, x = math.floor(z), int(y), int(x)
+			if z==31:z=30
+			cv2.rectangle(new_canvas[z], (x - 1, y - 1), (x + 1, y + 1), (250,0,0), -1)
+			# cv2.circle(new_canvas[z], (x, y), 5, (0, 250, 0), 1)
+		
+		print(np.shape(new_canvas), type(new_canvas))
+
+		# if positions:
+		# 	new_canvas = self.label_scan(new_canvas, positions)
 
 		if scale is not None:
 			im = new_canvas[0]
@@ -81,8 +88,9 @@ class DeepColloid:
 			resized = [cv2.resize(img, dim, interpolation = cv2.INTER_AREA) for img in new_canvas]
 			new_canvas = resized
 	
-		
-		clip = ImageSequenceClip(list(new_canvas), fps=fps)
+		new_canvas = list(new_canvas)
+		print(np.shape(new_canvas), type(new_canvas))
+		clip = ImageSequenceClip(new_canvas, fps=fps)
 		clip.write_gif(file_name, fps=fps)
 
 	def vol_frac(self, centers, r, canvas_size):
