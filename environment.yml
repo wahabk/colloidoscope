@@ -195,6 +195,7 @@ dependencies:
     - torchio==0.18.67
     - tornado==6.1
     - tqdm==4.62.3
+    - trackpy==0.5.0
     - traitlets==5.1.1
     - typing-extensions==3.10.0.2
     - urllib3==1.26.7

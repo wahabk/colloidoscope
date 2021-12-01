@@ -11,7 +11,7 @@ from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
 from .hoomd.hoomd_sim_positions import hooomd_sim_positions
 # from .paddycrusher import pycrusher
-
+import math
 print(os.cpu_count())
 
 @njit()
@@ -22,6 +22,7 @@ def draw_slice(args):
 		for j in range(s.shape[1]):
 			for k, center in enumerate(centers):
 				cz, cy, cx = center
+				# TODO add sqrt
 				dist = (z - cz)**2 + (i - cy)**2 + (j - cx)**2
 				if dist <= r**2:
 					if is_label:

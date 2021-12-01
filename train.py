@@ -1,12 +1,13 @@
 import torch
 import numpy as np
-from src.trainer import Trainer, LearningRateFinder
+from src.trainer import Trainer, LearningRateFinder, predict
 from src.unet import UNet
 import torchio as tio
 from src.dataset import ColloidsDatasetSimulated
 from src.deepcolloid import DeepColloid
 import matplotlib.pyplot as plt
 import neptune.new as neptune
+from neptune.new.types import File
 
 run = neptune.init(
     project="wahabk/colloidoscope",
@@ -17,7 +18,6 @@ dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/home/wahab/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
-# dc = DeepColloid(dataset_path)
 
 save = True
 params = dict(
@@ -27,7 +27,7 @@ params = dict(
     dataset_name = 'replicate',
     batch_size = 2,
     num_workers = 2,
-    epochs = 20,
+    epochs = 10,
     n_classes = 1,
     lr = 1e-3,
     random_seed = 42,
@@ -122,4 +122,17 @@ if save:
     model_name =  'output/weights/unet.pt'
     torch.save(model.state_dict(), model_name)
     run['model/weights'].upload(model_name)
+
+
+# test one predict and upload to neptune
+test_array = dc.read_hdf5(params['dataset_name'], 45)
+test_label = predict(test_array, 0.3, model, device)
+print(test_array.shape, test_label.shape)
+
+array_projection = np.max(test_array, axis=0)
+label_projection = np.max(test_label, axis=0)
+sidebyside = np.concatenate((array_projection, label_projection), axis=1)
+sidebyside /= sidebyside.max()
+run['prediction'].upload(File.as_image(sidebyside))
+
 run.stop()
