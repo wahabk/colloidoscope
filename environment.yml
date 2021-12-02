@@ -89,6 +89,7 @@ dependencies:
     - jedi==0.18.0
     - jinja2==3.0.3
     - jmespath==0.10.0
+    - joblib==1.1.0
     - jsonpointer==2.2
     - jsonref==0.2
     - jsonschema==3.2.0
@@ -168,6 +169,7 @@ dependencies:
     - rsa==4.7.2
     - s3transfer==0.5.0
     - scikit-image==0.17.2
+    - scikit-learn==1.0.1
     - scipy==1.7.2
     - simpleitk==2.1.1
     - simplejson==3.17.6
@@ -187,6 +189,7 @@ dependencies:
     - tensorboard==2.7.0
     - tensorboard-data-server==0.6.1
     - tensorboard-plugin-wit==1.8.0
+    - threadpoolctl==3.0.0
     - tifffile==2020.9.3
     - toml==0.10.1
     - toolz==0.11.2
