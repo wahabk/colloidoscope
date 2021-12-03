@@ -9,7 +9,7 @@ import os
 from scipy import ndimage
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
-from .hoomd.hoomd_sim_positions import hooomd_sim_positions
+from .hoomd_sim_positions import hooomd_sim_positions
 # from .paddycrusher import pycrusher
 import math
 print(os.cpu_count())

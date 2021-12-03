@@ -221,7 +221,6 @@ class LearningRateFinder:
 		self.optimizer.load_state_dict(self._opt_init)
 		print('Model and optimizer in initial state.')
 
-
 def predict(scan, threshold, model, device, weights_path=None, return_positions=False):
 	
 	if weights_path:

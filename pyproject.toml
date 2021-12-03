@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "colloidoscope"
+version = "0.1.0"
+description = "My PhD project to track colloids using confocal and deep learning."
+authors = ["Abdelwahab Kawafi <akawafi3@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8, <3.10"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
