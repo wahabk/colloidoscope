@@ -1,4 +1,4 @@
-from src.deepcolloid import DeepColloid
+from colloidoscope.deepcolloid import DeepColloid
 import numpy as np
 import matplotlib.pyplot as plt
 import napari
@@ -12,8 +12,8 @@ if __name__ == '__main__':
 	dc = DeepColloid(dataset_path)
 
 	canvas_size=(32,128,128)
-	dataset = 'replicate'
-	n_samples = 50
+	dataset_name = 'first_run'
+	n_samples = 500
 
 	for n in range(1,n_samples+1):
 		print(f'{n}/{n_samples}')
@@ -24,12 +24,13 @@ if __name__ == '__main__':
 		gauss = (5,1,1)
 		brightness = randrange(180,250)
 		noise = uniform(0.002, 0.008)
-		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = 0.3, debug=True)
+		volfrac = randrange(2, 5)
+		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = volfrac/10, debug=True)
 		
-		dc.view(canvas, positions)
-		napari.run()
+		# dc.view(canvas, positions)
+		# napari.run()
 
-		# dc.write_hdf5(dataset, n, canvas, positions)
-		# dc.write_hdf5(dataset+'_labels', n, label)
+		dc.write_hdf5(dataset_name, n, canvas, positions)
+		dc.write_hdf5(dataset_name+'_labels', n, label)
 		canvas, positions, label = None, None, None
 		

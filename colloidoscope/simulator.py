@@ -72,7 +72,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 	'''
 	
 	''' make half polydisperse '''
-	r = random.randrange(5,6)
+	r = random.randrange(5,12)
 	brightness = random.randrange(150,250)
 	zoom_out = [int(c/zoom) for c in canvas_size]
 	canvas = np.zeros(zoom_out, dtype='uint8')
