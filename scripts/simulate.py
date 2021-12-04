@@ -4,18 +4,23 @@ import matplotlib.pyplot as plt
 import napari
 from random import randrange, uniform
 
-
 if __name__ == '__main__':
 	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
+
+
 	canvas_size=(32,128,128)
 	dataset_name = 'first_run'
 	n_samples = 500
+	nums = dc.get_hdf5_keys('first_run')
+	print(nums)
+	# exit()
 
-	for n in range(1,n_samples+1):
+
+	for n in range(78,n_samples+1):
 		print(f'{n}/{n_samples}')
 		zoom = 0.75
 		xykernel = randrange(1,4,2)

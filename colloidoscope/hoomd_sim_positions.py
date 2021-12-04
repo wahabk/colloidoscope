@@ -33,7 +33,7 @@ def hooomd_sim_positions(phi:int, canvas_size:tuple, diameter:int=10) -> np.ndar
 
 	hoomd.run(2)
 
-	while phi_current < phi_target:
+	while round(phi_current, 2) < phi_target:
 		V_current = max(system.box.get_volume() * dV, V_target);
 		new_box = system.box.set_volume(V_current);
 		hoomd.update.box_resize(Lx=new_box.Lx, Ly=new_box.Ly, Lz=new_box.Lz, period=None);

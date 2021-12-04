@@ -1,12 +1,15 @@
-from src.deepcolloid import DeepColloid
+from colloidoscope import DeepColloid
 import numpy as np
 import matplotlib.pyplot as plt
 import napari
 
 if __name__ == '__main__':
-	dc = DeepColloid('/home/wahab/Data/HDD/Colloids')
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
+	dc = DeepColloid(dataset_path)
 
-	dataset = 'test'
+	dataset = 'replicate'
 	n=1
 
 	nums = dc.get_hdf5_keys(dataset)
@@ -17,6 +20,6 @@ if __name__ == '__main__':
 
 	print(scan.shape, label.shape)
 
-	dc.view(scan, positions)
-	napari.run()
+	# dc.view(scan, positions)
+	# napari.run()
 
