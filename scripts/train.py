@@ -27,7 +27,7 @@ params = dict(
     dataset_name = 'first_run',
     batch_size = 2,
     num_workers = 4,
-    epochs = 75,
+    epochs = 50,
     n_classes = 1,
     lr = 3e-5,
     random_seed = 42,
@@ -102,16 +102,16 @@ training_losses, validation_losses, lr_rates = trainer.run_trainer()
 if save:
     model_name =  'output/weights/unet.pt'
     torch.save(model.state_dict(), model_name)
-    run['model/weights'].upload(model_name)
+    # run['model/weights'].upload(model_name)
 
 
 # test one predict and upload to neptune
 test_array = dc.read_hdf5(params['dataset_name'], 45)
-test_label = predict(test_array, 0.3, model, device)
+test_label = predict(test_array, 0.5, model, device, return_positions=False)
 print(test_array.shape, test_label.shape)
 
 array_projection = np.max(test_array, axis=0)
-label_projection = np.max(test_label, axis=0)
+label_projection = np.max(test_label, axis=0)*255
 sidebyside = np.concatenate((array_projection, label_projection), axis=1)
 sidebyside /= sidebyside.max()
 run['prediction'].upload(File.as_image(sidebyside))

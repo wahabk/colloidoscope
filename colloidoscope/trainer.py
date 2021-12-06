@@ -121,7 +121,7 @@ class Trainer:
 				loss = self.criterion(out, target)
 				loss_value = loss.item()
 				valid_losses.append(loss_value)
-				if self.logger: self.logger['val/loss'].log(loss_value)
+				if self.logger: self.logger['train/val_loss'].log(loss_value)
 				batch_iter.set_description(f'Validation: (loss {loss_value:.4f})')
 
 		self.validation_loss.append(np.mean(valid_losses))
