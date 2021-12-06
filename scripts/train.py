@@ -1,10 +1,10 @@
 import torch
 import numpy as np
-from src.trainer import Trainer, LearningRateFinder, predict
-from src.unet import UNet
+from colloidoscope.trainer import Trainer, LearningRateFinder, predict
+from colloidoscope.unet import UNet
+from colloidoscope.dataset import ColloidsDatasetSimulated
+from colloidoscope.deepcolloid import DeepColloid
 import torchio as tio
-from src.dataset import ColloidsDatasetSimulated
-from src.deepcolloid import DeepColloid
 import matplotlib.pyplot as plt
 import neptune.new as neptune
 from neptune.new.types import File
@@ -22,36 +22,17 @@ dc = DeepColloid(dataset_path)
 save = True
 params = dict(
     roiSize = (32,128,128),
-    train_data = range(1,39),
-    val_data = range(39,51),
-    dataset_name = 'replicate',
+    train_data = range(1,400),
+    val_data = range(400,501),
+    dataset_name = 'first_run',
     batch_size = 2,
-    num_workers = 2,
-    epochs = 10,
+    num_workers = 4,
+    epochs = 75,
     n_classes = 1,
-    lr = 1e-3,
+    lr = 3e-5,
     random_seed = 42,
 )
 run['parameters'] = params
-
-# hyper-parameters
-# params = {
-#     "BATCH_SIZE": 8,
-#     "DEPTH": 4,
-#     "ACTIVATION": "relu",
-#     "NORMALIZATION": "group8",
-#     "UPSAMPLING": "transposed",
-#     "LR": 0.001,
-#     "WEIGTH_CE": torch.tensor((0.2, 0.8)),
-#     "WEIGTH_DICE": torch.tensor((0.0, 1.0)),
-#     "PRECISION": 32,
-#     "LR_FINDER": False,
-#     "INPUT_SIZE": (128, 128),
-#     "CLASSES": 2,
-#     "SEED": 42,
-#     "EXPERIMENT": "carvana",
-#     "MAXEPOCHS": 10,
-# }
 
 train_imtrans = tio.Compose([
     # tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times

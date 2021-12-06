@@ -17,7 +17,7 @@ if __name__ == '__main__':
 	n_samples = 500
 	nums = dc.get_hdf5_keys('first_run')
 	print(nums)
-	# exit()
+	exit()
 
 
 	for n in range(78,n_samples+1):
