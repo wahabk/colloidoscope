@@ -267,3 +267,8 @@ def predict(scan, threshold, model, device, weights_path=None, return_positions=
 	else:
 		return result
 
+def renormalise(tensor: torch.Tensor):
+	array = tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+	array = np.squeeze(array)  # remove batch dim and channel dim -> [H, W]
+	array = array * 255
+	return array

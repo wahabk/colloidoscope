@@ -13,11 +13,11 @@ if __name__ == '__main__':
 
 
 	canvas_size=(32,128,128)
-	dataset_name = 'first_run'
+	dataset_name = 'test'
 	n_samples = 500
-	nums = dc.get_hdf5_keys('first_run')
-	print(nums)
-	exit()
+	# nums = dc.get_hdf5_keys('test')
+	# print(nums)
+	# exit()
 
 
 	for n in range(78,n_samples+1):
@@ -29,13 +29,21 @@ if __name__ == '__main__':
 		gauss = (5,1,1)
 		brightness = randrange(180,250)
 		noise = uniform(0.002, 0.008)
-		volfrac = randrange(2, 5)
-		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = volfrac/10, debug=True)
+		volfrac = 0.2 #randrange(2, 5)/10 
+		canvas, positions, label = dc.simulate(canvas_size, zoom, gauss, noise=noise, volfrac = volfrac, debug=True)
 		
 		# dc.view(canvas, positions)
 		# napari.run()
+		print(canvas.shape, canvas.max(), canvas.min())
+		print(label.shape, label.max(), label.min())
 
-		dc.write_hdf5(dataset_name, n, canvas, positions)
-		dc.write_hdf5(dataset_name+'_labels', n, label)
-		canvas, positions, label = None, None, None
+		projection = np.max(canvas, axis=0)
+		plt.imsave('output/test_sim.png', projection, cmap='gray')
+		projection = np.max(label, axis=0)
+		plt.imsave('output/test_sim_label.png', projection, cmap='gray')
+		exit()
+
+		# dc.write_hdf5(dataset_name, n, canvas, positions)
+		# dc.write_hdf5(dataset_name+'_labels', n, label)
+		# canvas, positions, label = None, None, None
 		

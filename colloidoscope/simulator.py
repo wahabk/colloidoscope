@@ -12,7 +12,10 @@ from concurrent.futures import ProcessPoolExecutor
 from .hoomd_sim_positions import hooomd_sim_positions
 # from .paddycrusher import pycrusher
 import math
-print(os.cpu_count())
+
+@njit()
+def gaussian(x, mu, sig):
+    return 1./(np.sqrt(2.*np.pi)*sig)*np.exp(-np.power((x - mu)/sig, 2.)/2)
 
 @njit()
 def draw_slice(args):
@@ -22,11 +25,10 @@ def draw_slice(args):
 		for j in range(s.shape[1]):
 			for k, center in enumerate(centers):
 				cz, cy, cx = center
-				# TODO add sqrt
-				dist = (z - cz)**2 + (i - cy)**2 + (j - cx)**2
-				if dist <= r**2:
+				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
+				if dist <= r*2:
 					if is_label:
-						new_slice[i,j] = (1-(dist/r**2))**2 * 255
+						new_slice[i,j] = gaussian(dist, 0, r)
 					else:
 						new_slice[i,j] = brightness
 	return new_slice
@@ -101,7 +103,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 	# Add noise
 	canvas = [random_noise(img, mode='gaussian', var=noise)*255 for img in canvas] 
 	canvas = np.array(canvas,dtype='uint8')
-	label = np.array(label,dtype='uint8')
+	label = np.array(label,dtype='uint8')/label.max()
 
 	return canvas, centers, label
 
