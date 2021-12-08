@@ -1,43 +1,34 @@
-from numba import njit
-import numpy as np
-import random
-import os
-from skimage.util import random_noise
-import time
-import random
-import os
-from scipy import ndimage
-from concurrent.futures import ProcessPoolExecutor
 from colloidoscope.hoomd_sim_positions import convert_hoomd_positions, hooomd_sim_positions
 from colloidoscope import DeepColloid
-from colloidoscope.simulator import sim_from_parameters
+from colloidoscope.simulator import simulate
+import numpy as np
 from magicgui import magicgui
+from napari.layers import Image
 import napari
-from napari.types import ImageData
 
 # init magicgui parameters for sliders
 @magicgui(
-	call_button='update', 
+	call_button='Simulate', 
 	r={"widget_type": "Slider", 'maximum': 30},
 	zoom={"widget_type": "FloatSlider", 'maximum': 1},
-	xy_gauss={"widget_type": "Slider", 'maximum': 20},
-	z_gauss={"widget_type": "Slider", 'maximum': 20},
+	xy_gauss={"widget_type": "Slider", 'maximum': 10},
+	z_gauss={"widget_type": "Slider", 'maximum': 10},
 	brightness={"widget_type": "Slider", 'maximum': 255},
-	noise={"widget_type": "FloatSlider", 'maximum': 1},
-	layout='horizontal',)
-def update_simulation(layer: ImageData, r:int, zoom:float, 
-						xy_gauss:int, z_gauss:int, brightness:int, 
-						noise=float) -> ImageData:
+	noise={"widget_type": "FloatSlider", 'maximum': 0.1},
+	layout='vertical',)
+def update_simulation(layer:Image, r:int=5, zoom:float=0.5, 
+						xy_gauss:int=1, z_gauss:int=2, brightness:int=255, 
+						noise:float=0) -> Image:
 	if layer is not None:
 		assert isinstance(layer.data, np.ndarray)  # it will be!
 
 		array = layer.data
 		canvas_shape = array.shape
 		hoomd_centers = layer.metadata['centers']
-		centers = convert_hoomd_positions(hoomd_centers, diameter=r*2)
-		new_array = sim_from_parameters(canvas_shape, centers, r, zoom, xy_gauss, z_gauss, brightness, noise)
-
-		return new_array
+		centers = convert_hoomd_positions(positions = hoomd_centers, canvas_size=canvas_shape, diameter=r*2)
+		new_array = simulate(canvas_shape, centers, r, zoom, xy_gauss, z_gauss, brightness, noise)
+		layer.data = new_array
+		return 
 
 
 if __name__ == "__main__":
@@ -47,8 +38,7 @@ if __name__ == "__main__":
 	dc = DeepColloid(dataset_path)
 
 	canvas_size = (32,128,128)
-	volfrac = 0.2
-	
+	volfrac = 0.5
 	
 	canvas = np.zeros(canvas_size, dtype='uint8')
 	centers = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size, diameter=10)
@@ -56,14 +46,11 @@ if __name__ == "__main__":
 
 	viewer = napari.Viewer()
 	viewer.add_image(canvas, name="Simulated colloids", metadata=canvas_metadata)
-
 	# Add it to the napari viewer
 	viewer.window.add_dock_widget(update_simulation)
 	# update the layer dropdown menu when the layer list changes
 	viewer.layers.events.changed.connect(update_simulation.reset_choices)
-
 	# napari points tutorial: https://napari.org/tutorials/fundamentals/points.html
-
 	napari.run()
 
 

@@ -59,18 +59,21 @@ def hooomd_sim_positions(phi:int, canvas_size:tuple, diameter:int=10) -> np.ndar
 	n_particles = snap.particles.N
 	positions = snap.particles.position #from -16 to + 16
 
+	print(type(positions))
+
 	return positions
 
-def convert_hoomd_positions(positions, diameter):
+def convert_hoomd_positions(positions, canvas_size, diameter=10):
 	# convert positions from physics to normal
-	positions = positions - positions.min()
-	positions = positions * diameter
-	positions = np.array([p for p in positions if p[0]<canvas_size[0] and p[1]<canvas_size[1] and p[2]<canvas_size[2]])
-	return positions
+	centers = positions.copy()
+	centers = centers - centers.min()
+	centers = centers * diameter
+	centers = np.array([p for p in centers if p[0]<canvas_size[0] and p[1]<canvas_size[1] and p[2]<canvas_size[2]])
+	return centers
 
 if __name__ == '__main__':
 	positions = hooomd_sim_positions(phi=0.4, canvas_size=(32,128,128), diameter=10)
-	positions = convert_hoomd_positions(positions, diameter=10)
+	positions = convert_hoomd_positions(positions, (32,128,128), diameter=10)
 	print(type(positions))
 	print(positions.shape, positions.max(), positions.min())
 

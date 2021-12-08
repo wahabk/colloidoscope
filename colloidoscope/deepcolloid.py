@@ -6,7 +6,7 @@ from scipy.spatial.distance import pdist
 import cv2
 import math
 from copy import deepcopy
-from .simulator import *
+from .simulator import simulate
 
 
 class DeepColloid:
@@ -57,7 +57,8 @@ class DeepColloid:
 		return canvas
 
 	def simulate(self, *args, **kwargs):
-		return simulate_img3d(*args, **kwargs)
+		# wrapper for simulator
+		return simulate(*args, **kwargs)
 
 	def vol_frac(self, centers, r, canvas_size):
 		vol = (4/3)*  np.pi * r**3
