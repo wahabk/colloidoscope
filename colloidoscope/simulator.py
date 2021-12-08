@@ -9,7 +9,7 @@ import os
 from scipy import ndimage
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
-from .hoomd_sim_positions import hooomd_sim_positions
+from .hoomd_sim_positions import hooomd_sim_positions, convert_hoomd_positions
 # from .paddycrusher import pycrusher
 import math
 
@@ -76,12 +76,15 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 	''' make half polydisperse '''
 	r = random.randrange(5,12)
 	brightness = random.randrange(150,250)
-	zoom_out = [int(c/zoom) for c in canvas_size]
-	canvas = np.zeros(zoom_out, dtype='uint8')
 	label = np.zeros(canvas_size, dtype='uint8')
 	# centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2)
-	centers = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size, diameter=r*2)
+	hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size, diameter=r*2)
+	centers = convert_hoomd_positions(hoomd_positions, diameter=r*2)
 	
+	# zoom out to large image and positions
+	# later we zoom back in to add aliasing
+	zoom_out = [int(c/zoom) for c in canvas_size]
+	canvas = np.zeros(zoom_out, dtype='uint8')
 	zoom_out_centers=[]
 	for c in centers:
 		x,y,z = c
@@ -89,13 +92,10 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
-	print('Number of particles: ', len(centers))
-
-	print('making image')
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness, debug=debug)
-	print('making label')
 	label = draw_spheres_sliced(label, centers, r, is_label=True, debug=debug)
 
+	# zoom back in for aliasing
 	canvas = ndimage.zoom(canvas, zoom)
 	
 	if gauss: canvas = ndimage.gaussian_filter(canvas, gauss)
@@ -107,3 +107,32 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 
 	return canvas, centers, label
 
+
+def sim_from_parameters(canvas_size:list, centers:np.ndarray, r:int, zoom:float, 
+						xy_gauss:int, z_gauss:int, brightness:int, noise=float):
+	gauss_kernel = (xy_gauss, xy_gauss, z_gauss)
+	
+	# zoom out to large image and positions
+	# later we zoom back in to add aliasing
+	zoom_out = [int(c/zoom) for c in canvas_size]
+	canvas = np.zeros(zoom_out, dtype='uint8')
+	zoom_out_centers=[]
+	for c in centers:
+		x,y,z = c
+		new_c = [x/zoom,y/zoom,z/zoom]
+		zoom_out_centers.append(new_c)
+	zoom_out_centers = np.array(zoom_out_centers)
+
+	# print('Number of particles: ', len(centers))
+
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness, debug=debug)
+
+	# zoom back in for aliasing
+	canvas = ndimage.zoom(canvas, zoom)
+
+	canvas = ndimage.gaussian_filter(canvas, gauss_kernel)
+	# label = ndimage.gaussian_filter(canvas, [3,3,3])
+	# Add noise
+	canvas = [random_noise(img, mode='gaussian', var=noise)*255 for img in canvas] 
+	canvas = np.array(canvas,dtype='uint8')
+	label = np.array(label,dtype='uint8')/label.max()

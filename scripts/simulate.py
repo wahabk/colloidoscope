@@ -20,7 +20,7 @@ if __name__ == '__main__':
 	# exit()
 
 
-	for n in range(78,n_samples+1):
+	for n in range(0,n_samples+1):
 		print(f'{n}/{n_samples}')
 		zoom = 0.75
 		xykernel = randrange(1,4,2)

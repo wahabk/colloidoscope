@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	for person in real_path.iterdir():
 		print(person)
 
-		file_path = 
+		# file_path = 
 
 	
 
