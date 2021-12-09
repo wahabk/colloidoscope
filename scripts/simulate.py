@@ -9,23 +9,21 @@ import numpy as np
 import random
 
 if __name__ == '__main__':
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
 
 
 	canvas_size=(32,128,128)
-	dataset_name = 'test'
-	n_samples = 2
+	dataset_name = 'third_run'
+	n_samples = 500
 	# nums = dc.get_hdf5_keys('test')
 	# print(nums)
 	# exit()
 
-
-
-	for n in range(0,n_samples+1):
+	for n in range(1,n_samples+1):
 		print('\n', f'{n}/{n_samples}', '\n')
 
 		volfrac = randrange(2, 6)/10 
@@ -37,7 +35,6 @@ if __name__ == '__main__':
 		}
 		keys = list(types)
 		this_type = random.choice(keys)
-		this_type = 'very small'
 
 		print(this_type)
 		print(types[this_type], volfrac)
@@ -57,16 +54,16 @@ if __name__ == '__main__':
 		print(label.shape, label.max(), label.min())
 
 		# dc.view(canvas, centers)
-		viewer = napari.view_image(canvas)
-		viewer.add_points(centers)
-		napari.run()
+		# viewer = napari.view_image(canvas)
+		# viewer.add_points(centers)
+		# napari.run()
 
-		projection = np.max(canvas, axis=0)
-		projection_label = np.max(label, axis=0)*255
-		sidebyside = np.concatenate((projection, projection_label), axis=1)
-		plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
+		# projection = np.max(canvas, axis=0)
+		# projection_label = np.max(label, axis=0)*255
+		# sidebyside = np.concatenate((projection, projection_label), axis=1)
+		# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-		# dc.write_hdf5(dataset_name, n, canvas, centers)
-		# dc.write_hdf5(dataset_name+'_labels', n, label)
+		dc.write_hdf5(dataset_name, n, canvas, centers, dtype='uint8')
+		dc.write_hdf5(dataset_name+'_labels', n, label, dtype='float32')
 		canvas, centers, label = None, None, None
 		
