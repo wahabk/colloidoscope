@@ -10,7 +10,6 @@ import napari
 @magicgui(
 	call_button='Simulate', 
 	r={"widget_type": "Slider", 'maximum': 30},
-	zoom={"widget_type": "FloatSlider", 'maximum': 1},
 	xy_gauss={"widget_type": "Slider", 'maximum': 10},
 	z_gauss={"widget_type": "Slider", 'maximum': 10},
 	brightness={"widget_type": "Slider", 'maximum': 255},
@@ -26,7 +25,7 @@ def update_simulation(layer:Image, r:int=5, zoom:float=0.5,
 		canvas_shape = array.shape
 		hoomd_centers = layer.metadata['centers']
 		centers = convert_hoomd_positions(positions = hoomd_centers, canvas_size=canvas_shape, diameter=r*2)
-		new_array = simulate(canvas_shape, centers, r, zoom, xy_gauss, z_gauss, brightness, noise)
+		new_array = simulate(canvas_shape, centers, r, xy_gauss, z_gauss, brightness, noise)
 		layer.data = new_array
 		return 
 
