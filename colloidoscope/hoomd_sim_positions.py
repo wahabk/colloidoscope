@@ -7,6 +7,8 @@ import hoomd.hpmc
 import gsd.hoomd
 import numpy as np
 
+
+
 def hooomd_sim_positions(phi:int, canvas_size:tuple, diameter:int=10) -> np.ndarray:
 	hoomd.context.initialize("--mode=cpu");
 
@@ -31,7 +33,7 @@ def hooomd_sim_positions(phi:int, canvas_size:tuple, diameter:int=10) -> np.ndar
 	V_target = N / 6 * np.pi / phi_target
 	dV = 0.9
 
-	hoomd.run(2)
+	hoomd.run(2, quiet=True)
 
 	#round up to avoid floating point error in while loop
 	while round(phi_current, 2) < phi_target:
@@ -43,23 +45,21 @@ def hooomd_sim_positions(phi:int, canvas_size:tuple, diameter:int=10) -> np.ndar
 		while overlaps > 0:
 			hoomd.run(10, quiet=True);
 			overlaps = mc.count_overlaps()
-			print(overlaps, end=' ');
+			# print(overlaps, end=' ');
 			sys.stdout.flush();
-		print("compressing", phi_current, " -> ", phi_target)
+		# print("compressing", phi_current, " -> ", phi_target)
 
 	# if save:
 	# d = hoomd.dump.gsd(f"hs-phi-{phi_target * 1000:.0f}.gsd", period=2, group=hoomd.group.all(), overwrite=True)
 
 	#make 100 frames then sample
-	hoomd.run(100)
+	hoomd.run(50, quiet=True)
 
 	# take snapshot to extract data at the end
 	shape = (system.box.Lz, system.box.Ly, system.box.Lx,)
 	snap = system.take_snapshot()
 	n_particles = snap.particles.N
 	positions = snap.particles.position #from -16 to + 16
-
-	print(type(positions))
 
 	return positions
 

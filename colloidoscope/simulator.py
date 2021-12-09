@@ -13,7 +13,7 @@ import math
 def gaussian(x, mu, sig):
 	# gaussian equation for position heatmap generation
 	# numba decorator required for multithreading
-    return 1./(np.sqrt(2.*np.pi)*sig)*np.exp(-np.power((x - mu)/sig, 2.)/2)
+	return 1./(np.sqrt(2.*np.pi)*sig)*np.exp(-np.power((x - mu)/sig, 2.)/2)
 
 @njit()
 def draw_slice(args):
@@ -30,12 +30,12 @@ def draw_slice(args):
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				if dist <= r*2:
 					if is_label:
-						new_slice[i,j] = gaussian(dist, 0, r)
+						new_slice[i,j] = gaussian(dist, 0, r) * brightness
 					else:
 						new_slice[i,j] = brightness
 	return new_slice
 
-def draw_spheres_sliced(canvas, centers, r, brightness=255, num_workers=2, is_label=False, debug=False):
+def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False, num_workers=2):
 	new_canvas = []
 
 	args = [(s, z, r, centers, brightness, is_label) for z, s in enumerate(canvas)]
@@ -45,7 +45,11 @@ def draw_spheres_sliced(canvas, centers, r, brightness=255, num_workers=2, is_la
 			new_canvas.append(i)
 
 	canvas = list(new_canvas)
-	canvas = np.array(canvas, dtype='uint8')
+
+	if is_label: 
+		canvas = np.array(canvas, dtype='float32')
+		canvas = canvas/canvas.max()
+	else: canvas = np.array(canvas, dtype='uint8')
 	return canvas
 
 def shake(centers, magnitude):
@@ -58,8 +62,7 @@ def shake(centers, magnitude):
 	return np.array(new_centers)
 
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
-			xy_gauss:int, z_gauss:int, brightness:int, noise:float):
-	
+			xy_gauss:int, z_gauss:int, brightness:int, noise:float, make_label=True, num_workers=2):
 	zoom = 0.5
 	gauss_kernel = (z_gauss, xy_gauss, xy_gauss)
 	
@@ -74,8 +77,14 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
+
+	label = np.zeros(canvas_size, dtype='uint8')
+
 	# draw spheres slice by slice
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness)
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness, is_label=False, num_workers=num_workers)
+	# draw label heatmap from centers
+	label = draw_spheres_sliced(label, centers, r, is_label=True, num_workers=num_workers)
+	print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
 
 	# zoom back in for aliasing
 	canvas = ndimage.zoom(canvas, zoom)
@@ -83,11 +92,17 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	canvas = ndimage.gaussian_filter(canvas, gauss_kernel)
 	# Add noise
 	canvas = [random_noise(img, mode='gaussian', var=noise)*255 for img in canvas] 
+	
+	canvas = np.array(canvas,dtype='uint8')
+	label = np.array(label ,dtype='float32')
+	
+	if make_label:
+		return canvas, label
+	else:
+		return canvas
 
-	return np.array(canvas,dtype='uint8')
 
-
-def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=False):
+def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	'''
 	Simulate 3d image of colloids
 
@@ -118,8 +133,8 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3, debug=Fa
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness, debug=debug)
-	label = draw_spheres_sliced(label, centers, r, is_label=True, debug=debug)
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness)
+	label = draw_spheres_sliced(label, centers, r, is_label=True)
 
 	# zoom back in for aliasing
 	canvas = ndimage.zoom(canvas, zoom)
