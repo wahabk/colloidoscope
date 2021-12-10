@@ -2,7 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import trackpy as tp
 from sklearn import metrics
-from colloidoscope import DeepColloid
+from colloidoscope.trainer import predict
+from colloidoscope.unet import UNet
+from colloidoscope.deepcolloid import DeepColloid
+import torch
 
 def plot_pr_curve(
     precisions, recalls, category='Person', label=None, color=None, ax=None):
@@ -12,12 +15,12 @@ def plot_pr_curve(
         plt.figure(figsize=(10,8))
         ax = plt.gca()
 
-    ax.scatter(recalls, precisions, label=label, color=color)
+    ax.plot(recalls, precisions, 'rx')
     ax.set_xlabel('recall')
     ax.set_ylabel('precision')
     ax.set_title('Precision-Recall curve for {}'.format(category))
-    ax.set_xlim([0.0,1.3])
-    ax.set_ylim([0.0,1.2])
+    ax.set_xlim([-0.1,1.1])
+    ax.set_ylim([-0.1,1.1])
     return ax
 
 def run_trackpy(array, diameter=11):
@@ -46,41 +49,57 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	print(f'predict on {device}')
+
+	# model
+	model = UNet(in_channels=1,
+				out_channels=1,
+				n_blocks=4,
+				start_filters=32,
+				activation='relu',
+				normalization='batch',
+				conv_mode='same',
+				dim=3).to(device)
+
 	roiSize = (32,128,128)
 	threshold = 0.5
 	weights_path =  'output/weights/unet.pt'
-	dataset_name = 'replicate'
+	dataset_name = 'third_run'  
 
 
-	multi_gt_pos = []
-	multi_pred_pos = []
-	for i in range(20, 45):
-		canvas, gt_positions = dc.read_hdf5(dataset_name, i, return_positions=True)
-
-		tp_predictions = run_trackpy(canvas, diameter=11)
-
-		multi_gt_pos.append(gt_positions)
-		multi_pred_pos.append(tp_predictions)
-	# multi_gt_pos = np.array(multi_gt_pos)
-	# multi_pred_pos = np.array(multi_pred_pos)
-
-	aps, precisions, recalls = dc.average_precision(multi_gt_pos, multi_pred_pos)
-
-	print(precisions, recalls)
+	canvas, gt_positions = dc.read_hdf5(dataset_name, 202, return_positions=True)
+	tp_predictions = run_trackpy(canvas, diameter=9)
+	print(gt_positions.shape, tp_predictions.shape)
+	ap, precisions, recalls = dc.average_precision(gt_positions, tp_predictions, diameter=9)
 	# recalls = np.array([1-r for r in recalls])
+	print(ap, precisions, recalls)
+
+	display = metrics.PrecisionRecallDisplay(precision=precisions, recall=recalls, estimator_name='Trackpy').plot()
+	# fig = plt.figure()
+	# ax = plt.gca()
+	# ax = plot_pr_curve(precisions, recalls, category='trackpy')
+	plt.savefig('output/roc_trackpy.png')
+
+	canvas, gt_positions = dc.read_hdf5(dataset_name, 202, return_positions=True)
+	label, tp_predictions = predict(canvas, model, device, weights_path, threshold=threshold, return_positions=True)
+	print(gt_positions.shape, tp_predictions.shape)
+	ap, precisions, recalls = dc.average_precision(gt_positions, tp_predictions, diameter=9)
+	# recalls = np.array([1-r for r in recalls])
+	print(ap, precisions, recalls)
+
+	display = metrics.PrecisionRecallDisplay(precision=precisions, recall=recalls, estimator_name='unet').plot()
+	fig = display.figure_
+
 	# precisions = np.array([1-p for p in precisions])
+	# fig = plt.figure()
+	# ax = plt.gca()
+	# thresholds = np.linspace(0.05,0.95,10)
+	# ax = plot_pr_curve(precisions, recalls, category='unet')
+	plt.savefig('output/roc_unet.png')
 
-	# display = metrics.PrecisionRecallDisplay(precision=precisions, recall=recalls, average_precision=ap, estimator_name='Trackpy').plot()
-	# fig = display.figure_
-
-	fig = plt.figure()
-	ax = plt.gca()
-	thresholds = np.linspace(0.05,0.95,10)
-	ax = plot_pr_curve(precisions, recalls, label=thresholds, category='Trackpy')
-	plt.savefig('output/trackpyroc.png')
-
-	print(aps)
-	print(np.mean(aps))
+	# print(aps)
+	# print(np.mean(aps))
 	# plt.show()
 	# fig = plot_pr_curve(precisions, recalls)
 

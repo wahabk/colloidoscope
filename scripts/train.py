@@ -22,14 +22,14 @@ dc = DeepColloid(dataset_path)
 save = True
 params = dict(
     roiSize = (32,128,128),
-    train_data = range(1,80),
-    val_data = range(81,101),
-    dataset_name = 'second_run',
+    train_data = range(1,700),
+    val_data = range(701,801),
+    dataset_name = 'third_run',
     batch_size = 2,
     num_workers = 4,
-    epochs = 10,
+    epochs = 20,
     n_classes = 1,
-    lr = 1e-2,
+    lr = 10e-3,
     random_seed = 42,
 )
 run['parameters'] = params
@@ -37,10 +37,10 @@ run['parameters'] = params
 train_imtrans = tio.Compose([
     # tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
     # tio.CropOrPad(roiSize),            # tight crop around brain
-    tio.RandomFlip(axes=(0,1,2), flip_probability=0.75)
+    # tio.RandomFlip(axes=(0,1,2), flip_probability=0.75)
 ])
 train_segtrans = tio.Compose([
-    tio.RandomFlip(axes=(0,1,2), flip_probability=0.75)
+    # tio.RandomFlip(axes=(0,1,2), flip_probability=0.75)
 ])
 
 check_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=train_segtrans, label_transform=train_segtrans) 
@@ -81,7 +81,7 @@ optimizer = torch.optim.Adam(model.parameters(), params['lr'])
 
 # find learning rate
 # lrf = LearningRateFinder(model, criterion, optimizer, device)
-# lrf.fit(train_loader, steps=1000)
+# lrf.fit(train_loader, steps=500)
 # lrf.plot()
 
 # trainer

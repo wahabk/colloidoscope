@@ -221,7 +221,7 @@ class LearningRateFinder:
 		self.optimizer.load_state_dict(self._opt_init)
 		print('Model and optimizer in initial state.')
 
-def predict(scan, threshold, model, device, weights_path=None, return_positions=False):
+def predict(scan, model, device, weights_path=None, threshold=0.5, return_positions=False):
 	
 	if weights_path:
 		model_weights = torch.load(weights_path) # read trained weights
@@ -243,6 +243,7 @@ def predict(scan, threshold, model, device, weights_path=None, return_positions=
 	result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 	label = result.copy()
+
 	label[label > threshold] = 1
 	label[label < threshold] = 0
 

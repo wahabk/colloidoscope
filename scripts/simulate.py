@@ -14,16 +14,14 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-
-
 	canvas_size=(32,128,128)
 	dataset_name = 'third_run'
-	n_samples = 500
+	n_samples = 1000
 	# nums = dc.get_hdf5_keys('test')
 	# print(nums)
 	# exit()
 
-	for n in range(1,n_samples+1):
+	for n in range(122,n_samples+1):
 		print('\n', f'{n}/{n_samples}', '\n')
 
 		volfrac = randrange(2, 6)/10 

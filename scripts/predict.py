@@ -1,9 +1,7 @@
 import torch
 import numpy as np
-from colloidoscope.trainer import Trainer, LearningRateFinder, predict
+from colloidoscope.trainer import predict
 from colloidoscope.unet import UNet
-import torchio as tio
-from colloidoscope.dataset import ColloidsDatasetSimulated
 from colloidoscope.deepcolloid import DeepColloid
 import matplotlib.pyplot as plt
 import neptune.new as neptune
@@ -32,13 +30,13 @@ model = UNet(in_channels=1,
 roiSize = (32,128,128)
 threshold = 0.5
 weights_path =  'output/weights/unet.pt'
-dataset_name = 'test'
+dataset_name = 'third_run'
 
-array = dc.read_hdf5(dataset_name, 1)
+array = dc.read_hdf5(dataset_name, 202)
 # label = dc.read_hdf5(dataset_name+'_labels', 1)
-label, positions = predict(array, threshold, model, device, weights_path, return_positions=True)
+label, positions = predict(array, model, device, weights_path, return_positions=True)
 
 array_projection = np.max(array, axis=0)
-label_projection = np.max(label, axis=0)
-sidebyside = np.concatenate((array_projection, label_projection*255), axis=1)
+label_projection = np.max(label, axis=0)*255
+sidebyside = np.concatenate((array_projection, label_projection), axis=1)
 plt.imsave('output/prediction.png', sidebyside)
