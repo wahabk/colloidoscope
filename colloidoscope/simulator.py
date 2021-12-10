@@ -132,7 +132,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 		new_c = [x/zoom,y/zoom,z/zoom]
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
-
+	
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness)
 	label = draw_spheres_sliced(label, centers, r, is_label=True)
 

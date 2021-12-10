@@ -6,10 +6,10 @@ from colloidoscope.deepcolloid import DeepColloid
 import matplotlib.pyplot as plt
 import neptune.new as neptune
 import scipy
+import napari
 
-
-dataset_path = '/home/ak18001/Data/HDD/Colloids'
-# dataset_path = '/home/wahab/Data/HDD/Colloids'
+# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+dataset_path = '/home/wahab/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
 # dc = DeepColloid(dataset_path)
@@ -30,11 +30,15 @@ model = UNet(in_channels=1,
 roiSize = (32,128,128)
 threshold = 0.5
 weights_path =  'output/weights/unet.pt'
-dataset_name = 'third_run'
+dataset_name = 'replicate'
 
-array = dc.read_hdf5(dataset_name, 202)
-# label = dc.read_hdf5(dataset_name+'_labels', 1)
-label, positions = predict(array, model, device, weights_path, return_positions=True)
+array = dc.read_hdf5(dataset_name, 1)
+label = dc.read_hdf5(dataset_name+'_labels', 1)
+# label, positions = predict(array, model, device, weights_path, return_positions=True)
+
+viewer = napari.view_image(array)
+napari.run()
+
 
 array_projection = np.max(array, axis=0)
 label_projection = np.max(label, axis=0)*255
