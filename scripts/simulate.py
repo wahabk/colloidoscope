@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
 		# continue
 
-		hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size, diameter=r*2)
+		hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 		centers = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2)
 		canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, num_workers=10)
 		print(canvas.shape, canvas.max(), canvas.min())

@@ -40,7 +40,7 @@ if __name__ == "__main__":
 	volfrac = 0.5
 	
 	canvas = np.zeros(canvas_size, dtype='uint8')
-	centers = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size, diameter=10)
+	centers = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 	canvas_metadata = {'centers' : centers}
 
 	viewer = napari.Viewer()

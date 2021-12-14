@@ -223,7 +223,20 @@ class DeepColloid:
 
 		return average_precision, precisions, recalls
 
+	def crop3d(self, array, roiSize, center=None):
+		roiZ, roiY, roiX = roiSize
+		zl = int(roiZ / 2)
+		yl = int(roiY / 2)
+		xl = int(roiX / 2)
 
+		if center == None:
+			c = int(array.shape[0] / 2)
+			center = [c, c, c]
+
+		z, y, x = center
+		z, y, x = int(z), int(y), int(x)
+		array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
+		return array
 
 
 

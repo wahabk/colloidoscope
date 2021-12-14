@@ -7,15 +7,13 @@ import hoomd.hpmc
 import gsd.hoomd
 import numpy as np
 
-
-
-def hooomd_sim_positions(phi:int, canvas_size:tuple, diameter:int=10) -> np.ndarray:
+def hooomd_sim_positions(phi:int, canvas_size:tuple) -> np.ndarray:
 	hoomd.context.initialize("--mode=cpu");
 
 	phi_target = phi
 	# width of cell for lattice with 4 particles in each cube
 	# with 4 particles in each cell
-	cell_shape=(diameter*2,diameter*2,diameter*2)
+	cell_shape=(10*2,10*2,10*2)
 	nx, ny, nz = cell_shape  # n = nx * ny * nz * 4
 	# a determines gap between cells
 	a = 3.5

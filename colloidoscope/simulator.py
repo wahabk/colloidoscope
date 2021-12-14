@@ -28,7 +28,7 @@ def draw_slice(args):
 				cz, cy, cx = center
 				# euclidean distance
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
-				if dist <= r*2:
+				if dist <= r:
 					if is_label:
 						new_slice[i,j] = gaussian(dist, 0, r) * brightness
 					else:
@@ -52,6 +52,21 @@ def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False, num_
 	else: canvas = np.array(canvas, dtype='uint8')
 	return canvas
 
+def crop3d(array, roiSize, center=None):
+	roiZ, roiY, roiX = roiSize
+	zl = int(roiZ / 2)
+	yl = int(roiY / 2)
+	xl = int(roiX / 2)
+
+	if center == None:
+		c = int(array.shape[0] / 2)
+		center = [c, c, c]
+
+	z, y, x = center
+	z, y, x = int(z), int(y), int(x)
+	array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
+	return array
+
 def shake(centers, magnitude):
 	new_centers = []
 	for cz, cy, cx in centers:
@@ -65,10 +80,14 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 			xy_gauss:int, z_gauss:int, brightness:int, noise:float, make_label=True, num_workers=2):
 	zoom = 0.5
 	gauss_kernel = (z_gauss, xy_gauss, xy_gauss)
+	# make bigger padded canvas
+	# this is to allow the gaussian blur to work on the edges
+	# pad = 50
+	bigger_canvas = [c+pad for c in canvas_size]
 	
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
-	zoom_out = [int(c/zoom) for c in canvas_size]
+	zoom_out = [int(c/zoom) for c in bigger_canvas]
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	zoom_out_centers=[]
 	for c in centers:
@@ -94,7 +113,9 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	canvas = [random_noise(img, mode='gaussian', var=noise)*255 for img in canvas] 
 	
 	canvas = np.array(canvas,dtype='uint8')
+	canvas = crop3d(canvas, canvas_size)
 	label = np.array(label ,dtype='float32')
+	
 	
 	if make_label:
 		return canvas, label
@@ -104,6 +125,8 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	'''
+	DEPRECATED
+
 	Simulate 3d image of colloids
 
 	centers : list of centers of each particle x,y
@@ -118,7 +141,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	r = random.randrange(2,12)
 	brightness = random.randrange(150,250)
 	# centers = pycrusher.gen_rand_centers(volfrac=volfrac, canvas_size=canvas_size,  diameter=r*2)
-	hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size, diameter=r*2)
+	hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 	centers = convert_hoomd_positions(hoomd_positions, canvas_size=canvas_size, diameter=r*2)
 	
 	# zoom out to large image and positions
