@@ -9,11 +9,11 @@ import random
 import random
 import math
 
+
 @njit()
-def gaussian(x, mu, sig):
-	# gaussian equation for position heatmap generation
-	# numba decorator required for multithreading
-	return 1./(np.sqrt(2.*np.pi)*sig)*np.exp(-np.power((x - mu)/sig, 2.)/2)
+def gaussian(x, mu, sig, peak=1.):
+	# peak = 1./(np.sqrt(2.*np.pi*sig)) # regularisation term to make area under gauss = 1
+	return peak * np.exp(-((x-mu)**2.)/((2. * sig)**2.))
 
 @njit()
 def draw_slice(args):
@@ -30,7 +30,7 @@ def draw_slice(args):
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				if dist <= r:
 					if is_label:
-						new_slice[i,j] = gaussian(dist, 0, r) * brightness
+						new_slice[i,j] = gaussian(dist*4, 0, r, peak=255)
 					else:
 						new_slice[i,j] = brightness
 	return new_slice
@@ -47,9 +47,10 @@ def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False, num_
 	canvas = list(new_canvas)
 
 	if is_label: 
-		canvas = np.array(canvas, dtype='float32')
+		canvas = np.array(canvas, dtype='float64')
 		canvas = canvas/canvas.max()
-	else: canvas = np.array(canvas, dtype='uint8')
+	else: 
+		canvas = np.array(canvas, dtype='uint8')
 	return canvas
 
 def crop3d(array, roiSize, center=None):
@@ -59,13 +60,14 @@ def crop3d(array, roiSize, center=None):
 	xl = int(roiX / 2)
 
 	if center == None:
-		c = int(array.shape[0] / 2)
-		center = [c, c, c]
+		center = [int(c/2) for c in array.shape]
 
 	z, y, x = center
 	z, y, x = int(z), int(y), int(x)
-	array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
-	return array
+
+
+	new_array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
+	return new_array
 
 def shake(centers, magnitude):
 	new_centers = []
@@ -82,12 +84,12 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	gauss_kernel = (z_gauss, xy_gauss, xy_gauss)
 	# make bigger padded canvas
 	# this is to allow the gaussian blur to work on the edges
-	# pad = 50
-	bigger_canvas = [c+pad for c in canvas_size]
+	bigger_canvas = [c*1.25 for c in canvas_size]
 	
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
 	zoom_out = [int(c/zoom) for c in bigger_canvas]
+	zoom_out_r = r/zoom
 	canvas = np.zeros(zoom_out, dtype='uint8')
 	zoom_out_centers=[]
 	for c in centers:
@@ -96,14 +98,8 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
-
-	label = np.zeros(canvas_size, dtype='uint8')
-
 	# draw spheres slice by slice
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness, is_label=False, num_workers=num_workers)
-	# draw label heatmap from centers
-	label = draw_spheres_sliced(label, centers, r, is_label=True, num_workers=num_workers)
-	print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_r, brightness = brightness, is_label=False, num_workers=num_workers)
 
 	# zoom back in for aliasing
 	canvas = ndimage.zoom(canvas, zoom)
@@ -112,12 +108,16 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	# Add noise
 	canvas = [random_noise(img, mode='gaussian', var=noise)*255 for img in canvas] 
 	
-	canvas = np.array(canvas,dtype='uint8')
+	# crop to selected size
+	canvas = np.array(canvas, dtype='uint8')
 	canvas = crop3d(canvas, canvas_size)
-	label = np.array(label ,dtype='float32')
-	
 	
 	if make_label:
+		# draw label heatmap from centers
+		label = np.zeros(canvas_size, dtype='float64')
+		label = draw_spheres_sliced(label, centers, r, is_label=True, num_workers=num_workers)
+		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
+		label = np.array(label ,dtype='float64')
 		return canvas, label
 	else:
 		return canvas
@@ -157,7 +157,7 @@ def simulate_img3d(canvas_size, zoom, gauss, noise = 0.09, volfrac=0.3):
 	zoom_out_centers = np.array(zoom_out_centers)
 	
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, r, brightness = brightness)
-	label = draw_spheres_sliced(label, centers, r, is_label=True)
+	label = draw_spheres_sliced(label, centers, r, brightness=255, is_label=True)
 
 	# zoom back in for aliasing
 	canvas = ndimage.zoom(canvas, zoom)

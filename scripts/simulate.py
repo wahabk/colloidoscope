@@ -24,7 +24,7 @@ if __name__ == '__main__':
 	for n in range(122,n_samples+1):
 		print('\n', f'{n}/{n_samples}', '\n')
 
-		volfrac = randrange(2, 6)/10 
+		volfrac = 0.1 #randrange(2, 6)/10 
 		types = {
 		'very small' 	: {'r' : randrange(3,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'brightness' : 255, 'noise': uniform(0, 0.01)},
 		'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.02)},
