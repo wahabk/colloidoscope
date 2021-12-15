@@ -1,3 +1,4 @@
+from colloidoscope import hoomd_sim_positions
 from colloidoscope.hoomd_sim_positions import convert_hoomd_positions, hooomd_sim_positions
 from colloidoscope import DeepColloid
 from colloidoscope.simulator import simulate
@@ -48,12 +49,16 @@ if __name__ == '__main__':
 
 		hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 		centers = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2)
+		print(centers.shape)
+		print(centers.min(), centers.max())
 		canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, num_workers=10)
 		print(canvas.shape, canvas.max(), canvas.min())
 		print(label.shape, label.max(), label.min())
 
 		# dc.view(canvas, centers)
-		viewer = napari.view_image(canvas)
+		viewer = napari.view_image(canvas, opacity=0.75)
+		viewer.add_image(label*255, opacity=0.75, colormap='red')
+		viewer.add_points(centers)
 		# viewer.add_points(centers)
 		napari.run()
 

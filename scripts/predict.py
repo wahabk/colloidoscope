@@ -39,7 +39,6 @@ label = dc.read_hdf5(dataset_name+'_labels', 1)
 viewer = napari.view_image(array)
 napari.run()
 
-
 array_projection = np.max(array, axis=0)
 label_projection = np.max(label, axis=0)*255
 sidebyside = np.concatenate((array_projection, label_projection), axis=1)

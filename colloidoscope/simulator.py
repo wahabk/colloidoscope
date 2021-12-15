@@ -30,7 +30,7 @@ def draw_slice(args):
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				if dist <= r:
 					if is_label:
-						new_slice[i,j] = gaussian(dist*4, 0, r, peak=255)
+						new_slice[i,j] = gaussian(dist*2, 0, r, peak=255)
 					else:
 						new_slice[i,j] = brightness
 	return new_slice
@@ -84,13 +84,16 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	gauss_kernel = (z_gauss, xy_gauss, xy_gauss)
 	# make bigger padded canvas
 	# this is to allow the gaussian blur to work on the edges
-	bigger_canvas = [c*1.25 for c in canvas_size]
+	
+	print(centers[0])
 	
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
-	zoom_out = [int(c/zoom) for c in bigger_canvas]
-	zoom_out_r = r/zoom
-	canvas = np.zeros(zoom_out, dtype='uint8')
+	# TODO make bigger canvas then crop
+	zoom_out_r = int(r/zoom)
+	zoom_out_size = [int(c/zoom) for c in canvas_size]
+	bigger_canvas_size = [int(c*1) for c in zoom_out_size]
+	canvas = np.zeros(bigger_canvas_size, dtype='uint8')
 	zoom_out_centers=[]
 	for c in centers:
 		x,y,z = c
@@ -98,10 +101,14 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
+	print(centers[0])
+	print(zoom_out_centers[0])
+
+	
 	# draw spheres slice by slice
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_r, brightness = brightness, is_label=False, num_workers=num_workers)
-
 	# zoom back in for aliasing
+	canvas = crop3d(canvas, zoom_out_size)
 	canvas = ndimage.zoom(canvas, zoom)
 	# blur with gaussian filter
 	canvas = ndimage.gaussian_filter(canvas, gauss_kernel)
@@ -110,7 +117,6 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	
 	# crop to selected size
 	canvas = np.array(canvas, dtype='uint8')
-	canvas = crop3d(canvas, canvas_size)
 	
 	if make_label:
 		# draw label heatmap from centers

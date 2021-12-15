@@ -64,9 +64,13 @@ def hooomd_sim_positions(phi:int, canvas_size:tuple) -> np.ndarray:
 def convert_hoomd_positions(positions, canvas_size, diameter=10):
 	# convert positions from physics to normal
 	centers = positions.copy()
-	centers = centers - centers.min()
+	print(centers[0], centers.shape, canvas_size)
 	centers = centers * diameter
-	centers = np.array([p for p in centers if p[0]<canvas_size[0] and p[1]<canvas_size[1] and p[2]<canvas_size[2]])
+	print(centers[0], centers.shape, canvas_size)
+	centers = np.array([p for p in centers if -canvas_size[0]<p[0]<canvas_size[0] and -canvas_size[1]<p[1]<canvas_size[1] and -canvas_size[2]<p[2]<canvas_size[2]])
+	print(centers[0], centers.shape, canvas_size, centers.min())
+	centers = centers + [c/2 for c in canvas_size]
+	print(centers[0], centers.shape, canvas_size)
 	return centers
 
 if __name__ == '__main__':

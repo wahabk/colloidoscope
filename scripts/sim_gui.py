@@ -14,11 +14,10 @@ import napari
 	z_gauss={"widget_type": "Slider", 'maximum': 10},
 	brightness={"widget_type": "Slider", 'maximum': 255},
 	noise={"widget_type": "FloatSlider", 'maximum': 0.1},
-	label={"widget_type": "CheckBox"},
 	layout='vertical',)
-def update_simulation(layer:Image, r:int=5, 
+def update_simulation(layer:Image, label_layer:Image, r:int=5, 
 						xy_gauss:int=1, z_gauss:int=2, brightness:int=255, 
-						noise:float=0, label:bool=False) -> Image:
+						noise:float=0) -> Image:
 	if layer is not None:
 		assert isinstance(layer.data, np.ndarray)  # it will be!
 
@@ -31,8 +30,8 @@ def update_simulation(layer:Image, r:int=5,
 		print(new_array.shape, new_array.max(), new_array.min(), r, centers.shape)
 		print(label_array.shape, label_array.max(), label_array.min(), r, centers.shape)
 		
-		if label: layer.data = label_array*255
-		else: layer.data = new_array
+		layer.data = new_array
+		if label_layer: label_layer.data = label_array*255
 		
 		return 
 
@@ -52,6 +51,7 @@ if __name__ == "__main__":
 
 	viewer = napari.Viewer()
 	viewer.add_image(canvas, name="Simulated colloids", metadata=canvas_metadata)
+	viewer.add_image(canvas, name="Simulated labels", metadata=canvas_metadata)
 	# Add it to the napari viewer
 	viewer.window.add_dock_widget(update_simulation)
 	# update the layer dropdown menu when the layer list changes
