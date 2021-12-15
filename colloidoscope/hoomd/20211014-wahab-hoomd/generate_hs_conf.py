@@ -7,11 +7,13 @@ import hoomd.hpmc
 import gsd.hoomd
 import numpy as np
 
+
+
 """
 Generating Lattice
 """
-phi_target = 0.1  # the volume fraction of the system after compression
-n_particle = 1000
+phi_target = 0.56  # the volume fraction of the system after compression
+n_particle = 10000
 poly_dispersity = 0.1
 diameter = 1.0
 n_type = 10
@@ -72,7 +74,7 @@ with gsd.hoomd.open(name=init_fn, mode='xb') as f:
 """
 Starting Simulation
 """
-hoomd.context.initialize("--mode=cpu --nthreads=64");
+hoomd.context.initialize("--mode=cpu");
 system = hoomd.init.read_gsd(init_fn)
 
 for i, p in enumerate(system.particles):
