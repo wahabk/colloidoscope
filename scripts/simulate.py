@@ -1,5 +1,5 @@
 from colloidoscope import hoomd_sim_positions
-from colloidoscope.hoomd_sim_positions import convert_hoomd_positions, hooomd_sim_positions
+from colloidoscope.hoomd_sim_positions import convert_hoomd_positions, hooomd_sim_positions, read_gsd
 from colloidoscope import DeepColloid
 from colloidoscope.simulator import simulate
 import numpy as np
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 	for n in range(122,n_samples+1):
 		print('\n', f'{n}/{n_samples}', '\n')
 
-		volfrac = 0.1 #randrange(2, 6)/10 
+		volfrac = round(random.choice(np.linspace(0.1,0.55,10)), 2)
 		types = {
 		'very small' 	: {'r' : randrange(3,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'brightness' : 255, 'noise': uniform(0, 0.01)},
 		'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.02)},
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 		}
 		keys = list(types)
 		this_type = random.choice(keys)
-		this_type= 'small'
+		# this_type= 'small'
 
 		print(this_type)
 		print(types[this_type], volfrac)
@@ -47,7 +47,9 @@ if __name__ == '__main__':
 
 		# continue
 
-		hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
+		# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
+		path = f'output/Positions/phi{volfrac*1000:.0f}.gsd'
+		hoomd_positions, diameters = read_gsd(path, randrange(0,500))
 		centers = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2)
 		print(centers.shape)
 		print(centers.min(), centers.max())
@@ -55,12 +57,19 @@ if __name__ == '__main__':
 		print(canvas.shape, canvas.max(), canvas.min())
 		print(label.shape, label.max(), label.min())
 
+		metadata = {
+			'dataset': dataset_name,
+			'n' 	 : n,
+			'volfrac': volfrac,
+			'params' : types[this_type],
+		}
+
 		# dc.view(canvas, centers)
-		viewer = napari.view_image(canvas, opacity=0.75)
-		viewer.add_image(label*255, opacity=0.75, colormap='red')
-		viewer.add_points(centers)
+		# viewer = napari.view_image(canvas, opacity=0.75)
+		# viewer.add_image(label*255, opacity=0.75, colormap='red')
 		# viewer.add_points(centers)
-		napari.run()
+		# viewer.add_points(centers)
+		# napari.run()
 
 		# projection = np.max(canvas, axis=0)
 		# projection_label = np.max(label, axis=0)*255

@@ -40,7 +40,7 @@ def hoomd_make_configurations(phi:float, n_frames=100, output_folder='output/Pos
 
 	hoomd.run(100)
 
-	while phi_current < phi_target:
+	while round(phi_current, 2) < phi_target:
 		V_current = max(system.box.get_volume() * dV, V_target);
 		new_box = system.box.set_volume(V_current);
 		hoomd.update.box_resize(Lx=new_box.Lx, Ly=new_box.Ly, Lz=new_box.Lz, period=None);
@@ -57,7 +57,7 @@ def hoomd_make_configurations(phi:float, n_frames=100, output_folder='output/Pos
 
 	hoomd.run(n_frames*sample_period)
 
-def read_gsd(file_name):
+def read_gsd_old(file_name):
 	fn = file_name 
 	gsd_iter = gsd.hoomd.open(fn, 'rb')
 
@@ -75,11 +75,35 @@ def read_gsd(file_name):
 
 	gsd_iter.close()
 
+
+def read_gsd(file_name, i):
+	fn = file_name 
+	gsd_iter = gsd.hoomd.open(fn, 'rb')
+
+	num_frames = len(gsd_iter)
+	if i >= num_frames:
+		raise ValueError
+
+	frame = gsd_iter[i]
+
+	positions = frame.particles.position
+	diameters = frame.particles.diameter
+
+	return positions, diameters
+
+
 if __name__ == '__main__':
 
+	phi = 0.1
+	path = f'output/Positions/phi{phi*1000:.0f}.gsd'
 
-	for phi in np.linspace(0.1,0.55,10,dtype='float32'):
-		print(phi)
+	positions = read_gsd(path)
+	print(positions)
 
-		hoomd_make_configurations(phi, n_frames=1000)
-		positions = read_gsd(f'output/Positions/phi{phi*1000:.0f}.gsd')
+	# for phi in [0.45, 0.5, 0.55] :#np.linspace(0.1,0.55,10):
+	# 	phi = round(phi, 2)
+	# 	if phi == 0.1: continue
+	# 	print(phi)
+	# 	hoomd_make_configurations(phi, n_frames=500)
+	# 	positions = read_gsd(f'output/Positions/phi{phi*1000:.0f}.gsd')
+

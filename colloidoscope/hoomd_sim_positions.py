@@ -69,6 +69,7 @@ def convert_hoomd_positions(positions, canvas_size, diameter=10):
 	centers = centers + [c/2 for c in canvas_size]
 	return centers
 
+
 if __name__ == '__main__':
 	positions = hooomd_sim_positions(phi=0.4, canvas_size=(32,128,128), diameter=10)
 	positions = convert_hoomd_positions(positions, (32,128,128), diameter=10)
