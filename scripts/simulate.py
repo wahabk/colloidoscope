@@ -1,7 +1,5 @@
-from colloidoscope import hoomd_sim_positions
-from colloidoscope.hoomd_sim_positions import convert_hoomd_positions, hooomd_sim_positions, read_gsd
 from colloidoscope import DeepColloid
-from colloidoscope.simulator import simulate
+from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
 import numpy as np
 import matplotlib.pyplot as plt
 import napari
@@ -16,13 +14,13 @@ if __name__ == '__main__':
 	dc = DeepColloid(dataset_path)
 
 	canvas_size=(32,128,128)
-	dataset_name = 'third_run'
-	n_samples = 1000
+	dataset_name = 'test'
+	n_samples = 2
 	# nums = dc.get_hdf5_keys('test')
 	# print(nums)
 	# exit()
 
-	for n in range(122,n_samples+1):
+	for n in range(1,n_samples+1):
 		print('\n', f'{n}/{n_samples}', '\n')
 
 		volfrac = round(random.choice(np.linspace(0.1,0.55,10)), 2)
@@ -36,33 +34,30 @@ if __name__ == '__main__':
 		this_type = random.choice(keys)
 		# this_type= 'small'
 
-		print(this_type)
-		print(types[this_type], volfrac)
-
 		r = types[this_type]['r']
 		xy_gauss = types[this_type]['xy_gauss']
 		z_gauss = types[this_type]['z_gauss']
 		brightness = types[this_type]['brightness']
 		noise = types[this_type]['noise']
 
-		# continue
-
-		# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
-		path = f'output/Positions/phi{volfrac*1000:.0f}.gsd'
-		hoomd_positions, diameters = read_gsd(path, randrange(0,500))
-		centers = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2)
-		print(centers.shape)
-		print(centers.min(), centers.max())
-		canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, num_workers=10)
-		print(canvas.shape, canvas.max(), canvas.min())
-		print(label.shape, label.max(), label.min())
-
 		metadata = {
 			'dataset': dataset_name,
 			'n' 	 : n,
+			'type'	 : this_type,
 			'volfrac': volfrac,
 			'params' : types[this_type],
 		}
+		print(metadata)
+
+		# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
+		path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
+		hoomd_positions, diameters = read_gsd(path, randrange(0,500))
+		centers = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2)
+		canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, num_workers=10)
+
+		print(canvas.shape, canvas.max(), canvas.min())
+		print(label.shape, label.max(), label.min())
+		metadata['positions'] = centers
 
 		# dc.view(canvas, centers)
 		# viewer = napari.view_image(canvas, opacity=0.75)
@@ -71,12 +66,14 @@ if __name__ == '__main__':
 		# viewer.add_points(centers)
 		# napari.run()
 
-		# projection = np.max(canvas, axis=0)
-		# projection_label = np.max(label, axis=0)*255
-		# sidebyside = np.concatenate((projection, projection_label), axis=1)
-		# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
+		projection = np.max(canvas, axis=0)
+		projection_label = np.max(label, axis=0)*255
+		sidebyside = np.concatenate((projection, projection_label), axis=1)
+		plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-		# dc.write_hdf5(dataset_name, n, canvas, centers, dtype='uint8')
-		# dc.write_hdf5(dataset_name+'_labels', n, label, dtype='float32')
+		print(n, canvas.dtype, centers.dtype, type(metadata))
+
+		dc.write_hdf5(dataset_name, n, canvas, metadata, dtype='uint8')
+		dc.write_hdf5(dataset_name+'_labels', n, label, metadata, dtype='float32')
 		canvas, centers, label = None, None, None
 		

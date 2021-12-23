@@ -13,22 +13,21 @@ class DeepColloid:
 	def __init__(self, dataset_path) -> None:
 		self.dataset_path = dataset_path
 
-	def read_hdf5(self, dataset: str, n: int, return_positions: bool=False,) -> np.ndarray:
+	def read_hdf5(self, dataset: str, n: int) -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
 			canvas = f[str(n)]
-			if return_positions: 
-				positions = f[str(n)].attrs['positions']
-				return np.array(canvas), np.array(positions)
-			else: 
-				return np.array(canvas)		
+			metadata = f[str(n)].attrs['metadata']
+
+			return np.array(canvas), metadata
+
 	
-	def write_hdf5(self, dataset: np.ndarray, n: int, canvas: np.ndarray, positions: np.ndarray=False, dtype:str='uint8') -> np.ndarray:
+	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
-			if positions is not None: dset.attrs['positions'] = positions
+			dset.attrs['metadata'] = metadata
 		return
 
 	def get_hdf5_keys(self, dataset) -> list:
@@ -94,20 +93,6 @@ class DeepColloid:
 
 	def calc_iou_individual(self, center1, center2, diameter,):
 		"""Measure intersection over union of two circles with equal diameter
-
-		Parameters
-		----------
-		center1 : [type]
-			[description]
-		center2 : [type]
-			[description]
-		diameter : [type]
-			[description]
-
-		Returns
-		-------
-		[type]
-			[description]
 		"""		
 		r = diameter / 2
 		c = math.sqrt((center1[0]-center2[0])**2 + (center1[1]-center2[1])**2 + (center1[2]-center2[2])**2)

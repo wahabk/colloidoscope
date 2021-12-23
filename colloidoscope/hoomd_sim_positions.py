@@ -1,6 +1,5 @@
 import os
 import sys
-from typing import Any
 
 import hoomd
 import hoomd.hpmc
@@ -61,6 +60,48 @@ def hooomd_sim_positions(phi:int, canvas_size:tuple) -> np.ndarray:
 
 	return positions
 
+def hoomd_make_configurations(phi:float, n_frames=100, output_folder='output/Positions/'):
+	
+	hoomd.context.initialize("--mode=cpu");
+
+	phi_target = phi
+
+	sample_period = 100
+	nx, ny, nz = 20, 20, 20  # n = nx * ny * nz * 4
+	a = 3.5
+
+	system = hoomd.init.create_lattice(
+		unitcell=hoomd.lattice.fcc(a=a), n=[nx, ny, nz],
+	)
+
+	mc = hoomd.hpmc.integrate.sphere(seed=0, d=0.1)
+	mc.shape_param.set('A', diameter=1.0);
+
+	# compress
+	N = len(system.particles)
+	phi_current = N / 6 * np.pi / system.box.get_volume()
+	V_target = N / 6 * np.pi / phi_target
+	dV = 0.9
+
+	hoomd.run(100)
+
+	while round(phi_current, 2) < phi_target:
+		V_current = max(system.box.get_volume() * dV, V_target);
+		new_box = system.box.set_volume(V_current);
+		hoomd.update.box_resize(Lx=new_box.Lx, Ly=new_box.Ly, Lz=new_box.Lz, period=None);
+		phi_current = N / 6 * np.pi / V_current
+		overlaps = mc.count_overlaps()
+		while overlaps > 0:
+			hoomd.run(10, quiet=True);
+			overlaps = mc.count_overlaps()
+			print(overlaps, end=' ');
+			sys.stdout.flush();
+		print("compressing", phi_current, " -> ", phi_target)
+
+	d = hoomd.dump.gsd(f"{output_folder}phi{phi_target*1000:.0f}.gsd", period=sample_period, group=hoomd.group.all(), overwrite=True)
+
+	hoomd.run(n_frames*sample_period)
+
 def convert_hoomd_positions(positions, canvas_size, diameter=10):
 	# convert positions from physics to normal
 	centers = positions.copy()
@@ -69,6 +110,21 @@ def convert_hoomd_positions(positions, canvas_size, diameter=10):
 	centers = centers + [c/2 for c in canvas_size]
 	return centers
 
+def read_gsd(file_name:str, i:int):
+	gsd_iter = gsd.hoomd.open(file_name, 'rb')
+
+	num_frames = len(gsd_iter)
+	if i >= num_frames:
+		raise ValueError
+
+	frame = gsd_iter[i]
+
+	positions = frame.particles.position
+	diameters = frame.particles.diameter
+
+	gsd_iter.close()
+
+	return positions, diameters
 
 if __name__ == '__main__':
 	positions = hooomd_sim_positions(phi=0.4, canvas_size=(32,128,128), diameter=10)

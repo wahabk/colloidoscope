@@ -85,7 +85,6 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	# make bigger padded canvas
 	# this is to allow the gaussian blur to work on the edges
 	
-	print(centers[0])
 	
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
@@ -100,9 +99,6 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		new_c = [x/zoom,y/zoom,z/zoom]
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
-
-	print(centers[0])
-	print(zoom_out_centers[0])
 
 	
 	# draw spheres slice by slice
