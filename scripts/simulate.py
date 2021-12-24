@@ -15,24 +15,31 @@ if __name__ == '__main__':
 
 	canvas_size=(32,128,128)
 	dataset_name = 'test'
-	n_samples = 2
+	n_samples = 500 #5000
 	# nums = dc.get_hdf5_keys('test')
 	# print(nums)
 	# exit()
+	volfracs= [round(x, 2) for x in np.linspace(0.1,0.55,10)]
+	volfracs = np.array([[x]*n_samples for x in volfracs]).flatten()
 
-	for n in range(1,n_samples+1):
-		print('\n', f'{n}/{n_samples}', '\n')
+	# for n in range(1,n_samples+1):
+	# 	print('\n', f'{n}/{n_samples}', '\n')
 
-		volfrac = round(random.choice(np.linspace(0.1,0.55,10)), 2)
+	for n, volfrac in enumerate(volfracs):
+		print(volfracs)
+		n+=1
+		print('\n', f'{n}/{len(volfracs)}', '\n')
+
+		volfrac = random.choice(volfracs)
 		types = {
-		'very small' 	: {'r' : randrange(3,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'brightness' : 255, 'noise': uniform(0, 0.01)},
+		'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'brightness' : 255, 'noise': uniform(0, 0.01)},
 		'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.02)},
 		'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(0,4), 'z_gauss' : randrange(3,7), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.03)},
 		'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.03)},
 		}
 		keys = list(types)
 		this_type = random.choice(keys)
-		# this_type= 'small'
+		this_type= 'large'
 
 		r = types[this_type]['r']
 		xy_gauss = types[this_type]['xy_gauss']
@@ -57,7 +64,6 @@ if __name__ == '__main__':
 
 		print(canvas.shape, canvas.max(), canvas.min())
 		print(label.shape, label.max(), label.min())
-		metadata['positions'] = centers
 
 		# dc.view(canvas, centers)
 		# viewer = napari.view_image(canvas, opacity=0.75)
@@ -73,7 +79,11 @@ if __name__ == '__main__':
 
 		print(n, canvas.dtype, centers.dtype, type(metadata))
 
-		dc.write_hdf5(dataset_name, n, canvas, metadata, dtype='uint8')
-		dc.write_hdf5(dataset_name+'_labels', n, label, metadata, dtype='float32')
+		dc.write_hdf5(dataset_name, n, canvas, metadata, centers, dtype='uint8')
+		dc.write_hdf5(dataset_name+'_labels', n, label, centers=centers, dtype='float32')
+
+		canvas, metadata, positions = dc.read_hdf5(dataset_name, n)
+		print(canvas.shape, metadata, positions.shape)
+
 		canvas, centers, label = None, None, None
 		

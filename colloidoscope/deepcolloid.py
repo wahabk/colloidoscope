@@ -7,7 +7,8 @@ import cv2
 import math
 from copy import deepcopy
 from .simulator import simulate
-
+import json
+from pathlib2 import Path
 
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
@@ -17,17 +18,37 @@ class DeepColloid:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
-			canvas = f[str(n)]
-			metadata = f[str(n)].attrs['metadata']
+			canvas = np.array(f[str(n)])
+			positions = np.array(f[str(n)+'_positions'])
 
-			return np.array(canvas), metadata
+		json_path = f'{self.dataset_path}/{dataset}.json'
+		with open(json_path, "r+") as f:
+			json_data = json.load(f)
+			metadata = json_data[str(n)]
 
+		return canvas, metadata, positions
 	
-	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, dtype:str='uint8') -> np.ndarray:
+	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
-			dset.attrs['metadata'] = metadata
+			dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype=dtype, data = positions, compression=1)
+
+
+		if metadata:
+			json_path = f'{self.dataset_path}/{dataset}.json'
+			json_file = Path(json_path)
+			exists = json_file.exists()
+			print(exists)
+			
+			with open(json_path, 'w+') as f:
+				#exception if file doesnt exist already
+				if exists: json_data = json.load(f)
+				else: json_data = {}
+
+				json_data[str(n)] = metadata
+				json.dump(json_data, f, sort_keys=True, indent=4)
+
 		return
 
 	def get_hdf5_keys(self, dataset) -> list:

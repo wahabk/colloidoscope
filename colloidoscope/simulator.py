@@ -102,6 +102,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 	
 	# draw spheres slice by slice
+	print('Simulating scan...')
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_r, brightness = brightness, is_label=False, num_workers=num_workers)
 	# zoom back in for aliasing
 	canvas = crop3d(canvas, zoom_out_size)
@@ -117,6 +118,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	if make_label:
 		# draw label heatmap from centers
 		label = np.zeros(canvas_size, dtype='float64')
+		print('Simulating label...')
 		label = draw_spheres_sliced(label, centers, r, is_label=True, num_workers=num_workers)
 		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
 		label = np.array(label ,dtype='float64')
