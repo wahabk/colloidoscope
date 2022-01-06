@@ -56,7 +56,8 @@ class DeepColloid:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "r") as f:
 			keys = list(f.keys())
-		nums = [int(n) for n in list(keys)]
+			nums = keys
+		# nums = [int(n) for n in list(keys)]
 		return nums
 
 	def view(self, array:np.ndarray, positions:np.ndarray=None) -> None:

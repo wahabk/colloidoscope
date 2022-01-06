@@ -16,6 +16,10 @@ if __name__ == '__main__':
 	canvas_size=(32,128,128)
 	dataset_name = 'new_year'
 	n_samples = 500 #5000
+
+	# keys = dc.get_hdf5_keys(dataset_name)
+	# print(keys)
+	# exit()
 	
 	# make list of volfracs already simulated
 	volfracs= [round(x, 2) for x in np.linspace(0.1,0.55,10)]
