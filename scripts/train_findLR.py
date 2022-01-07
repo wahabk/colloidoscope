@@ -19,10 +19,11 @@ dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
 
-run['Tags'] = 'testing NY'
+run['Tags'] = 'NY finding LR'
 
 save = True
 params = dict(
+    tag = 'finding lr',
     roiSize = (32,128,128),
     train_data = range(1,1000),
     val_data = range(1001,1500),
@@ -84,35 +85,9 @@ criterion = torch.nn.BCEWithLogitsLoss()
 # optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 optimizer = torch.optim.Adam(model.parameters(), params['lr'])
 
-# trainer
-trainer = Trainer(model=model,
-                  device=device,
-                  criterion=criterion,
-                  optimizer=optimizer,
-                  training_DataLoader=train_loader,
-                  validation_DataLoader=val_loader,
-                  lr_scheduler=None,
-                  epochs=params['epochs'],
-                  logger=run,
-                  )
-
-# start training
-training_losses, validation_losses, lr_rates = trainer.run_trainer()
-
-if save:
-    model_name =  'output/weights/unet.pt'
-    torch.save(model.state_dict(), model_name)
-    # run['model/weights'].upload(model_name)
-
-# test one predict and upload to neptune
-test_array = dc.read_hdf5(params['dataset_name'], 45)
-test_label = predict(test_array, 0.5, model, device, return_positions=False)
-print(test_array.shape, test_label.shape)
-
-array_projection = np.max(test_array, axis=0)
-label_projection = np.max(test_label, axis=0)*255
-sidebyside = np.concatenate((array_projection, label_projection), axis=1)
-sidebyside /= sidebyside.max()
-run['prediction'].upload(File.as_image(sidebyside))
+# find learning rate
+lrf = LearningRateFinder(model, criterion, optimizer, device)
+lrf.fit(train_loader, steps=500)
+lrf.plot()
 
 run.stop()

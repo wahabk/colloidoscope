@@ -28,9 +28,11 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# Select sample
 		i = self.indices[index]
 
-		X, positions = dc.read_hdf5(self.dataset_name, i, return_positions=True)
+		X, metadata, positions = dc.read_hdf5(self.dataset_name, i)
 		# TODO make arg return_positions = True for use in DSNT
-		y = dc.read_hdf5(self.dataset_name+'_labels', i)
+		y, positions = dc.read_hdf5(self.dataset_name+'_labels', i, read_metadata=False)
+
+
 
 		# dc.view(X)
 		# napari.run()

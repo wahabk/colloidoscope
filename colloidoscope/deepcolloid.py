@@ -14,19 +14,23 @@ class DeepColloid:
 	def __init__(self, dataset_path) -> None:
 		self.dataset_path = dataset_path
 
-	def read_hdf5(self, dataset: str, n: int) -> np.ndarray:
+	def read_hdf5(self, dataset: str, n: int, read_metadata=True) -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
 			canvas = np.array(f[str(n)])
 			positions = np.array(f[str(n)+'_positions'])
 
-		json_path = f'{self.dataset_path}/{dataset}.json'
-		with open(json_path, "r+") as f:
-			json_data = json.load(f)
-			metadata = json_data[str(n)]
 
-		return canvas, metadata, positions
+		if read_metadata:
+			json_path = f'{self.dataset_path}/{dataset}.json'
+			with open(json_path, "r+") as f:
+				json_data = json.load(f)
+				metadata = json_data[str(n)]
+
+			return canvas, metadata, positions
+		else:
+			return canvas, positions
 	
 	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'

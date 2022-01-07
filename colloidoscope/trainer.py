@@ -98,9 +98,6 @@ class Trainer:
 
 		batch_iter.close()
 
-
-
-
 	def _validate(self):
 
 		if self.notebook:
