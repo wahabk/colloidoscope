@@ -21,7 +21,6 @@ dependencies:
   - libstdcxx-ng=9.3.0=hd4cf53a_17
   - ncurses=6.3=h7f8727e_2
   - openssl=1.1.1l=h7f8727e_0
-  - pip=21.2.4=py38h06a4308_0
   - python=3.8.12=h12debd9_0
   - python_abi=3.8=2_cp38
   - readline=8.1=h27cfd23_0
@@ -134,6 +133,7 @@ dependencies:
     - pickleshare==0.7.5
     - pillow==8.4.0
     - pint==0.18
+    - pip==21.3.1
     - pluggy==1.0.0
     - proglog==0.1.9
     - prompt-toolkit==3.0.23

@@ -19,7 +19,7 @@ dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
 
-run['Tags'] = 'testing NY'
+
 
 save = True
 params = dict(
@@ -31,10 +31,13 @@ params = dict(
     num_workers = 4,
     epochs = 15,
     n_classes = 1,
-    lr = 10e-4,
+    lr = 10e-2,
     random_seed = 42,
 )
+run['Tags'] = 'testing NY'
 run['parameters'] = params
+
+
 
 train_imtrans = tio.Compose([
     # tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times

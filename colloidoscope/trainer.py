@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 import pandas as pd
 import torch
 from torch import nn
@@ -9,6 +8,8 @@ import math
 import neptune.new as neptune
 from .deepcolloid import DeepColloid
 import scipy
+from ray import tune
+import os
 
 class Trainer:
 	def __init__(self,
@@ -23,6 +24,7 @@ class Trainer:
 				 epoch: int = 0,
 				 notebook: bool = False,
 				 logger=None,
+				 tuner=None,
 				 ):
 
 		self.model = model
@@ -36,6 +38,7 @@ class Trainer:
 		self.epoch = epoch
 		self.notebook = notebook
 		self.logger = logger
+		self.tuner = tuner
 
 		self.training_loss = []
 		self.validation_loss = []
@@ -59,6 +62,12 @@ class Trainer:
 			"""Validation block"""
 			if self.validation_DataLoader is not None:
 				self._validate()
+
+			if self.tuner:
+				with tune.checkpoint_dir(self.epoch) as checkpoint_dir:
+					path = os.path.join(checkpoint_dir, "checkpoint")
+					torch.save((self.model.state_dict(), self.optimizer.state_dict()), path)
+
 
 			"""Learning rate scheduler block"""
 			if self.lr_scheduler is not None:
@@ -118,10 +127,12 @@ class Trainer:
 				loss = self.criterion(out, target)
 				loss_value = loss.item()
 				valid_losses.append(loss_value)
-				if self.logger: self.logger['train/val_loss'].log(loss_value)
+				if self.logger: self.logger['val/loss'].log(loss_value)
 				batch_iter.set_description(f'Validation: (loss {loss_value:.4f})')
 
 		self.validation_loss.append(np.mean(valid_losses))
+		if self.tuner: tune.report(loss=(np.sum(valid_losses) / len(self.validation_DataLoader)))
+
 
 		batch_iter.close()
 
@@ -149,7 +160,7 @@ class LearningRateFinder:
 			steps=100,
 			min_lr=1e-7,
 			max_lr=1,
-			constant_increment=False
+			constant_increment=False,
 			):
 		"""
 		Trains the model for number of steps using varied learning rate and store the statistics
@@ -184,6 +195,7 @@ class LearningRateFinder:
 					current_lr += (max_lr - min_lr) / steps
 				else:
 					current_lr = current_lr * (max_lr / min_lr) ** (1 / steps)
+
 
 	def plot(self,
 			 smoothing=True,
