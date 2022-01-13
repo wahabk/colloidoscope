@@ -19,7 +19,6 @@ dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
 
-run['Tags'] = 'NY finding LR'
 
 save = True
 params = dict(
@@ -35,6 +34,7 @@ params = dict(
     lr = 10e-4,
     random_seed = 42,
 )
+run['Tags'] = 'NY finding LR'
 run['parameters'] = params
 
 train_imtrans = tio.Compose([

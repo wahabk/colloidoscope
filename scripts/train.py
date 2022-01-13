@@ -73,7 +73,7 @@ print(f'training on {device}')
 #TODO add model params to neptune
 model = UNet(in_channels=1,
              out_channels=params['n_classes'],
-             n_blocks=4,
+             n_blocks=6,
              start_filters=32,
              activation='relu',
              normalization='batch',

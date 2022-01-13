@@ -28,25 +28,26 @@ def train(config, dataset_path, dataset_name='new_year'):
         val_data = range(1001,1500),
         dataset_name = dataset_name,
         batch_size = config['batch_size'],
+        n_blocks = config['n_blocks'],
         num_workers = 4,
-        epochs = 15,
+        epochs = 75,
         n_classes = 1,
         lr = config['lr'],
         random_seed = 42,
     )
 
-    run['Tags'] = 'testing hp sauce'
+    run['Tags'] = 'hpsauce w/ blocks'
     run['parameters'] = params
 
     train_imtrans = tio.Compose([
         tio.RandomFlip(axes=(0,1,2), flip_probability=0.75),
-        tio.RandomElasticDeformation(num_control_points=7,max_displacement=2),
-        tio.RandomAnisotropy((0,1,2), p=0.1),
-        tio.RandomBiasField(0.5),
+        # tio.RandomElasticDeformation(num_control_points=7,max_displacement=2),
+        # tio.RandomAnisotropy((0,1,2), p=0.1),
+        # tio.RandomBiasField(0.5),
     ])
     train_segtrans = tio.Compose([
         tio.RandomFlip(axes=(0,1,2), flip_probability=0.75),
-        tio.RandomElasticDeformation(num_control_points=7,max_displacement=2),
+        # tio.RandomElasticDeformation(num_control_points=7,max_displacement=2),
     ])
 
     # create a training data loader
@@ -64,7 +65,7 @@ def train(config, dataset_path, dataset_name='new_year'):
     #TODO add model params to neptune
     model = UNet(in_channels=1,
                 out_channels=params['n_classes'],
-                n_blocks=4,
+                n_blocks=params['n_blocks'],
                 start_filters=32,
                 activation='relu',
                 normalization='batch',
@@ -96,9 +97,7 @@ def train(config, dataset_path, dataset_name='new_year'):
 
     # test one predict and upload to neptune
     test_array = dc.read_hdf5(params['dataset_name'], 45)
-    test_label = predict(test_array, 0.5, model, device, return_positions=False)
-    print(test_array.shape, test_label.shape)
-
+    test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
     array_projection = np.max(test_array, axis=0)
     label_projection = np.max(test_label, axis=0)*255
     sidebyside = np.concatenate((array_projection, label_projection), axis=1)
@@ -113,16 +112,17 @@ if __name__ == "__main__":
     # dataset_path = '/home/wahab/Data/HDD/Colloids'
     # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 
-    num_samples = 8
-    max_num_epochs = 40
+    num_samples = 20
+    max_num_epochs = 75
     gpus_per_trial = 1
     dataset_name = 'new_year'
 
     config = {
     # "l1": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
     # "l2": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
-    "lr": tune.choice([10e-2, 10e-3, 10e-4]), #tune.loguniform(10e-4, 10e-1),
-    "batch_size": tune.choice([2, 4]),
+    "lr": tune.choice([10e-3, 10e-4, 10e-5]), #tune.loguniform(10e-4, 10e-1),
+    "batch_size": tune.choice([1, 2, 4]),
+    "n_blocks": tune.choice([3,4,5,6]),
     }
 
     # the scheduler will terminate badly performing trials
