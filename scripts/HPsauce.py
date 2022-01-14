@@ -24,11 +24,12 @@ def train(config, dataset_path, dataset_name='new_year'):
 
     params = dict(
         roiSize = (32,128,128),
-        train_data = range(1,1000),
-        val_data = range(1001,1500),
+        train_data = range(1,4000),
+        val_data = range(4001,5000),
         dataset_name = dataset_name,
         batch_size = config['batch_size'],
         n_blocks = config['n_blocks'],
+        norm = config['norm'],
         num_workers = 4,
         epochs = 75,
         n_classes = 1,
@@ -36,7 +37,7 @@ def train(config, dataset_path, dataset_name='new_year'):
         random_seed = 42,
     )
 
-    run['Tags'] = 'hpsauce w/ blocks'
+    run['Tags'] = 'hpsauce w/ norm'
     run['parameters'] = params
 
     train_imtrans = tio.Compose([
@@ -68,7 +69,7 @@ def train(config, dataset_path, dataset_name='new_year'):
                 n_blocks=params['n_blocks'],
                 start_filters=32,
                 activation='relu',
-                normalization='batch',
+                normalization=params['norm'],
                 conv_mode='same',
                 dim=3).to(device)
 
@@ -112,17 +113,18 @@ if __name__ == "__main__":
     # dataset_path = '/home/wahab/Data/HDD/Colloids'
     # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 
-    num_samples = 20
-    max_num_epochs = 75
+    num_samples = 15
+    max_num_epochs = 50
     gpus_per_trial = 1
     dataset_name = 'new_year'
 
     config = {
     # "l1": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
     # "l2": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
-    "lr": tune.choice([10e-3, 10e-4, 10e-5]), #tune.loguniform(10e-4, 10e-1),
-    "batch_size": tune.choice([1, 2, 4]),
+    "lr": tune.choice([0.01, 0.001]), #tune.loguniform(10e-4, 10e-1),
+    "batch_size": tune.choice([2,4]),
     "n_blocks": tune.choice([3,4,5,6]),
+    "norm": tune.choice(['batch', 'instance'])
     }
 
     # the scheduler will terminate badly performing trials
