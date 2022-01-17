@@ -11,13 +11,14 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 
 	"""	
 
-	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None):	
+	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None, return_metadata=False):	
 		super().__init__()
 		self.dataset_path = dataset_path
 		self.dataset_name = dataset_name
 		self.indices = indices
 		self.transform = transform
 		self.label_transform = label_transform
+		self.return_metadata = return_metadata
 
 
 	def __len__(self):
@@ -29,10 +30,8 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		i = self.indices[index]
 
 		X, metadata, positions = dc.read_hdf5(self.dataset_name, i)
-		# TODO make arg return_positions = True for use in DSNT
-		y, positions = dc.read_hdf5(self.dataset_name+'_labels', i, read_metadata=False)
-
-
+		metadata['positions'] = positions
+		y, y_positions = dc.read_hdf5(self.dataset_name+'_labels', i, read_metadata=False)
 
 		# dc.view(X)
 		# napari.run()
@@ -43,21 +42,22 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# print('x', np.min(X), np.max(X), X.shape)
 		# print('y', np.min(y), np.max(y), y.shape)
 
-		#fopr reshaping"
+		#for reshaping
 		X = np.expand_dims(X, 0)      # if numpy array
 		y = np.expand_dims(y, 0)
 		# tensor = tensor.unsqueeze(1)  # if torch tensor
 
 		if self.transform:
 			X, y = self.transform(X), self.label_transform(y)
-		# if self.label_transform:
-		# 	y = self.label_transform(X)
 
 		# print('x', np.min(X), np.max(X), X.shape)
 		# print('y', np.min(y), np.max(y), y.shape)
 
 		del dc
-		return X, y
+		if self.return_metadata:
+			return X, y, metadata
+		else:
+			return X, y,
 
 
 def compute_max_depth(shape= 1920, max_depth=10, print_out=True):

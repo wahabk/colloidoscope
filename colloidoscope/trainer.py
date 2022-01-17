@@ -1,3 +1,4 @@
+from gettext import find
 import numpy as np
 import pandas as pd
 import torch
@@ -7,6 +8,7 @@ from tqdm import tqdm, trange
 import math
 import neptune.new as neptune
 from .deepcolloid import DeepColloid
+from .dataset import ColloidsDatasetSimulated
 import scipy
 from ray import tune
 import os
@@ -24,7 +26,7 @@ class Trainer:
 				 epoch: int = 0,
 				 notebook: bool = False,
 				 logger=None,
-				 tuner=None,
+				 tuner=False,
 				 ):
 
 		self.model = model
@@ -90,9 +92,9 @@ class Trainer:
 						  leave=False)
 
 		for i, (x, y) in batch_iter:
-			input, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
+			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 			self.optimizer.zero_grad()  # zerograd the parameters
-			out = self.model(input)  # one forward pass
+			out = self.model(input_)  # one forward pass
 			loss = self.criterion(out, target)  # calculate loss
 			loss_value = loss.item()
 			train_losses.append(loss_value)
@@ -120,10 +122,10 @@ class Trainer:
 						  leave=False)
 
 		for i, (x, y) in batch_iter:
-			input, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
+			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 
 			with torch.no_grad():
-				out = self.model(input)
+				out = self.model(input_)
 				loss = self.criterion(out, target)
 				loss_value = loss.item()
 				valid_losses.append(loss_value)
@@ -230,7 +232,7 @@ class LearningRateFinder:
 		self.optimizer.load_state_dict(self._opt_init)
 		print('Model and optimizer in initial state.')
 
-def predict(scan, model, device, weights_path=None, threshold=0.5, return_positions=False):
+def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_positions=False):
 	
 	if weights_path:
 		model_weights = torch.load(weights_path) # read trained weights
@@ -242,40 +244,92 @@ def predict(scan, model, device, weights_path=None, threshold=0.5, return_positi
 	array = np.expand_dims(array, 0)      # add batch axis
 	array = torch.from_numpy(array).to(device)  # to torch, send to device
 	
-	model.eval()
+	# model.eval()
 	with torch.no_grad():
 		out = model(array)  # send through model/network
 
-	out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output
+	out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 	
 	# post process to numpy array
 	result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+
+	if return_positions:
+		positions = find_positions(result, threshold)
+		return result, positions
+	else:
+		return result
+
+def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
 
 	label[label > threshold] = 1
 	label[label < threshold] = 0
 
-	if return_positions:
-		str_3D=np.array([
-		[[0, 0, 0],
-		[0, 1, 0],
-		[0, 0, 0]],
+	str_3D=np.array([[[0, 0, 0],
+					[0, 1, 0],
+					[0, 0, 0]],
 
-		[[0, 1, 0],
-		[1, 1, 1],
-		[0, 1, 0]],
+					[[0, 1, 0],
+					[1, 1, 1],
+					[0, 1, 0]],
 
-		[[0, 0, 0],
-		[0, 1, 0],
-		[0, 0, 0]]], dtype='uint8')
+					[[0, 0, 0],
+					[0, 1, 0],
+					[0, 0, 0]]], dtype='uint8')
 
-		resultLabel = scipy.ndimage.label(label, structure=str_3D)
-		positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
-		positions = np.array(positions)
-		return result, positions
-	else:
-		return result
+	resultLabel = scipy.ndimage.label(label, structure=str_3D)
+	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
+	return np.array(positions)
+
+
+
+def dep_test(model, train_data, device='cpu'):
+
+	for d in train_data:
+		label, positions = predict(d, model, device=device, return_positions=True)
+
+
+
+def test(model, dataset_path, dataset_name, train_set, threshold=0.5, num_workers=4, batch_size=2, criterion=torch.nn.BCEWithLogitsLoss(), run=None, device='cpu'):
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, train_set, return_metadata=False) 
+	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=torch.cuda.is_available())
+
+	losses = []
+	with torch.no_grad():
+		for i, data in enumerate(test_loader):
+			x, y = data
+			x, y = x.to(device), y.to(device)
+
+			print(x.shape, x.max(), x.min())
+			print(y.shape, y.max(), y.min())
+
+			out = model(x)  # send through model/network
+
+			#TODO read metadata here from idx
+
+			loss = criterion(out, y)
+
+			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
+			# post process to numpy array
+			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+
+			losses.append({'loss' : loss, **metadata})
+
+			print(i, {'loss' : loss, **metadata}, )
+			
+			positions = find_positions(result, threshold)
+
+	if run:
+		run['test/losses'] = losses
+
+
+	#TODO log BCE per simulation metadata
+	#TODO log mAP
+	#TODO log g(r)
+
+	return losses
 
 def renormalise(tensor: torch.Tensor):
 	array = tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
