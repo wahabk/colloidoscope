@@ -29,8 +29,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# Select sample
 		i = self.indices[index]
 
-		X, metadata, positions = dc.read_hdf5(self.dataset_name, i)
-		metadata['positions'] = positions
+		X, metadata, positions = dc.read_hdf5(self.dataset_name, i, read_metadata=True)
 		y, y_positions = dc.read_hdf5(self.dataset_name+'_labels', i, read_metadata=False)
 
 		# dc.view(X)
@@ -53,11 +52,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# print('x', np.min(X), np.max(X), X.shape)
 		# print('y', np.min(y), np.max(y), y.shape)
 
-		del dc
-		if self.return_metadata:
-			return X, y, metadata
-		else:
-			return X, y,
+		return X, y,
 
 
 def compute_max_depth(shape= 1920, max_depth=10, print_out=True):

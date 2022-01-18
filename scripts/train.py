@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from colloidoscope.trainer import Trainer, LearningRateFinder, predict
+from colloidoscope.trainer import Trainer, LearningRateFinder, predict, test
 from colloidoscope.unet import UNet
 from colloidoscope.dataset import ColloidsDatasetSimulated
 from colloidoscope.deepcolloid import DeepColloid
@@ -19,22 +19,20 @@ dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
 
-
-
 save = True
 params = dict(
     roiSize = (32,128,128),
-    train_data = range(1,1000),
-    val_data = range(1001,1500),
+    train_data = range(1,50),
+    val_data = range(51,61),
     dataset_name = 'new_year',
     batch_size = 4,
     num_workers = 4,
-    epochs = 15,
+    epochs = 10,
     n_classes = 1,
-    lr = 10e-2,
+    lr = 0.005,
     random_seed = 42,
 )
-run['Tags'] = 'testing NY'
+run['Tags'] = 'testing ready'
 run['parameters'] = params
 
 
@@ -50,12 +48,6 @@ train_segtrans = tio.Compose([
 
 check_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=train_segtrans, label_transform=train_segtrans) 
 check_loader = torch.utils.data.DataLoader(check_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
-for i in check_loader:
-    batch = i
-    break
-x,y = batch
-print(x[0].shape, x[0].max(), x[0].min())
-print(y[0].shape, y[0].max(), y[0].min())
 
 
 # create a training data loader
@@ -108,8 +100,8 @@ if save:
     # run['model/weights'].upload(model_name)
 
 # test one predict and upload to neptune
-test_array = dc.read_hdf5(params['dataset_name'], 45)
-test_label = predict(test_array, 0.5, model, device, return_positions=False)
+test_array, metadata, true_positions = dc.read_hdf5(params['dataset_name'], 40, read_metadata=True)
+test_label, pred_positions = predict(test_array, model, device, threshold= 0.5, return_positions=True)
 print(test_array.shape, test_label.shape)
 
 array_projection = np.max(test_array, axis=0)
@@ -117,5 +109,20 @@ label_projection = np.max(test_label, axis=0)*255
 sidebyside = np.concatenate((array_projection, label_projection), axis=1)
 sidebyside /= sidebyside.max()
 run['prediction'].upload(File.as_image(sidebyside))
+
+x, y = dc.get_gr(true_positions, 7, 25)
+plt.plot(x, y, label='true')
+x, y = dc.get_gr(pred_positions, 7, 25)
+plt.plot(x, y, label='pred')
+plt.legend()
+plt.savefig('output/gr.png')
+
+fig = plt.gcf()
+run['gr'].upload(fig)
+
+test_sample = range(3000, 3101)
+losses = test(model, dataset_path, params['dataset_name'], test_sample, device=device, run=run)
+
+run['test/df'].upload(File.as_html(losses))
 
 run.stop()

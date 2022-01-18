@@ -61,9 +61,13 @@ class Trainer:
 			"""Training block"""
 			self._train()
 
+			if self.logger: self.logger['epochs/loss'].log(self.training_loss[-1])
+
 			"""Validation block"""
 			if self.validation_DataLoader is not None:
 				self._validate()
+
+			if self.logger: self.logger['epochs/val'].log(self.validation_loss[-1])
 
 			if self.tuner:
 				with tune.checkpoint_dir(self.epoch) as checkpoint_dir:
@@ -234,7 +238,7 @@ class LearningRateFinder:
 
 def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_positions=False):
 	
-	if weights_path:
+	if weights_path is not None:
 		model_weights = torch.load(weights_path) # read trained weights
 		model.load_state_dict(model_weights) # add weights to model
 
@@ -244,7 +248,7 @@ def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_
 	array = np.expand_dims(array, 0)      # add batch axis
 	array = torch.from_numpy(array).to(device)  # to torch, send to device
 	
-	# model.eval()
+	model.eval()
 	with torch.no_grad():
 		out = model(array)  # send through model/network
 
@@ -291,45 +295,53 @@ def dep_test(model, train_data, device='cpu'):
 
 
 
-def test(model, dataset_path, dataset_name, train_set, threshold=0.5, num_workers=4, batch_size=2, criterion=torch.nn.BCEWithLogitsLoss(), run=None, device='cpu'):
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, train_set, return_metadata=False) 
-	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=torch.cuda.is_available())
+def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=None, device='cpu'):
+	dc = DeepColloid(dataset_path)
+	
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
+	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = []
+	model.eval()
 	with torch.no_grad():
-		for i, data in enumerate(test_loader):
+		for idx, data in enumerate(test_loader):
+			i = test_set[idx]
+			metadata, true_positions = dc.read_metadata(dataset_name, i)
+
 			x, y = data
 			x, y = x.to(device), y.to(device)
-
-			print(x.shape, x.max(), x.min())
-			print(y.shape, y.max(), y.min())
+			# print(x.shape, x.max(), x.min())
+			# print(y.shape, y.max(), y.min())
 
 			out = model(x)  # send through model/network
-
-			#TODO read metadata here from idx
-
 			loss = criterion(out, y)
-
+			loss = loss.cpu().numpy()
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 			# post process to numpy array
 			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
-			losses.append({'loss' : loss, **metadata})
+			m = {
+				'dataset': metadata['dataset'],
+				'n' 	 : metadata['n'],
+				'idx'	 : i,
+				'volfrac': metadata['volfrac'],
+				'n_particles':  metadata['n_particles'],
+				**metadata['params'],
+				'loss'	 : float(loss),
+			}
 
-			print(i, {'loss' : loss, **metadata}, )
+			losses.append(m)
 			
 			positions = find_positions(result, threshold)
 
 	if run:
 		run['test/losses'] = losses
 
-
-	#TODO log BCE per simulation metadata
 	#TODO log mAP
 	#TODO log g(r)
 
-	return losses
+	return pd.DataFrame(losses)
 
 def renormalise(tensor: torch.Tensor):
 	array = tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray

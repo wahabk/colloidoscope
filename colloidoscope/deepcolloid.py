@@ -31,6 +31,22 @@ class DeepColloid:
 			return canvas, metadata, positions
 		else:
 			return canvas, positions
+
+	def read_metadata(self, dataset: str, n: int) -> dict:
+
+		json_path = f'{self.dataset_path}/{dataset}.json'
+		with open(json_path, "r+") as f:
+			json_data = json.load(f)
+			metadata = json_data[str(n)]
+
+		path = f'{self.dataset_path}/{dataset}.hdf5'
+		with h5py.File(path, "r") as f:
+			positions = np.array(f[str(n)+'_positions'])
+
+		return metadata, positions
+
+
+
 	
 	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
