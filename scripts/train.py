@@ -22,8 +22,8 @@ dc = DeepColloid(dataset_path)
 save = True
 params = dict(
     roiSize = (32,128,128),
-    train_data = range(1,50),
-    val_data = range(51,61),
+    train_data = range(1,500),
+    val_data = range(501,601),
     dataset_name = 'new_year',
     batch_size = 4,
     num_workers = 4,
@@ -104,6 +104,8 @@ test_array, metadata, true_positions = dc.read_hdf5(params['dataset_name'], 40, 
 test_label, pred_positions = predict(test_array, model, device, threshold= 0.5, return_positions=True)
 print(test_array.shape, test_label.shape)
 
+
+# TODO add this to test
 array_projection = np.max(test_array, axis=0)
 label_projection = np.max(test_label, axis=0)*255
 sidebyside = np.concatenate((array_projection, label_projection), axis=1)
