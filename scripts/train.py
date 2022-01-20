@@ -117,10 +117,9 @@ plt.plot(x, y, label='true')
 x, y = dc.get_gr(pred_positions, 7, 25)
 plt.plot(x, y, label='pred')
 plt.legend()
-plt.savefig('output/gr.png')
-
 fig = plt.gcf()
 run['gr'].upload(fig)
+# plt.savefig('output/gr.png')
 
 test_sample = range(3000, 3101)
 losses = test(model, dataset_path, params['dataset_name'], test_sample, device=device, run=run)

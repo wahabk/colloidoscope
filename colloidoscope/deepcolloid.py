@@ -80,12 +80,16 @@ class DeepColloid:
 		# nums = [int(n) for n in list(keys)]
 		return nums
 
-	def view(self, array:np.ndarray, positions:np.ndarray=None) -> None:
-		if positions is not None:
-			array = np.array([np.stack((img,)*3, axis=-1) for img in array])
-			array = self.label_scan(array, positions)
+	def view(self, array:np.ndarray, positions:np.ndarray=None, label:np.ndarray=None) -> None:
 
-		napari.view_image(array)
+		viewer = napari.view_image(array)
+		if positions is not None:
+			# array = np.array([np.stack((img,)*3, axis=-1) for img in array])
+			# array = self.label_scan(array, positions)
+			viewer.add_points(positions)
+		if label is not None:
+			viewer.add_image(label*255)
+		
 
 	def label_scan(self, array: np.ndarray, positions: list) -> np.ndarray:
 		canvas = deepcopy(array)
