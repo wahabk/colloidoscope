@@ -1,4 +1,3 @@
-from importlib.metadata import metadata
 import torch
 import numpy as np
 from colloidoscope.trainer import Trainer, LearningRateFinder, predict, test

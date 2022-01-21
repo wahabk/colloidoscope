@@ -31,6 +31,7 @@ dependencies:
   - wheel=0.37.0=pyhd3eb1b0_1
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7b6447c_3
+  - pip
   - pip:
     - absl-py==1.0.0
     - alabaster==0.7.12
@@ -51,7 +52,6 @@ dependencies:
     - charset-normalizer==2.0.8
     - click==8.0.3
     - cloudpickle==2.0.0
-    - colloidoscope==0.1.0
     - cppimport==21.3.7
     - cycler==0.11.0
     - dask==2021.11.2
