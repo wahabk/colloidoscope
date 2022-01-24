@@ -16,7 +16,8 @@ run = neptune.init(
 
 # dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
-dataset_path = '/data/mb16907/wahab/Colloids'
+# dataset_path = '/data/mb16907/wahab/Colloids'
+dataset_path = '/user/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
 
 save = True
@@ -72,9 +73,9 @@ model = UNet(in_channels=1,
              conv_mode='same',
              dim=3)
 
-# model = torch.nn.DataParallel(model, device_ids=[0,1])
+model = torch.nn.DataParallel(model, device_ids=[0,1])
 
-model.to(device)
+# model.to(device)
 
 # criterion
 criterion = torch.nn.BCEWithLogitsLoss()

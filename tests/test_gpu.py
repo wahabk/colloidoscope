@@ -6,3 +6,5 @@ print(sys.version)
 print(os.cpu_count())
 print(torch.__version__)
 print('Testing deepcolloid, torch cuda status: ', torch.cuda.is_available())
+
+import colloidoscope

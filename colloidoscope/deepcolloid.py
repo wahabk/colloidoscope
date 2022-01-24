@@ -6,7 +6,7 @@ from scipy.spatial.distance import pdist
 import cv2
 import math
 from copy import deepcopy
-from .simulator import simulate
+# from .simulator import simulate
 import json
 from pathlib2 import Path
 
