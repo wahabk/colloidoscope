@@ -1,0 +1,20 @@
+NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.
+
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2020 NVIDIA Corporation
+Built on Tue_Sep_15_19:10:02_PDT_2020
+Cuda compilation tools, release 11.1, V11.1.74
+Build cuda_11.1.TC455_06.29069683_0
+My torch test
+/tmp/slurmd/job10005982/slurm_script: line 43: cd: /mnt/storage/home/ak18001/code/deepcolloid: No such file or directory
+Running on host compute150.bc4.acrc.priv
+Time is Mon Jan 24 15:20:08 GMT 2022
+Directory is /user/home/ak18001/code/colloidoscope
+Slurm job ID is 10005982
+This jobs runs on the following machines:
+compute150
+3.8.12 (default, Oct 12 2021, 13:49:34) 
+[GCC 7.5.0]
+28
+1.10.0+cu102
+Testing deepcolloid, torch cuda status:  False

@@ -8,6 +8,16 @@ import torchio as tio
 import matplotlib.pyplot as plt
 import neptune.new as neptune
 from neptune.new.types import File
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
+
+print('------------num available devices:', torch.cuda.device_count())
+
+print ('Available devices ', torch.cuda.device_count())
+print ('Current cuda device ', torch.cuda.current_device())
+
+
 
 run = neptune.init(
     project="wahabk/colloidoscope",
@@ -75,7 +85,7 @@ model = UNet(in_channels=1,
 
 model = torch.nn.DataParallel(model, device_ids=[0,1])
 
-# model.to(device)
+model.to(device)
 
 # criterion
 criterion = torch.nn.BCEWithLogitsLoss()

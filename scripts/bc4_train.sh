@@ -25,6 +25,7 @@ nvcc --version
 
 echo 'My torch test'
 source activate #!activate conda
+conda activate colloids
 
 #! application name
 application="python3"
