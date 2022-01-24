@@ -35,7 +35,7 @@ ENV PYTHONUNBUFFERED=1
 # ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "colloids", "python3", "tests/test_gpu.py"]
 # ENTRYPOINT ["conda", "activate", "colloids"]
 
-WORKDIR /deepcolloid
+WORKDIR /colloidoscope
 # Update pip
 # RUN pip3 install --upgrade pip
 # # Install pip requirements

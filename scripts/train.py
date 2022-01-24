@@ -14,9 +14,9 @@ run = neptune.init(
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 )
 
-dataset_path = '/home/ak18001/Data/HDD/Colloids'
-# dataset_path = '/home/wahab/Data/HDD/Colloids'
+# dataset_path = '/home/ak18001/Data/HDD/Colloids'
 # dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
+dataset_path = '/data/mb16907/wahab/Colloids'
 dc = DeepColloid(dataset_path)
 
 save = True
@@ -26,13 +26,13 @@ params = dict(
     val_data = range(501,601),
     dataset_name = 'new_year',
     batch_size = 4,
-    num_workers = 4,
+    num_workers = 2,
     epochs = 10,
     n_classes = 1,
     lr = 0.005,
     random_seed = 42,
 )
-run['Tags'] = 'testing ready'
+run['Tags'] = 'test multigpu'
 run['parameters'] = params
 
 
@@ -70,7 +70,11 @@ model = UNet(in_channels=1,
              activation='relu',
              normalization='batch',
              conv_mode='same',
-             dim=3).to(device)
+             dim=3)
+
+# model = torch.nn.DataParallel(model, device_ids=[0,1])
+
+model.to(device)
 
 # criterion
 criterion = torch.nn.BCEWithLogitsLoss()

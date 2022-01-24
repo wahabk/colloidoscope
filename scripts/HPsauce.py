@@ -158,7 +158,6 @@ if __name__ == "__main__":
 	# TESTING
 	# TODO upload to neptune new run
 
-	run.stop()
 	# setup neptune
 	run = neptune.init(
 		project="wahabk/colloidoscope",
