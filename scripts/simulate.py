@@ -62,7 +62,7 @@ if __name__ == '__main__':
 		hoomd_positions, diameters = read_gsd(path, randrange(0,500))
 		centers = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2)
 		metadata['n_particles'] = len(centers)
-		canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, num_workers=10)
+		canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, diameters=diameters, num_workers=10)
 
 		print(canvas.shape, canvas.max(), canvas.min())
 		print(label.shape, label.max(), label.min())

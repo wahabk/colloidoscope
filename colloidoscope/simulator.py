@@ -18,7 +18,7 @@ def gaussian(x, mu, sig, peak=1.):
 @njit()
 def draw_slice(args):
 	# extract args
-	s, z, r, centers, brightness, is_label = args
+	s, z, radii, centers, brightness, is_label = args
 	#initiate new slice to be drawn
 	new_slice = s
 	#for each sphere check if this pixel is inside it
@@ -26,6 +26,7 @@ def draw_slice(args):
 		for j in range(s.shape[1]):
 			for k, center in enumerate(centers):
 				cz, cy, cx = center
+				r = radii[k]
 				# euclidean distance
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				if dist <= r:
@@ -35,10 +36,10 @@ def draw_slice(args):
 						new_slice[i,j] = brightness
 	return new_slice
 
-def draw_spheres_sliced(canvas, centers, r, brightness=255, is_label=False, num_workers=2):
+def draw_spheres_sliced(canvas, centers, radii, brightness=255, is_label=False, num_workers=2):
 	new_canvas = []
 
-	args = [(s, z, r, centers, brightness, is_label) for z, s in enumerate(canvas)]
+	args = [(s, z, radii, centers, brightness, is_label) for z, s in enumerate(canvas)]
 
 	with ProcessPoolExecutor(max_workers=num_workers) as pool:
 		for i in pool.map(draw_slice, args):
@@ -79,7 +80,7 @@ def shake(centers, magnitude):
 	return np.array(new_centers)
 
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
-			xy_gauss:int, z_gauss:int, brightness:int, noise:float, make_label=True, num_workers=2):
+			xy_gauss:int, z_gauss:int, brightness:int, noise:float, make_label=True, diameters=np.ndarray([]), num_workers=2):
 	zoom = 0.5
 	gauss_kernel = (z_gauss, xy_gauss, xy_gauss)
 	# make bigger padded canvas
@@ -100,10 +101,12 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
-	
+	#TODO find out zoom_out_radii
+	zoom_out_radii = [(d/2)/zoom for d in diameters]
+
 	# draw spheres slice by slice
 	print('Simulating scan...')
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_r, brightness = brightness, is_label=False, num_workers=num_workers)
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_radii, brightness = brightness, is_label=False, num_workers=num_workers)
 	# zoom back in for aliasing
 	canvas = crop3d(canvas, zoom_out_size)
 	canvas = ndimage.zoom(canvas, zoom)

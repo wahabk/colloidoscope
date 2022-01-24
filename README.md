@@ -27,4 +27,4 @@ docker run -it \
 for installation dir:
 sudo dockerd --data-root <custom_dir>
 
-
+Thanks to yushi yang for contributing the position simulations and helping me with the entire project in general
