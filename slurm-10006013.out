@@ -1,0 +1,67 @@
+Mon Jan 24 16:10:27 2022       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 495.29.05    Driver Version: 495.29.05    CUDA Version: 11.5     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla P100-PCIE...  Off  | 00000000:06:00.0 Off |                    0 |
+| N/A   61C    P0    31W / 250W |      0MiB / 16280MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+|   1  Tesla P100-PCIE...  Off  | 00000000:86:00.0 Off |                    0 |
+| N/A   33C    P0    25W / 250W |      0MiB / 16280MiB |      2%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2020 NVIDIA Corporation
+Built on Tue_Sep_15_19:10:02_PDT_2020
+Cuda compilation tools, release 11.1, V11.1.74
+Build cuda_11.1.TC455_06.29069683_0
+My torch test
+/tmp/slurmd/job10006013/slurm_script: line 44: cd: /mnt/storage/home/ak18001/code/deepcolloid: No such file or directory
+Running on host gpu06.bc4.acrc.priv
+Time is Mon Jan 24 16:10:31 GMT 2022
+Directory is /user/home/ak18001/code/colloidoscope
+Slurm job ID is 10006013
+This jobs runs on the following machines:
+gpu06
+https://app.neptune.ai/wahabk/Colloidoscope/e/COL-147
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+training on cuda
+Traceback (most recent call last):
+  File "scripts/train.py", line 76, in <module>
+    model = torch.nn.DataParallel(model, device_ids=[0,1])
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/nn/parallel/data_parallel.py", line 142, in __init__
+    _check_balance(self.device_ids)
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/nn/parallel/data_parallel.py", line 23, in _check_balance
+    dev_props = _get_devices_properties(device_ids)
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/_utils.py", line 464, in _get_devices_properties
+    return [_get_device_attr(lambda m: m.get_device_properties(i)) for i in device_ids]
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/_utils.py", line 464, in <listcomp>
+    return [_get_device_attr(lambda m: m.get_device_properties(i)) for i in device_ids]
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/_utils.py", line 447, in _get_device_attr
+    return get_member(torch.cuda)
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/_utils.py", line 464, in <lambda>
+    return [_get_device_attr(lambda m: m.get_device_properties(i)) for i in device_ids]
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/cuda/__init__.py", line 359, in get_device_properties
+    raise AssertionError("Invalid device id")
+AssertionError: Invalid device id
+Shutting down background jobs, please wait a moment...
+Done!
+Waiting for the remaining 65 operations to synchronize with Neptune. Do not kill this process.
+All 65 operations synced, thanks for waiting!

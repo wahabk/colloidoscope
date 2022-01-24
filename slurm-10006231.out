@@ -1,0 +1,56 @@
+Mon Jan 24 16:33:03 2022       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 495.29.05    Driver Version: 495.29.05    CUDA Version: 11.5     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla P100-PCIE...  Off  | 00000000:06:00.0 Off |                    0 |
+| N/A   64C    P0    37W / 250W |      0MiB / 16280MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+|   1  Tesla P100-PCIE...  Off  | 00000000:86:00.0 Off |                    0 |
+| N/A   32C    P0    28W / 250W |      0MiB / 16280MiB |      2%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2020 NVIDIA Corporation
+Built on Tue_Sep_15_19:10:02_PDT_2020
+Cuda compilation tools, release 11.1, V11.1.74
+Build cuda_11.1.TC455_06.29069683_0
+My torch test
+/tmp/slurmd/job10006231/slurm_script: line 44: cd: /mnt/storage/home/ak18001/code/deepcolloid: No such file or directory
+Running on host gpu01.bc4.acrc.priv
+Time is Mon Jan 24 16:33:07 GMT 2022
+Directory is /user/home/ak18001/code/colloidoscope
+Slurm job ID is 10006231
+This jobs runs on the following machines:
+gpu01
+------------num available devices: 2
+Available devices  2
+Current cuda device  0
+https://app.neptune.ai/wahabk/Colloidoscope/e/COL-148
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+training on cuda
+Traceback (most recent call last):
+  File "scripts/train.py", line 86, in <module>
+    model = torch.nn.DistributedDataParallel(model, device_ids=[0,1])
+AttributeError: module 'torch.nn' has no attribute 'DistributedDataParallel'
+Shutting down background jobs, please wait a moment...
+Done!
+Waiting for the remaining 43 operations to synchronize with Neptune. Do not kill this process.
+All 43 operations synced, thanks for waiting!
