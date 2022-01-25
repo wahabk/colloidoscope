@@ -35,7 +35,8 @@ if __name__ == '__main__':
 
 	for phi in np.linspace(0.1,0.5,5):
 		phi = round(phi, 2)
+		if phi==0.1: continue
 		print(phi)
 		hoomd_make_configurations_polydisp(phi, n_frames=100, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/test/')
-		positions, diameters= read_gsd(f'/home/ak18001/Data/HDD/Colloids/Positions/test/phi_{phi*1000:.0f}_poly.gsd')
-		print(positions, diameters)
+		# positions, diameters= read_gsd(f'/home/ak18001/Data/HDD/Colloids/Positions/test/phi_{phi*1000:.0f}_poly.gsd', 0)
+		# print(positions, diameters)
