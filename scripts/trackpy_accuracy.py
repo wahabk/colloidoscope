@@ -23,26 +23,6 @@ def plot_pr_curve(
     ax.set_ylim([-0.1,1.1])
     return ax
 
-def plot_precision_recall_curve(y_true, y_pred):
-	#http://scikit-learn.org/stable/auto_examples/model_selection/plot_precision_recall.html
-	precision, tpr_recall, _ = metrics.precision_recall_curve(y_true, y_pred)
-	pr_curve, = plt.step(tpr_recall, precision, color='r', alpha=0.2, where='post')
-	plt.fill_between(tpr_recall, precision, step='post', alpha=0.2, color='r')
-	plt.set_xlabel('True Positive Rate (Recall)')
-	plt.set_ylabel('Precision')
-	plt.set_ylim([0.0, 1.05])
-	plt.set_xlim([0.0, 1.0])
-	plt.set_title('Average Precision=%0.2f' % metrics.average_precision_score(y_true, y_pred))
-	
-
-
-	# #Plot dots at certain decision thresholds, for clarity
-	# for d in [0.1, 0.5, 0.9]:
-	# 	tpr_recall, _, precision = calculate_tpr_fpr_prec(y_true, y_score, d)
-	# 	plt.plot(tpr_recall, precision, 'o', color = pr_color)
-	# 	text = plt.annotate('d='+str(d), (tpr_recall, precision))
-	# 	text.set_rotation(45)
-
 def run_trackpy(array, diameter=11):
 	f = tp.locate(array, diameter)
 	f = [list(f[:]['z']), list(f[:]['x']), list(f[:]['y'])]
@@ -64,8 +44,8 @@ if __name__ == '__main__':
 	# print(video.shape)
 	# t, x, y, z
 
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 	dataset_name = 'new_year'
@@ -74,20 +54,18 @@ if __name__ == '__main__':
 	print(metadata)
 	diameters = [metadata['params']['r']*2 for i in range(len(gt_positions))]
 
-	tp_predictions = run_trackpy(canvas, diameter=metadata['params']['r']*2+1)
+	tp_predictions = run_trackpy(canvas, diameter=metadata['params']['r']*2-1)
 	print(metadata)
 	print(gt_positions.shape, tp_predictions.shape)
 
 	precisions, recalls, thresholds, predictions = dc.average_precision(gt_positions, tp_predictions, diameters=diameters)
-	true = [1 for i in gt_positions]
 	print(precisions, recalls)
-	print(thresholds)
 
 	# display = metrics.PrecisionRecallDisplay.from_predictions(true, predictions) #(precision=precisions, recall=recalls, estimator_name='unet').plot()
-	# display = metrics.PrecisionRecallDisplay(precision=precisions, recall=np.flip(recalls), estimator_name='trackpy').plot()
-	# plt.xlim([-0.1,1.1])
-	# plt.ylim([-0.1,1.1])
-	plot_precision_recall_curve(true, predictions)
+	display = metrics.PrecisionRecallDisplay(precision=np.flip(precisions), recall=recalls, estimator_name='trackpy').plot()
+	plt.xlim([-0.1,1.1])
+	plt.ylim([-0.1,1.1])
+	# plot_precision_recall_curve(true, predictions)
 	plt.savefig('output/roc_trackpy.png')
 
 	# dc.view(canvas, tp_predictions)
