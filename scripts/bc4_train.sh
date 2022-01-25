@@ -6,8 +6,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:2
-#SBATCH --time=0:03:00
-#SBATCH --mem=8G
+#SBATCH --time=0:45:00
+#SBATCH --mem=50G
 
 # Load modules required for runtime
 module load CUDA

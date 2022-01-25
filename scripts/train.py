@@ -10,14 +10,10 @@ import neptune.new as neptune
 from neptune.new.types import File
 import os
 
+# fix  cuda multi gpu error
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
-
 print('------------num available devices:', torch.cuda.device_count())
-
-print ('Available devices ', torch.cuda.device_count())
 print ('Current cuda device ', torch.cuda.current_device())
-
-
 
 run = neptune.init(
     project="wahabk/colloidoscope",
@@ -36,17 +32,15 @@ params = dict(
     train_data = range(1,500),
     val_data = range(501,601),
     dataset_name = 'new_year',
-    batch_size = 4,
-    num_workers = 2,
-    epochs = 10,
+    batch_size = 16,
+    num_workers = 8,
+    epochs = 15,
     n_classes = 1,
     lr = 0.005,
     random_seed = 42,
 )
-run['Tags'] = 'test multigpu'
+run['Tags'] = 'multigpu 10 blocks'
 run['parameters'] = params
-
-
 
 train_imtrans = tio.Compose([
     # tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
@@ -59,7 +53,6 @@ train_segtrans = tio.Compose([
 
 check_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=train_segtrans, label_transform=train_segtrans) 
 check_loader = torch.utils.data.DataLoader(check_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
-
 
 # create a training data loader
 train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=train_segtrans, label_transform=train_segtrans) 
@@ -76,7 +69,7 @@ print(f'training on {device}')
 #TODO add model params to neptune
 model = UNet(in_channels=1,
              out_channels=params['n_classes'],
-             n_blocks=6,
+             n_blocks=10,
              start_filters=32,
              activation='relu',
              normalization='batch',
