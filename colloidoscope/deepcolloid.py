@@ -44,9 +44,6 @@ class DeepColloid:
 			positions = np.array(f[str(n)+'_positions'])
 
 		return metadata, positions
-
-
-
 	
 	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
@@ -88,8 +85,9 @@ class DeepColloid:
 			# array = self.label_scan(array, positions)
 			viewer.add_points(positions)
 		if label is not None:
-			viewer.add_image(label*255)
+			viewer.add_image(label*255)	
 		
+		napari.run()
 
 	def label_scan(self, array: np.ndarray, positions: list) -> np.ndarray:
 		canvas = deepcopy(array)
@@ -138,23 +136,22 @@ class DeepColloid:
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 
-	def calc_iou_individual(self, center1, center2, diameter,):
-		"""Measure intersection over union of two circles with equal diameter
-		"""		
-		r = diameter / 2
-		c = math.sqrt((center1[0]-center2[0])**2 + (center1[1]-center2[1])**2 + (center1[2]-center2[2])**2)
-		area = math.pi*r**2
-		try:
-			q = 2* math.acos(math.radians(c/2*r))
-			overlap = (r**2)*(q - math.sin(q)) # area of overlap of circles with same r
-		except ValueError:
-			overlap = 0
-		iou = overlap / (area*2 - overlap)
-		return iou
+	def calc_iou_dist(self, center1, center2, diameter):
+		"""
+		Measure distance between two spheres normalised by diameters
+		"""
 
-	def get_results(self, gt, pred, diameter, threshold,):
+		dist = pdist([center1, center2])[0]
+
+		iou_dist = 1 - (dist/(diameter))
+
+		if iou_dist < 0 : iou_dist = 0
+		return iou_dist
+
+	def get_results(self, gt, pred, diameters, threshold,):
 
 		tp, fp, fn = 0, 0, 0
+		predictions = [0 for i in gt]
 
 		if len(pred) == 0:
 			tp = 0
@@ -170,18 +167,33 @@ class DeepColloid:
 		gt_idx_thresh = []
 		pred_idx_thresh = []
 		ious = []
+
 		# for each prediction, measure its iou with ALL ground truths 
 		# and append if more than the threshold
 		for ipb, pred_pos in enumerate(pred):
 			for igb, gt_pos in enumerate(gt):
-				iou = self.calc_iou_individual(pred_pos, gt_pos, diameter)
+				diameter = diameters[igb]
+				iou = self.calc_iou_dist(pred_pos, gt_pos, diameter)
+				
 				if iou > threshold:
 					gt_idx_thresh.append(igb)
 					pred_idx_thresh.append(ipb)
 					ious.append(iou)
 		ious = np.array(ious)
+
+		# all_ious = []
+		# for igb, gt_pos in enumerate(gt):
+		# 	best = 0
+		# 	for ipb, pred_pos in enumerate(pred):
+		# 		iou = self.calc_iou_dist(pred_pos, gt_pos, diameter)
+		# 		if iou > best:
+		# 			best = iou
+		# 	all_ious.append(best)			
+
 		# sort by higher iou
-		args_desc = np.argsort(ious)[::-1]
+		args_desc = np.argsort(ious)
+		args_desc = args_desc[::-1]
+
 
 		if len(args_desc) == 0:
 			# No matches
@@ -189,29 +201,37 @@ class DeepColloid:
 			fp = len(pred)
 			fn = len(gt)
 		else:
+			iou_at_pred = []
 			gt_match_idx = []
 			pred_match_idx = []
+			iou_index = []
 			# in descending iou order check if a match was found
 			# select highest iou match for each ground truth
-			for idx in args_desc:
+			for i, idx in enumerate(args_desc):
 				gt_idx = gt_idx_thresh[idx]
 				pr_idx = pred_idx_thresh[idx]
 				# If the boxes have not been matched, add them to matches
 				if (gt_idx not in gt_match_idx) and (pr_idx not in pred_match_idx):
 					gt_match_idx.append(gt_idx)
 					pred_match_idx.append(pr_idx)
+					iou_index.append(i)
+					iou_at_pred.append(ious[idx])
+			
+			tp = len(gt_match_idx) # ones that are in both
+			fp = len(pred) - len(pred_match_idx) # predictions not matched
+			fn = len(gt) - len(gt_match_idx) # grount truths not in pred
 
-			tp = len(gt_match_idx)
-			fp = len(pred) - len(pred_match_idx)
-			fn = len(gt) - len(gt_match_idx)
+			# import pdb; pdb.set_trace()
 
-		return tp, fp, fn
+			for i , j in enumerate(gt_match_idx):
+				predictions[j] = iou_at_pred[i]
+ 
+		return tp, fp, fn, predictions
 
-	def get_precision_recall(self, ground_truths, predictions, diameter, threshold):
-
+	def get_precision_recall(self, ground_truths, predictions, diameters, threshold):
 
 		# take block of different images and find result
-		tp, fp, fn = self.get_results(ground_truths, predictions, diameter, threshold,)
+		tp, fp, fn, predictions = self.get_results(ground_truths, predictions, diameters, threshold)
 
 		try:
 			precision = tp/(tp + fp)
@@ -221,39 +241,44 @@ class DeepColloid:
 			recall = tp/(tp + fn)
 		except ZeroDivisionError:
 			recall = 0.0
-		precision = np.array(precision)
-		recall = np.array(recall)
+		precision = precision
+		recall = recall
 
-		return precision, recall
+		return precision, recall, predictions
 
-	def average_precision(self, ground_truth, prediction, diameter=10):
+	def average_precision(self, ground_truth, prediction, diameters):
 		print('Calculating average precision, threshold:')
 
-		average_precisions = []
 		precisions = []
 		recalls = []
-		thresholds = np.linspace(0,1,30)
+		predictions = []
+		thresholds = np.linspace(0,1,10)
 		for thresh in thresholds:
 			print(thresh)
-			prec, rec = self.get_precision_recall(ground_truth, prediction, diameter, thresh,)
-			# precisions = precisions + prec
-			# recalls = recalls + rec
+			prec, rec, pred = self.get_precision_recall(ground_truth, prediction, diameters, thresh,)
 			precisions.append(prec)
 			recalls.append(rec)
+			predictions.append(pred)
+		print('Done')
+
 		precisions = np.array(precisions)
 		recalls = np.array(recalls)
 
-		prec_at_rec = []
-		for recall_level in np.linspace(0.0, 1.0, 11):
-			try:
-				args = np.argwhere(recalls >= recall_level).flatten()
-				prec = max(precisions[args])
-			except ValueError:
-				prec = 0.0
-			prec_at_rec.append(prec)
-		average_precision = np.mean(prec_at_rec)
+		middleIndex = int((len(precisions) + 1)/2)
 
-		return average_precision, precisions, recalls
+		# TODO integrate to find ap
+
+		# prec_at_rec = []
+		# for recall_level in np.linspace(0.0, 1.0, 11):
+		# 	try:
+		# 		args = np.argwhere(recalls >= recall_level).flatten()
+		# 		prec = max(precisions[args])
+		# 	except ValueError:
+		# 		prec = 0.0
+		# 	prec_at_rec.append(prec)
+		# average_precision = np.mean(prec_at_rec)
+
+		return precisions, recalls, thresholds, predictions[0]
 
 	def crop3d(self, array, roiSize, center=None):
 		roiZ, roiY, roiX = roiSize

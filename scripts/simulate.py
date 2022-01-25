@@ -21,6 +21,7 @@ if __name__ == '__main__':
 	# print(keys)
 	# exit()
 	
+	# TODO change this to know which sim came from which pos
 	# make list of volfracs already simulated
 	volfracs= [round(x, 2) for x in np.linspace(0.1,0.55,10)]
 	# make list of n_samples for each volfrac
@@ -57,6 +58,8 @@ if __name__ == '__main__':
 		}
 		print(metadata)
 
+
+		# TODO fix crop size
 		# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 		path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
 		hoomd_positions, diameters = read_gsd(path, randrange(0,500))
@@ -78,6 +81,9 @@ if __name__ == '__main__':
 		# projection_label = np.max(label, axis=0)*255
 		# sidebyside = np.concatenate((projection, projection_label), axis=1)
 		# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
+
+		# TODO SAVE DIAMETERS PLEASE
+		# TODO sort out indices of which one to sim
 
 		dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, dtype='uint8')
 		dc.write_hdf5(dataset_name+'_labels', n, label, metadata=None, positions=centers, dtype='float32')
