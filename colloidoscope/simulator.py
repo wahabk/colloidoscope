@@ -18,7 +18,7 @@ def gaussian(x, mu, sig, peak=1.):
 @njit()
 def draw_slice(args):
 	# extract args
-	s, z, radii, centers, brightness, is_label = args
+	s, z, radii, centers, brightnesses, is_label = args
 	#initiate new slice to be drawn
 	new_slice = s
 	#for each sphere check if this pixel is inside it
@@ -27,6 +27,7 @@ def draw_slice(args):
 			for k, center in enumerate(centers):
 				cz, cy, cx = center
 				r = radii[k]
+				brightness = brightnesses[k]
 				# euclidean distance
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				if dist <= r:
@@ -36,10 +37,15 @@ def draw_slice(args):
 						new_slice[i,j] = brightness
 	return new_slice
 
-def draw_spheres_sliced(canvas, centers, radii, brightness=255, is_label=False, num_workers=2):
+def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=False, num_workers=2):
 	new_canvas = []
 
-	args = [(s, z, radii, centers, brightness, is_label) for z, s in enumerate(canvas)]
+	if brightnesses == None or is_label == True:
+		brightnesses = [255 for _ in centers]
+
+	args = [(s, z, radii, centers, brightnesses, is_label) for z, s in enumerate(canvas)]
+
+	print(canvas.shape, centers.shape, np.shape(radii))
 
 	with ProcessPoolExecutor(max_workers=num_workers) as pool:
 		for i in pool.map(draw_slice, args):
@@ -66,7 +72,6 @@ def crop3d(array, roiSize, center=None):
 	z, y, x = center
 	z, y, x = int(z), int(y), int(x)
 
-
 	new_array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
 	return new_array
 
@@ -80,7 +85,8 @@ def shake(centers, magnitude):
 	return np.array(new_centers)
 
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
-			xy_gauss:int, z_gauss:int, brightness:int, noise:float, make_label=True, diameters=np.ndarray([]), num_workers=2):
+			xy_gauss:int, z_gauss:int, min_brightness:int, max_brightness:int, noise:float, make_label=True, diameters=np.ndarray([]), num_workers=2):
+	brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
 	zoom = 0.5
 	gauss_kernel = (z_gauss, xy_gauss, xy_gauss)
 	# make bigger padded canvas
@@ -101,12 +107,12 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
-	#TODO find out zoom_out_radii
-	zoom_out_radii = [(d/2)/zoom for d in diameters]
+	radii = [(d/2) for d in diameters]
+	zoom_out_radii = [r/zoom for r in radii]
 
 	# draw spheres slice by slice
 	print('Simulating scan...')
-	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_radii, brightness = brightness, is_label=False, num_workers=num_workers)
+	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_radii, brightnesses = brightnesses, is_label=False, num_workers=num_workers)
 	# zoom back in for aliasing
 	canvas = crop3d(canvas, zoom_out_size)
 	canvas = ndimage.zoom(canvas, zoom)
@@ -122,7 +128,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		# draw label heatmap from centers
 		label = np.zeros(canvas_size, dtype='float64')
 		print('Simulating label...')
-		label = draw_spheres_sliced(label, centers, r, is_label=True, num_workers=num_workers)
+		label = draw_spheres_sliced(label, centers, radii, is_label=True, num_workers=num_workers)
 		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
 		label = np.array(label ,dtype='float64')
 		return canvas, label

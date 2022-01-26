@@ -6,7 +6,7 @@ from scipy.spatial.distance import pdist
 import cv2
 import math
 from copy import deepcopy
-# from .simulator import simulate
+from .simulator import simulate
 import json
 from pathlib2 import Path
 
@@ -14,13 +14,14 @@ class DeepColloid:
 	def __init__(self, dataset_path) -> None:
 		self.dataset_path = dataset_path
 
-	def read_hdf5(self, dataset: str, n: int, read_metadata=True) -> np.ndarray:
+	def read_hdf5(self, dataset: str, n: int, read_metadata=False, read_diameters=False) -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
 			canvas = np.array(f[str(n)])
 			positions = np.array(f[str(n)+'_positions'])
-
+			if read_diameters:
+				diameters = np.array(f[str(n)+'_diameters'])
 
 		if read_metadata:
 			json_path = f'{self.dataset_path}/{dataset}.json'
@@ -28,7 +29,13 @@ class DeepColloid:
 				json_data = json.load(f)
 				metadata = json_data[str(n)]
 
-			return canvas, metadata, positions
+			if read_diameters:
+				return canvas, metadata, positions, diameters
+			else:
+				return canvas, metadata, positions
+
+		if read_diameters:
+			return canvas, positions, diameters
 		else:
 			return canvas, positions
 
@@ -45,12 +52,14 @@ class DeepColloid:
 
 		return metadata, positions
 	
-	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, dtype:str='uint8') -> np.ndarray:
+	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, diameters=None, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
 			dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype=dtype, data = positions, compression=1)
+			if diameters is not None:
+				dset = f.create_dataset(name=str(n)+'_diameters', shape=positions.shape, dtype='float32', data = positions, compression=1)
 
 		if metadata:
 			json_path = f'{self.dataset_path}/{dataset}.json'
@@ -58,6 +67,7 @@ class DeepColloid:
 			json_file = Path(json_path)
 			exists = json_file.exists()
 
+			# check if exists or create new one
 			if exists:
 				with open(json_path, 'r') as json_file:
 					json_data = json.load(json_file)

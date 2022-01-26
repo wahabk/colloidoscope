@@ -14,7 +14,7 @@ if __name__ == '__main__':
 	dc = DeepColloid(dataset_path)
 
 	canvas_size=(32,128,128)
-	dataset_name = 'new_year'
+	dataset_name = 'jan22'
 	n_samples = 500 #5000
 
 	# keys = dc.get_hdf5_keys(dataset_name)
@@ -35,10 +35,10 @@ if __name__ == '__main__':
 
 		volfrac = random.choice(volfracs)
 		types = {
-		'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'brightness' : 255, 'noise': uniform(0, 0.01)},
-		'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.02)},
-		'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(0,4), 'z_gauss' : randrange(3,7), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.03)},
-		'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'brightness' : randrange(150,255), 'noise': uniform(0, 0.03)},
+		'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'min_brightness' : randrange(180,220), 'max_brightness' : randrange(221,255), 'noise': uniform(0, 0.01)},
+		'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
+		'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(0,4), 'z_gauss' : randrange(3,7), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
+		'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
 		}
 		keys = list(types)
 		this_type = random.choice(keys)
