@@ -233,7 +233,7 @@ def convert_hoomd_positions(positions, canvas_size, diameter=10, diameters=None,
 	
 	indices = []
 	for idx, c in enumerate(centers):
-		if -canvas_size[0]<c[0]<canvas_size[0] and -canvas_size[1]<c[1]<canvas_size[1] and -canvas_size[2]<c[2]<canvas_size[2]]:
+		if -canvas_size[0]<c[0]<canvas_size[0] and -canvas_size[1]<c[1]<canvas_size[1] and -canvas_size[2]<c[2]<canvas_size[2]:
 			indices.append(idx)
 
 	centers = centers[indices]

@@ -3,35 +3,35 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - _libgcc_mutex=0.1=main
-  - _openmp_mutex=4.5=1_gnu
-  - ca-certificates=2021.10.8=ha878542_0
-  - certifi=2021.10.8=py38h578d9bd_1
-  - hoomd=2.9.7=cpu_py38h2f8b214_1
-  - ld_impl_linux-64=2.35.1=h7274673_9
-  - libblas=3.9.0=11_linux64_openblas
-  - libcblas=3.9.0=11_linux64_openblas
-  - libffi=3.3=he6710b0_2
-  - libgcc-ng=9.3.0=h5101ec6_17
-  - libgfortran-ng=11.2.0=h69a702a_11
-  - libgfortran5=11.2.0=h5c6108e_11
-  - libgomp=9.3.0=h5101ec6_17
-  - liblapack=3.9.0=11_linux64_openblas
-  - libopenblas=0.3.17=pthreads_h8fe5266_1
-  - libstdcxx-ng=9.3.0=hd4cf53a_17
-  - ncurses=6.3=h7f8727e_2
-  - openssl=1.1.1l=h7f8727e_0
-  - pip=21.3.1=pyhd8ed1ab_0
-  - python=3.8.12=h12debd9_0
-  - python_abi=3.8=2_cp38
-  - readline=8.1=h27cfd23_0
-  - setuptools=58.0.4=py38h06a4308_0
-  - sqlite=3.36.0=hc218d9a_0
-  - tbb=2021.4.0=hd09550d_0
-  - tk=8.6.11=h1ccaba5_0
-  - wheel=0.37.0=pyhd3eb1b0_1
-  - xz=5.2.5=h7b6447c_0
-  - zlib=1.2.11=h7b6447c_3
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=4.5
+  - ca-certificates=2021.10.8
+  - certifi=2021.10.8
+  - hoomd=2.9.7
+  - ld_impl_linux-64=2.35.1
+  - libblas=3.9.0
+  - libcblas=3.9.0
+  - libffi=3.3
+  - libgcc-ng=9.3.0
+  - libgfortran-ng=11.2.0
+  - libgfortran5=11.2.0
+  - libgomp=9.3.0
+  - liblapack=3.9.0
+  - libopenblas=0.3.17
+  - libstdcxx-ng=9.3.0
+  - ncurses=6.3
+  - openssl=1.1.1l
+  - pip=21.3.1
+  - python=3.8.12
+  - python_abi=3.8
+  - readline=8.1
+  - setuptools=58.0.4
+  - sqlite=3.36.0
+  - tbb=2021.4.0
+  - tk=8.6.11
+  - wheel=0.37.0
+  - xz=5.2.5
+  - zlib=1.2.11
   - pip:
     - absl-py==1.0.0
     - alabaster==0.7.12
@@ -215,4 +215,4 @@ dependencies:
     - werkzeug==2.0.2
     - wrapt==1.13.3
     - zipp==3.6.0
-prefix: /home/wahab/miniconda3/envs/colloids
+prefix: /root/miniconda3/envs/colloids
