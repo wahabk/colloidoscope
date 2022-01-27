@@ -62,14 +62,14 @@ if __name__ == '__main__':
 			}
 			print(metadata)
 
-			# TODO fix crop size
 			# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 			# path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
-			path = f'{dataset_path}/Positions/phi_{volfrac*1000:.0f}.gsd'
+			path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
 			print(f'Reading: {path} ...')
 			hoomd_positions, diameters = read_gsd(path, n)
 			print(diameters.shape)
 			centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
+
 			metadata['n_particles'] = len(centers)
 			canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, min_brightness, max_brightness, 
 										noise, make_label=True, diameters=diameters, num_workers=num_workers)
@@ -79,13 +79,12 @@ if __name__ == '__main__':
 
 			dc.view(canvas, centers,  label)
 
+			exit()
+
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
-
-			# TODO SAVE DIAMETERS PLEASE
-			# TODO sort out indices of which one to sim
 
 			# dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, diameters=diameters, dtype='uint8')
 			# dc.write_hdf5(dataset_name+'_labels', n, label, metadata=None, positions=centers, dtype='float32')

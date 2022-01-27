@@ -107,7 +107,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		zoom_out_centers.append(new_c)
 	zoom_out_centers = np.array(zoom_out_centers)
 
-	radii = [(d/2) for d in diameters]
+	radii = [(d*r) for d in diameters]
 	zoom_out_radii = [r/zoom for r in radii]
 
 	# draw spheres slice by slice

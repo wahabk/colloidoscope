@@ -89,13 +89,13 @@ class DeepColloid:
 
 	def view(self, array:np.ndarray, positions:np.ndarray=None, label:np.ndarray=None) -> None:
 
-		viewer = napari.view_image(array)
+		viewer = napari.view_image(array, name='Scan')
 		if positions is not None:
 			# array = np.array([np.stack((img,)*3, axis=-1) for img in array])
 			# array = self.label_scan(array, positions)
 			viewer.add_points(positions)
 		if label is not None:
-			viewer.add_image(label*255)	
+			viewer.add_image(label*255, opacity=0.5, colormap='red', name='label')	
 		
 		napari.run()
 
