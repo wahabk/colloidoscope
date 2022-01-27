@@ -36,7 +36,7 @@ if __name__ == '__main__':
 			print(i, n, v, n+(i*100)-100, index)
 			print('\n', f'{index}/{len(volfracs.flatten())}', '\n')
 			
-			volfrac = v
+			volfrac = 0.2
 			types = {
 			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'min_brightness' : randrange(180,220), 'max_brightness' : randrange(221,255), 'noise': uniform(0, 0.01)},
 			'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 			'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
 			}
 			keys = list(types)
-			this_type = random.choice(keys)
+			this_type = 'large' #random.choice(keys)
 
 			r = types[this_type]['r']
 			xy_gauss = types[this_type]['xy_gauss']
@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
 			dc.view(canvas, centers,  label)
 
-			exit()
+			# exit()
 
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255

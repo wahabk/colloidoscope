@@ -6,7 +6,7 @@ from scipy.spatial.distance import pdist
 import cv2
 import math
 from copy import deepcopy
-# from .simulator import simulate
+from .simulator import simulate
 import json
 from pathlib2 import Path
 
@@ -93,7 +93,7 @@ class DeepColloid:
 		if positions is not None:
 			# array = np.array([np.stack((img,)*3, axis=-1) for img in array])
 			# array = self.label_scan(array, positions)
-			viewer.add_points(positions)
+			viewer.add_points(positions, n_dimensional=True)
 		if label is not None:
 			viewer.add_image(label*255, opacity=0.5, colormap='red', name='label')	
 		
@@ -110,9 +110,9 @@ class DeepColloid:
 		
 		return canvas
 
-	# def simulate(self, *args, **kwargs):
-	# 	# wrapper for simulator
-	# 	return simulate(*args, **kwargs)
+	def simulate(self, *args, **kwargs):
+		# wrapper for simulator
+		return simulate(*args, **kwargs)
 
 	def vol_frac(self, centers, r, canvas_size):
 		vol = (4/3)*  np.pi * r**3
