@@ -124,6 +124,9 @@ class DeepColloid:
 
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
+
+
+
 		bins = np.linspace(0, cutoff, bins)
 		drs = bins[1:] - bins[:-1]
 		distances = pdist(positions).ravel()
@@ -141,6 +144,11 @@ class DeepColloid:
 			rg_hist = np.histogram(pdist(random_gas), bins=bins)[0]
 
 		hist = np.histogram(distances, bins=bins)[0]
+
+		print(hist, rg_hist)
+
+		rg_hist[rg_hist==0] = 0.000001
+
 		hist = hist / rg_hist # pdfs
 		hist[np.isnan(hist)] = 0
 		bin_centres = (bins[1:] + bins[:-1]) / 2
