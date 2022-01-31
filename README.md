@@ -28,7 +28,7 @@ Option 1:
 cd <installation_dir>
 git clone https://github.com/wahabk/colloidoscope
 # activate your virtual environment, make sure you use python 3.8
-python3 -m pip install .
+python3.8 -m pip install .
 ```
 
 Option 2, To get going with conda (most robust and includes hoomdblue):
@@ -38,7 +38,7 @@ cd <installation_dir>
 git clone https://github.com/wahabk/colloidoscope
 conda env create -f environment.yaml # this will create an env using python 3.8 named 'colloids'
 conda activate colloids
-python3 -m pip install .
+python3.8 -m pip install .
 ```
 
 # Usage: Quick Start

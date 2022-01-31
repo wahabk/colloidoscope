@@ -9,13 +9,14 @@ from .simulator import simulate
 from .explore_lif import Reader
 import json
 from pathlib2 import Path
+from skimage import io
 
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
 		self.dataset_path = dataset_path
 
 	def read_tif(self, path):
-		pass
+		return io.imread(self.dataset_path+path)
 
 	def explore_lif_reader(self, *args, **kwargs):
 		return Reader(*args, **kwargs)
