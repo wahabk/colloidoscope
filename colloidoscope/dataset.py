@@ -46,8 +46,19 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		y = np.expand_dims(y, 0)
 		# tensor = tensor.unsqueeze(1)  # if torch tensor
 
+		# import pdb; pdb.set_trace()
+
+		X = torch.from_numpy(X)
+		y = torch.from_numpy(y)
+
 		if self.transform:
-			X, y = self.transform(X), self.label_transform(y)
+			stacked = torch.cat([X, y], dim=0) # shape=(2xHxW)
+			stacked = self.label_transform(stacked)
+			X, y = torch.chunk(stacked, chunks=2, dim=0)
+			X = self.transform(X)
+			# X, y = self.transform(X), self.label_transform(y)
+
+		
 
 		# print('x', np.min(X), np.max(X), X.shape)
 		# print('y', np.min(y), np.max(y), y.shape)

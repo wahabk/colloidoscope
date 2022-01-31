@@ -223,13 +223,27 @@ def hoomd_make_configurations_polydisp(phi:float, n_frames=100, output_folder='o
 
 
 
-def convert_hoomd_positions(positions, canvas_size, diameter=10):
+def convert_hoomd_positions(positions, canvas_size, diameter=10, diameters=None,):
 	# convert positions from physics to normal
 	centers = positions.copy()
+
+	# import pdb; pdb.set_trace()
 	centers = centers * diameter
-	centers = np.array([p for p in centers if -canvas_size[0]<p[0]<canvas_size[0] and -canvas_size[1]<p[1]<canvas_size[1] and -canvas_size[2]<p[2]<canvas_size[2]])
-	centers = centers + [c/2 for c in canvas_size]
-	return centers
+	centers = centers - (centers.min(axis=0) + [diameter,diameter,diameter] )
+	
+	indices = []
+	for idx, c in enumerate(centers):
+		if -diameter/4<c[0]<(canvas_size[0]+diameter/4) and -diameter/4<c[1]<(canvas_size[1]+diameter/4) and -diameter/4<c[2]<(canvas_size[2]+diameter/4):
+			indices.append(idx)
+
+	centers = centers[indices]
+
+	if diameters is not None:
+		diameters = diameters[indices]
+		print(centers.shape, diameters.shape)
+		return centers, diameters
+	else:
+		return centers
 
 def read_gsd(file_name:str, i:int):
 	gsd_iter = gsd.hoomd.open(file_name, 'rb')
