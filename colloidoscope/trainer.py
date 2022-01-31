@@ -7,11 +7,14 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm, trange
 import math
 import neptune.new as neptune
+from neptune.new.types import File
 from .deepcolloid import DeepColloid
 from .dataset import ColloidsDatasetSimulated
+from .unet import UNet
 import scipy
 from ray import tune
 import os
+import torchio as tio
 
 class Trainer:
 	def __init__(self,
@@ -348,3 +351,93 @@ def renormalise(tensor: torch.Tensor):
 	array = np.squeeze(array)  # remove batch dim and channel dim -> [H, W]
 	array = array * 255
 	return array
+
+def train(config, name, dataset_path, dataset_name, train_data, val_data):
+	dc = DeepColloid(dataset_path)
+
+	# setup neptune
+	run = neptune.init(
+		project="wahabk/colloidoscope",
+		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
+	)
+	params = dict(
+		roiSize = (32,128,128),
+		train_data = train_data,
+		val_data = val_data,
+		dataset_name = dataset_name,
+		batch_size = config['batch_size'],
+		n_blocks = config['n_blocks'],
+		norm = config['norm'],
+		num_workers = 4,
+		n_classes = 1,
+		lr = config['lr'],
+		epochs = config['epochs'],
+		start_filters = config['start_filters'],
+		activation = config['activation'],
+		random_seed = 42,
+	)
+	run['Tags'] = name
+	run['parameters'] = params
+
+	transforms_affine = tio.Compose([
+		tio.RandomFlip(axes=(1,2), flip_probability=0.5),
+	])
+	transforms_img = tio.Compose([
+		tio.RandomAnisotropy(p=0.5),              # make images look anisotropic 25% of times
+	])
+
+	# create a training data loader
+	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=transforms_affine) 
+	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
+	# create a validation data loader
+	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data']) 
+	val_loader = torch.utils.data.DataLoader(val_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
+
+	# device
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	print(f'training on {device}')
+
+	# model
+	#TODO add model params to neptune
+	model = UNet(in_channels=1,
+				out_channels=params['n_classes'],
+				n_blocks=params['n_blocks'],
+				start_filters=params['start_filters'],
+				activation=params['activation'],
+				normalization=params['norm'],
+				conv_mode='same',
+				dim=3).to(device)
+
+	# loss function
+	criterion = torch.nn.BCEWithLogitsLoss()
+
+	# optimizer
+	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
+
+	# trainer
+	trainer = Trainer(model=model,
+					device=device,
+					criterion=criterion,
+					optimizer=optimizer,
+					training_DataLoader=train_loader,
+					validation_DataLoader=val_loader,
+					lr_scheduler=None,
+					epochs=params['epochs'],
+					logger=run,
+					tuner=True,
+					)
+
+	# start training
+	training_losses, validation_losses, lr_rates = trainer.run_trainer()
+
+	# test one predict and upload to neptune
+	test_array, metadata, positions = dc.read_hdf5(params['dataset_name'], 1)
+	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
+	array_projection = np.max(test_array, axis=0)
+	label_projection = np.max(test_label, axis=0)*255
+	sidebyside = np.concatenate((array_projection, label_projection), axis=1)
+	sidebyside /= sidebyside.max()
+	run['prediction'].upload(File.as_image(sidebyside))
+
+	run.stop()

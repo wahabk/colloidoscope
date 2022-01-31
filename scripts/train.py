@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from colloidoscope.trainer import Trainer, LearningRateFinder, predict, test
+from colloidoscope.trainer import Trainer, LearningRateFinder, predict, test, train
 from colloidoscope.unet import UNet
 from colloidoscope.dataset import ColloidsDatasetSimulated
 from colloidoscope.deepcolloid import DeepColloid
@@ -115,17 +115,16 @@ test_array, metadata, true_positions = dc.read_hdf5(params['dataset_name'], 40, 
 test_label, pred_positions = predict(test_array, model, device, threshold= 0.5, return_positions=True)
 print(test_array.shape, test_label.shape)
 
-
-# TODO add prediction and g(r) to test
+# TODO add prediction, ap, and g(r) to test
 array_projection = np.max(test_array, axis=0)
 label_projection = np.max(test_label, axis=0)*255
 sidebyside = np.concatenate((array_projection, label_projection), axis=1)
 sidebyside /= sidebyside.max()
 run['prediction'].upload(File.as_image(sidebyside))
 
-x, y = dc.get_gr(true_positions, 7, 25)
+x, y = dc.get_gr(true_positions, 7, 25, minimum_gas_number=1)
 plt.plot(x, y, label='true')
-x, y = dc.get_gr(pred_positions, 7, 25)
+x, y = dc.get_gr(pred_positions, 7, 25, minimum_gas_number=1)
 plt.plot(x, y, label='pred')
 plt.legend()
 fig = plt.gcf()
