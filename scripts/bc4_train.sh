@@ -4,10 +4,10 @@
 #SBATCH --partition=veryshort
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:2
 #SBATCH --time=0:45:00
-#SBATCH --mem=50G
+#SBATCH --mem=16G
 
 # Load modules required for runtime
 module load CUDA
@@ -41,7 +41,7 @@ options="scripts/train.py"
 #! (default is home directory)
 
 cd $SLURM_SUBMIT_DIR
-cd '/mnt/storage/home/ak18001/code/deepcolloid'
+# cd '/mnt/storage/home/ak18001/code/deepcolloid'
 
 echo Running on host `hostname`
 echo Time is `date`

@@ -10,6 +10,7 @@ import neptune.new as neptune
 from neptune.new.types import File
 import os
 
+print(os.cpu_count())
 # fix  cuda multi gpu error
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
 print('------------num available devices:', torch.cuda.device_count())
@@ -32,14 +33,14 @@ params = dict(
     train_data = range(1,500),
     val_data = range(501,601),
     dataset_name = 'new_year',
-    batch_size = 16,
-    num_workers = 8,
+    batch_size = 8,
+    num_workers = 4,
     epochs = 15,
     n_classes = 1,
     lr = 0.005,
     random_seed = 42,
 )
-run['Tags'] = 'multigpu 10 blocks'
+run['Tags'] = 'multigpu 8 blocks'
 run['parameters'] = params
 
 train_imtrans = tio.Compose([
@@ -69,7 +70,7 @@ print(f'training on {device}')
 #TODO add model params to neptune
 model = UNet(in_channels=1,
              out_channels=params['n_classes'],
-             n_blocks=10,
+             n_blocks=6,
              start_filters=32,
              activation='relu',
              normalization='batch',
@@ -111,7 +112,6 @@ if save:
 test_array, metadata, true_positions = dc.read_hdf5(params['dataset_name'], 40, read_metadata=True)
 test_label, pred_positions = predict(test_array, model, device, threshold= 0.5, return_positions=True)
 print(test_array.shape, test_label.shape)
-
 
 # TODO add this to test
 array_projection = np.max(test_array, axis=0)
