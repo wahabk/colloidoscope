@@ -1,19 +1,18 @@
 #!/bin/bash
 
 #SBATCH --job-name=torch-train
-#SBATCH --partition=veryshort
+#SBATCH --partition=gpu_short
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:2
-#SBATCH --time=0:45:00
+#SBATCH --time=0:05:00
 #SBATCH --mem=16G
 
 # Load modules required for runtime
-module load CUDA
-module load languages/anaconda3/2021-3.8.8-cuda-11.1-pytorch
-module load languages/intel/2017.01
-export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
+module load lang/cuda/11.1
+module load lang/python/anaconda/3.8.8-2021.05-torch
+# export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
 # export CUDA_VISIBLE_DEVICES=0
 nvidia-smi
 nvcc --version
@@ -31,7 +30,7 @@ conda activate colloids
 application="python3"
 
 #! Run options for the application
-options="scripts/bc4.py"
+options="scripts/bp1.py"
 
 #####################################
 ### You should not have to change ###

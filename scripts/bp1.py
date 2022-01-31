@@ -16,7 +16,7 @@ print ('Current cuda device ', torch.cuda.current_device())
 print(torch.cuda.is_available())
 
 # fix  cuda multi gpu error
-os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
 print('------------num available devices:', torch.cuda.device_count())
 
 if __name__ == "__main__":
@@ -24,7 +24,8 @@ if __name__ == "__main__":
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	# dataset_path = '/data/mb16907/wahab/Colloids'
-	dataset_path = '/user/home/ak18001/scratch/Colloids/'
+	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
+	dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
 	dataset_name = 'new_year'
@@ -36,7 +37,7 @@ if __name__ == "__main__":
 
 	config = {
 		"lr": 0.005,
-		"batch_size": 8,
+		"batch_size": 32,
 		"n_blocks": 6,
 		"norm": 'batch',
 		"epochs": 30,
