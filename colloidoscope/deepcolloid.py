@@ -3,16 +3,22 @@ import matplotlib.pyplot as plt
 import napari
 import h5py
 from scipy.spatial.distance import pdist
-import cv2
 import math
 from copy import deepcopy
 from .simulator import simulate
+from .explore_lif import Reader
 import json
 from pathlib2 import Path
 
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
 		self.dataset_path = dataset_path
+
+	def read_tif(self, path):
+		pass
+
+	def explore_lif_reader(self, *args, **kwargs):
+		return Reader(*args, **kwargs)
 
 	def read_hdf5(self, dataset: str, n: int, read_metadata=False, read_diameters=False) -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
@@ -98,17 +104,6 @@ class DeepColloid:
 			viewer.add_image(label*255, opacity=0.5, colormap='red', name='label')	
 		
 		napari.run()
-
-	def label_scan(self, array: np.ndarray, positions: list) -> np.ndarray:
-		canvas = deepcopy(array)
-		#decompose grayscale numpy array into RGB
-		
-		for z, y, x in positions:
-			z, y, x = math.floor(z), int(y), int(x)
-			cv2.rectangle(canvas[z], (x - 1, y - 1), (x + 1, y + 1), (250,0,0), -1)
-			cv2.circle(canvas[z], (x, y), 5, (0, 250, 0), 1)
-		
-		return canvas
 
 	def simulate(self, *args, **kwargs):
 		# wrapper for simulator

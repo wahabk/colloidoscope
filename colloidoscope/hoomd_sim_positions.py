@@ -1,14 +1,14 @@
 import os
 import sys
 
-import hoomd
-import hoomd.hpmc
-import gsd.hoomd
 import numpy as np
 
 import itertools
 
 def hooomd_sim_positions(phi:int, canvas_size:tuple) -> np.ndarray:
+	import hoomd
+	import hoomd.hpmc
+
 	hoomd.context.initialize("--mode=cpu");
 
 	phi_target = phi
@@ -64,6 +64,9 @@ def hooomd_sim_positions(phi:int, canvas_size:tuple) -> np.ndarray:
 
 def hoomd_make_configurations(phi:float, n_frames=100, output_folder='output/Positions/'):
 	
+	import hoomd
+	import hoomd.hpmc
+
 	hoomd.context.initialize("--mode=cpu");
 
 	phi_target = phi
@@ -105,6 +108,10 @@ def hoomd_make_configurations(phi:float, n_frames=100, output_folder='output/Pos
 	hoomd.run(n_frames*sample_period)
 
 def hoomd_make_configurations_polydisp(phi:float, n_frames=100, output_folder='output/Positions/'):
+
+	import hoomd
+	import hoomd.hpmc
+	import gsd.hoomd
 
 	"""
 	Generating Lattice
@@ -246,6 +253,8 @@ def convert_hoomd_positions(positions, canvas_size, diameter=10, diameters=None,
 		return centers
 
 def read_gsd(file_name:str, i:int):
+	import gsd.hoomd
+
 	gsd_iter = gsd.hoomd.open(file_name, 'rb')
 
 	num_frames = len(gsd_iter)

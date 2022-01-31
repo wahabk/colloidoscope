@@ -1,7 +1,5 @@
 from setuptools import setup, find_packages
 
-# TODO use setup.py or setup.cfg?
-
 setup(
        # the name must match the folder name 'verysimplemodule'
         name="colloidoscope", 
@@ -11,7 +9,22 @@ setup(
         description='My PhD project to track colloids using confocal and deep learning.',
         # long_description=LONG_DESCRIPTION,
         packages=find_packages(),
-        install_requires=[],
+        install_requires=[
+                'numpy>=1.19',
+                'torch',
+                'matplotlib',
+                'pathlib2',
+                'trackpy',
+                'numba',
+                'matplotlib',
+                'h5py',
+                'napari',
+                'scipy',
+                'scikit-learn',
+                'scikit-image',
+                'torchio',
+                'neptune-client',
+                'tqdm',
+        ],
         keywords=['python', 'colloidoscope'],
-
 )

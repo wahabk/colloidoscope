@@ -58,9 +58,6 @@ MarkupSafe==2.0.1
 matplotlib==3.3.4
 matplotlib-inline==0.1.3
 mccabe==0.6.1
-monai==0.7.0
-moviepy==1.0.3
-# mpi4py==3.1.2
 napari==0.4.12
 napari-console==0.0.4
 napari-plugin-engine==0.2.0
