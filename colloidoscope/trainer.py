@@ -352,7 +352,11 @@ def renormalise(tensor: torch.Tensor):
 	array = array * 255
 	return array
 
-def train(config, name, dataset_path, dataset_name, train_data, val_data):
+def train(config, name, dataset_path, dataset_name, train_data, val_data, save=False, tuner=True):
+	'''
+	by default for ray tune
+	'''
+
 	dc = DeepColloid(dataset_path)
 
 	# setup neptune
@@ -425,14 +429,19 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data):
 					lr_scheduler=None,
 					epochs=params['epochs'],
 					logger=run,
-					tuner=True,
+					tuner=tuner,
 					)
 
 	# start training
 	training_losses, validation_losses, lr_rates = trainer.run_trainer()
+	
+	if save:
+		model_name = save
+		torch.save(model.state_dict(), model_name)
+		# run['model/weights'].upload(model_name)
 
 	# test one predict and upload to neptune
-	test_array, metadata, positions = dc.read_hdf5(params['dataset_name'], 1)
+	test_array, metadata, positions = dc.read_hdf5(params['dataset_name'], 1, read_metadata=True)
 	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
 	array_projection = np.max(test_array, axis=0)
 	label_projection = np.max(test_label, axis=0)*255

@@ -29,7 +29,7 @@ run = neptune.init(
 dataset_path = '/user/home/ak18001/scratch/Colloids'
 dc = DeepColloid(dataset_path)
 
-save = True
+save = False
 params = dict(
     roiSize = (32,128,128),
     train_data = range(1,500),

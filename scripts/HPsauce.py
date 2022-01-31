@@ -44,16 +44,13 @@ if __name__ == "__main__":
 		max_t=max_num_epochs,
 		grace_period=1,
 		reduction_factor=2)
-	reporter = CLIReporter(
-		# parameter_columns=["l1", "l2", "lr", "batch_size"],
-		metric_columns=["loss", "training_iteration"])
+
 	result = tune.run(
-		partial(train, dataset_path=dataset_path, dataset_name=dataset_name, train_data=range(1,2000), val_data=range(2001,2501)),
+		partial(train, run_name, dataset_path=dataset_path, dataset_name=dataset_name, train_data=range(1,2000), val_data=range(2001,2501)),
 		resources_per_trial={"cpu": 4, "gpu": 1},
 		config=config,
 		num_samples=num_samples,
 		scheduler=scheduler,
-		# progress_reporter=reporter,
 		checkpoint_at_end=True)
 
 	best_trial = result.get_best_trial("loss", "min", "last")
