@@ -1,0 +1,83 @@
+Mon Jan 31 13:39:39 2022       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 495.29.05    Driver Version: 495.29.05    CUDA Version: 11.5     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla P100-PCIE...  Off  | 00000000:06:00.0 Off |                    0 |
+| N/A   30C    P0    30W / 250W |      0MiB / 16280MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+|   1  Tesla P100-PCIE...  Off  | 00000000:86:00.0 Off |                    0 |
+| N/A   29C    P0    28W / 250W |      0MiB / 16280MiB |      2%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2020 NVIDIA Corporation
+Built on Tue_Sep_15_19:10:02_PDT_2020
+Cuda compilation tools, release 11.1, V11.1.74
+Build cuda_11.1.TC455_06.29069683_0
+My torch test
+Running on host gpu01.bc4.acrc.priv
+Time is Mon Jan 31 13:39:43 GMT 2022
+Directory is /user/home/ak18001/code/colloidoscope
+Slurm job ID is 10014479
+This jobs runs on the following machines:
+gpu01
+28
+Current cuda device  0
+True
+------------num available devices: 1
+https://app.neptune.ai/wahabk/Colloidoscope/e/COL-168
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/neptune/new/internal/utils/git.py:35: UserWarning: GitPython could not be initialized
+  warnings.warn("GitPython could not be initialized")
+/user/home/ak18001/.local/lib/python3.8/site-packages/torch/utils/data/dataloader.py:478: UserWarning: This DataLoader will create 4 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
+training on cuda
+Progress:   0%|          | 0/30 [00:00<?, ?it/s]
+Training:   0%|          | 0/250 [00:00<?, ?it/s][A
+                                                 [AProgress:   0%|          | 0/30 [00:04<?, ?it/s]
+Traceback (most recent call last):
+  File "scripts/bc4.py", line 47, in <module>
+    train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+  File "/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/colloidoscope/trainer.py", line 436, in train
+    training_losses, validation_losses, lr_rates = trainer.run_trainer()
+  File "/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/colloidoscope/trainer.py", line 65, in run_trainer
+    self._train()
+  File "/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/colloidoscope/trainer.py", line 104, in _train
+    out = self.model(input_)  # one forward pass
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1102, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/colloidoscope/unet.py", line 472, in forward
+    x, before_pooling = module(x)
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1102, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/user/home/ak18001/.conda/envs/colloids/lib/python3.8/site-packages/colloidoscope/unet.py", line 224, in forward
+    y = self.pool(y)  # pooling
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1102, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/nn/modules/pooling.py", line 240, in forward
+    return F.max_pool3d(input, self.kernel_size, self.stride,
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/_jit_internal.py", line 422, in fn
+    return if_false(*args, **kwargs)
+  File "/user/home/ak18001/.local/lib/python3.8/site-packages/torch/nn/functional.py", line 785, in _max_pool3d
+    return torch.max_pool3d(input, kernel_size, stride, padding, dilation, ceil_mode)
+RuntimeError: Given input size: (1024x1x4x4). Calculated output size: (1024x0x2x2). Output size is too small
+Shutting down background jobs, please wait a moment...
+Done!
+Waiting for the remaining 63 operations to synchronize with Neptune. Do not kill this process.
+All 63 operations synced, thanks for waiting!

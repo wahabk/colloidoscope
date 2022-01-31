@@ -31,7 +31,7 @@ conda activate colloids
 application="python3"
 
 #! Run options for the application
-options="scripts/train.py"
+options="scripts/bc4.py"
 
 #####################################
 ### You should not have to change ###
