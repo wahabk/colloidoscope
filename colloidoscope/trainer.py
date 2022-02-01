@@ -305,11 +305,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = []
+	first = True # save figs for first instance
 	model.eval()
 	with torch.no_grad():
 		for idx, data in enumerate(test_loader):
 			i = test_set[idx]
-			metadata, true_positions = dc.read_metadata(dataset_name, i)
+			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
 
 			x, y = data
 			x, y = x.to(device), y.to(device)
@@ -324,6 +325,10 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
+			pred_positions = find_positions(result, threshold)
+			ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+
+
 			m = {
 				'dataset': metadata['dataset'],
 				'n' 	 : metadata['n'],
@@ -332,11 +337,25 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				'n_particles':  metadata['n_particles'],
 				**metadata['params'],
 				'loss'	 : float(loss),
+				'AP'	 : float(ap),
 			}
+
+			if first and run != None:
+				x, y = dc.get_gr(true_positions, 7, 25, minimum_gas_number=1)
+				plt.plot(x, y, label='true')
+				x, y = dc.get_gr(pred_positions, 7, 25, minimum_gas_number=1)
+				plt.plot(x, y, label='pred')
+				plt.legend()
+				fig = plt.gcf()
+				run['gr'].upload(fig)
+				plt.clf()
+
+				fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
+
+
 
 			losses.append(m)
 			
-			positions = find_positions(result, threshold)
 
 	if run:
 		run['test/losses'] = losses

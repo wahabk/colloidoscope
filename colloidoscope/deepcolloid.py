@@ -48,6 +48,8 @@ class DeepColloid:
 
 	def read_metadata(self, dataset: str, n: int) -> dict:
 
+
+
 		json_path = f'{self.dataset_path}/{dataset}.json'
 		with open(json_path, "r+") as f:
 			json_data = json.load(f)
@@ -56,8 +58,12 @@ class DeepColloid:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "r") as f:
 			positions = np.array(f[str(n)+'_positions'])
+			try:
+				diameters = np.array(f[str(n)+'_diameters'])
+			except:
+				diameters = [metadata['params']['r']*2 for i in range(len(positions))]
 
-		return metadata, positions
+		return metadata, positions, diameters
 	
 	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, diameters=None, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
@@ -261,6 +267,10 @@ class DeepColloid:
 		return precision, recall, predictions
 
 	def average_precision(self, ground_truth, prediction, diameters):
+
+		# based on https://gist.github.com/tarlen5/008809c3decf19313de216b9208f3734
+
+
 		print('Calculating average precision, threshold:')
 
 		precisions = []
@@ -272,27 +282,26 @@ class DeepColloid:
 			prec, rec, pred = self.get_precision_recall(ground_truth, prediction, diameters, thresh,)
 			precisions.append(prec)
 			recalls.append(rec)
-			predictions.append(pred)
+			predictions.append(pred) # predictions are here for testing sklearn.metrics from_estimator
 		print('Done')
 
 		precisions = np.array(precisions)
 		recalls = np.array(recalls)
+		recalls = np.flip(recalls) # why do i need to flip ????
 
-		middleIndex = int((len(precisions) + 1)/2)
+		ap = np.trapz(precisions, x=recalls) # integrate
 
-		# TODO integrate to find ap
+		return ap, precisions, recalls, thresholds
 
-		# prec_at_rec = []
-		# for recall_level in np.linspace(0.0, 1.0, 11):
-		# 	try:
-		# 		args = np.argwhere(recalls >= recall_level).flatten()
-		# 		prec = max(precisions[args])
-		# 	except ValueError:
-		# 		prec = 0.0
-		# 	prec_at_rec.append(prec)
-		# average_precision = np.mean(prec_at_rec)
+	def plot_pr(self, ap, precisions, recalls, thresholds, name):
+		# display = metrics.PrecisionRecallDisplay(precision=precisions, 
+		# 								recall=recalls, estimator_name=name).plot()
 
-		return precisions, recalls, thresholds, predictions[0]
+		plt.plot(recalls, precisions, 'bo-')
+		plt.title(f'{name}. Average precision = {ap}')
+		plt.xlim([-0.1,1.1])
+		plt.ylim([-0.1,1.1])
+		return plt.gcf()
 
 	def crop3d(self, array, roiSize, center=None):
 		roiZ, roiY, roiX = roiSize

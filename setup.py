@@ -16,6 +16,7 @@ setup(
                 'pathlib2',
                 'trackpy',
                 'numba',
+                'pandas',
                 'matplotlib',
                 'h5py',
                 'napari',

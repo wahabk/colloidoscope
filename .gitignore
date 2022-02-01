@@ -141,5 +141,4 @@ runs/
 *.pth
 .neptune/
 *.pth
-output/weights/
-
+*.pt
