@@ -352,7 +352,7 @@ def renormalise(tensor: torch.Tensor):
 	array = array * 255
 	return array
 
-def train(config, name, dataset_path, dataset_name, train_data, val_data, save=False, tuner=True):
+def train(config, name, dataset_path, dataset_name, train_data, val_data, save=False, tuner=True, device_ids=[0,1]):
 	'''
 	by default for ray tune
 	'''
@@ -410,7 +410,10 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, save=F
 				activation=params['activation'],
 				normalization=params['norm'],
 				conv_mode='same',
-				dim=3).to(device)
+				dim=3)
+
+	model = torch.nn.DataParallel(model, device_ids=device_ids)
+	model.to(device)
 
 	# loss function
 	criterion = torch.nn.BCEWithLogitsLoss()

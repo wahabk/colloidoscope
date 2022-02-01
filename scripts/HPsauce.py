@@ -26,6 +26,8 @@ if __name__ == "__main__":
 	gpus_per_trial = 1
 	dataset_name = 'new_year'
 	run_name = 'testing'
+	save = '/user/home/ak18001/scratch/Colloids/unet.pt'
+	device_ids = [0,1]
 
 	config = {
 	"lr": tune.loguniform(0.01, 0.001),
@@ -46,7 +48,7 @@ if __name__ == "__main__":
 		reduction_factor=2)
 
 	result = tune.run(
-		partial(train, run_name, dataset_path=dataset_path, dataset_name=dataset_name, train_data=range(1,2000), val_data=range(2001,2501)),
+		partial(train, run_name, dataset_path=dataset_path, dataset_name=dataset_name, train_data=range(1,2000), val_data=range(2001,2501), save=save, tuner=True, device_ids=device_ids),
 		resources_per_trial={"cpu": 4, "gpu": 1},
 		config=config,
 		num_samples=num_samples,
