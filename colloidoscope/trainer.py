@@ -371,7 +371,7 @@ def renormalise(tensor: torch.Tensor):
 	array = array * 255
 	return array
 
-def train(config, name, dataset_path, dataset_name, train_data, val_data, save=False, tuner=True):
+def train(config, name, dataset_path, dataset_name, train_data, val_data, save=False, tuner=True, device_ids=[0,1]):
 	'''
 	by default for ray tune
 	'''
@@ -421,7 +421,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, save=F
 	print(f'training on {device}')
 
 	# model
-	#TODO add model params to neptune
 	model = UNet(in_channels=1,
 				out_channels=params['n_classes'],
 				n_blocks=params['n_blocks'],
@@ -429,7 +428,10 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, save=F
 				activation=params['activation'],
 				normalization=params['norm'],
 				conv_mode='same',
-				dim=3).to(device)
+				dim=3)
+
+	model = torch.nn.DataParallel(model, device_ids=device_ids)
+	model.to(device)
 
 	# loss function
 	criterion = torch.nn.BCEWithLogitsLoss()
@@ -467,5 +469,10 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, save=F
 	sidebyside = np.concatenate((array_projection, label_projection), axis=1)
 	sidebyside /= sidebyside.max()
 	run['prediction'].upload(File.as_image(sidebyside))
+
+	test_set = range(3000, 3101)
+	losses = test(model, dataset_path, dataset_name, test_set, device=device)
+
+	run['test/df'].upload(File.as_html(losses))
 
 	run.stop()

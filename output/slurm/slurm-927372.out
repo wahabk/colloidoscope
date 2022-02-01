@@ -1,0 +1,45 @@
+cpu-bind=MASK - bp1-gpu005, task 4294967295 4294967295 [0]: mask 0x1010 set
+Tue Feb  1 12:07:07 2022       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 470.74       Driver Version: 470.74       CUDA Version: 11.4     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  NVIDIA GeForce ...  Off  | 00000000:86:00.0 Off |                  N/A |
+| 39%   65C    P0    77W / 250W |      0MiB / 11019MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+|   1  NVIDIA GeForce ...  Off  | 00000000:AF:00.0 Off |                  N/A |
+| 14%   64C    P0    64W / 250W |      0MiB / 11019MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2020 NVIDIA Corporation
+Built on Tue_Sep_15_19:10:02_PDT_2020
+Cuda compilation tools, release 11.1, V11.1.74
+Build cuda_11.1.TC455_06.29069683_0
+My torch test
+Running on host bp1-gpu005.data.bp.acrc.priv
+Time is Tue 1 Feb 12:07:09 GMT 2022
+Directory is /user/home/ak18001/code/colloidoscope
+Slurm job ID is 927372
+This jobs runs on the following machines:
+bp1-gpu005
+16
+Current cuda device  0
+True
+------------num available devices: 2
+Traceback (most recent call last):
+  File "scripts/bp1.py", line 48, in <module>
+    train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+TypeError: train() got an unexpected keyword argument 'device_ids'

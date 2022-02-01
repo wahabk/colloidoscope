@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
 	config = {
 		"lr": 0.005,
-		"batch_size": 32,
+		"batch_size": 16,
 		"n_blocks": 6,
 		"norm": 'batch',
 		"epochs": 30,
@@ -46,4 +46,4 @@ if __name__ == "__main__":
 	}
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
-				train_data=train_data, val_data=val_data, save=save, tuner=False)
+				train_data=train_data, val_data=val_data, save=save, tuner=False, device_ids=[0,1,])
