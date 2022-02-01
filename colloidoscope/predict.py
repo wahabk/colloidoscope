@@ -7,7 +7,8 @@ import pandas as pd
 def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_positions=False):
 	
 	if weights_path is not None:
-		model_weights = torch.load(weights_path) # read trained weights
+		model_weights = torch.load(weights_path, map_location='cpu') # read trained weights
+		# print(model_weights.keys())
 		model.load_state_dict(model_weights) # add weights to model
 
 	array = scan.copy()
@@ -55,8 +56,9 @@ def find_positions(result, threshold) -> np.ndarray:
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
 
-def detect(self, array, weights_path =  'output/weights/unet.pt', debug=False):
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def detect(array, weights_path =  'output/weights/unet.pt', debug=False):
+	# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	device = 'cpu'
 	print(f'predict on {device}')
 
 	# model
@@ -67,7 +69,9 @@ def detect(self, array, weights_path =  'output/weights/unet.pt', debug=False):
 				activation='relu',
 				normalization='batch',
 				conv_mode='same',
-				dim=3).to(device)
+				dim=3)
+				
+	model = torch.nn.DataParallel(model).to(device)
 
 	roiSize = (32,128,128)
 	threshold = 0.5
@@ -80,7 +84,7 @@ def detect(self, array, weights_path =  'output/weights/unet.pt', debug=False):
 	}
 
 	if debug:
-		return positions
+		return positions, label
 	else:
 		return pd.DataFrame().from_dict(d) #, orient='index')
 

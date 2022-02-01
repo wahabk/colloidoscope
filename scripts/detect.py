@@ -1,11 +1,15 @@
 import colloidoscope as cd
 
 if __name__ == '__main__':
-	dataset_path = '/Users/wahab/Data/Colloids/'
+	dataset_path = dataset_path = '/home/wahab/Data/HDD/Colloids/'
 
 	dc = cd.DeepColloid(dataset_path)
-	
-	array = dc.read_tif(dataset_path+'Real/Levke/goodData_2021_4_1Levke_smallParticles_betterData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif')
+	path = '/home/wahab/Data/HDD/Colloids/Real/Levke/Levke_smallParticles_betterData_2021_4_1/goodData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
+	array = dc.read_tif(path)
+
+	array = array[0]
+
+	array = dc.crop3d(array, (32,128,128))
 
 	# reader = explore_lif.Reader('Data/i-ii.lif')
 	# series = reader.getSeries()
@@ -19,8 +23,8 @@ if __name__ == '__main__':
 
 	print(array.shape)
 
-	pos = dc.detect(array, debug=True)
+	pos, label = dc.detect(array, debug=True)
 
 	print(pos)
 	
-	dc.view(array)
+	dc.view(array, positions=pos, label=label)
