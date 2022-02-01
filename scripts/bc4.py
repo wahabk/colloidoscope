@@ -14,9 +14,8 @@ from ray import tune
 print(os.cpu_count())
 print ('Current cuda device ', torch.cuda.current_device())
 print(torch.cuda.is_available())
-
 # fix  cuda multi gpu error
-os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
 print('------------num available devices:', torch.cuda.device_count())
 
 if __name__ == "__main__":
@@ -30,9 +29,10 @@ if __name__ == "__main__":
 	dataset_name = 'new_year'
 	train_data=range(2,2000)
 	val_data=range(2001,2501)
+	test_data=range(3000, 3101)
 	name='testing'
 	# save = 'output/weights/unet.pt'
-	save = '/user/home/ak18001/scratch/Colloids/unet.pt'
+	save = '/user/home/ak18001/scratch/Colloids/unet.pt' # bp1
 
 	config = {
 		"lr": 0.005,
@@ -45,4 +45,5 @@ if __name__ == "__main__":
 	}
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
-				train_data=train_data, val_data=val_data, save=save, tuner=False)
+				train_data=train_data, val_data=val_data, test_data=test_data, 
+				save=save, tuner=False, device_ids=[0,1,])

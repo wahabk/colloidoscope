@@ -1,20 +1,19 @@
-from gettext import find
 import numpy as np
 import pandas as pd
 import torch
-from torch import nn
 from matplotlib import pyplot as plt
 from tqdm import tqdm, trange
 import math
 import neptune.new as neptune
 from neptune.new.types import File
-from .deepcolloid import DeepColloid
-from .dataset import ColloidsDatasetSimulated
+from .deepcolloid import *
+from .dataset import *
 from .unet import UNet
-import scipy
 from ray import tune
 import os
 import torchio as tio
+import scipy
+from .predict import predict
 
 class Trainer:
 	def __init__(self,
@@ -151,7 +150,7 @@ class LearningRateFinder:
 	"""
 
 	def __init__(self,
-				 model: nn.Module,
+				 model: torch.nn.Module,
 				 criterion,
 				 optimizer,
 				 device
@@ -239,33 +238,11 @@ class LearningRateFinder:
 		self.optimizer.load_state_dict(self._opt_init)
 		print('Model and optimizer in initial state.')
 
-def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_positions=False):
-	
-	if weights_path is not None:
-		model_weights = torch.load(weights_path) # read trained weights
-		model.load_state_dict(model_weights) # add weights to model
 
-	array = scan.copy()
-	array = np.array(array/255, dtype=np.float32)
-	array = np.expand_dims(array, 0)      # add channel axis
-	array = np.expand_dims(array, 0)      # add batch axis
-	array = torch.from_numpy(array).to(device)  # to torch, send to device
-	
-	model.eval()
-	with torch.no_grad():
-		out = model(array)  # send through model/network
+def dep_test(model, train_data, device='cpu'):
 
-	out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-	
-	# post process to numpy array
-	result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
-
-	if return_positions:
-		positions = find_positions(result, threshold)
-		return result, positions
-	else:
-		return result
+	for d in train_data:
+		label, positions = predict(d, model, device=device, return_positions=True)
 
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
@@ -288,15 +265,6 @@ def find_positions(result, threshold) -> np.ndarray:
 	resultLabel = scipy.ndimage.label(label, structure=str_3D)
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
-
-
-
-def dep_test(model, train_data, device='cpu'):
-
-	for d in train_data:
-		label, positions = predict(d, model, device=device, return_positions=True)
-
-
 
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=None, device='cpu'):
 	dc = DeepColloid(dataset_path)
@@ -371,7 +339,7 @@ def renormalise(tensor: torch.Tensor):
 	array = array * 255
 	return array
 
-def train(config, name, dataset_path, dataset_name, train_data, val_data, save=False, tuner=True, device_ids=[0,1]):
+def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1]):
 	'''
 	by default for ray tune
 	'''
@@ -470,7 +438,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, save=F
 	sidebyside /= sidebyside.max()
 	run['prediction'].upload(File.as_image(sidebyside))
 
-	test_set = range(3000, 3101)
+	test_set = test_data
 	losses = test(model, dataset_path, dataset_name, test_set, device=device)
 
 	run['test/df'].upload(File.as_html(losses))

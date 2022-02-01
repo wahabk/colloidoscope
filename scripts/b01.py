@@ -18,31 +18,31 @@ print('------------num available devices:', torch.cuda.device_count())
 
 if __name__ == "__main__":
 
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	# dataset_path = '/data/mb16907/wahab/Colloids'
 	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
-	dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
+	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
 	dataset_name = 'new_year'
-	train_data=range(2,2000)
-	val_data=range(2001,2501)
-	test_data=range(3000, 3101)
-	name='testing'
+	train_data=range(2,1000)
+	val_data=range(1001,1501)
+	test_data=range(3000, 3051)
+	name='deliver?'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
 		"lr": 0.005,
-		"batch_size": 16,
+		"batch_size": 4,
 		"n_blocks": 6,
 		"norm": 'batch',
-		"epochs": 30,
+		"epochs": 10,
 		"start_filters": 32,
 		"activation": 'relu',
 	}
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, 
-				save=save, tuner=False, device_ids=[0,1,])
+				save=save, tuner=False, device_ids=[0,])

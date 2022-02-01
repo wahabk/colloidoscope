@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from .deepcolloid import DeepColloid
+from .deepcolloid import *
 
 class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 	"""

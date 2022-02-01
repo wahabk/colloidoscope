@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import napari
 import h5py
+import torch
 from scipy.spatial.distance import pdist
 import math
 from copy import deepcopy
@@ -10,13 +11,18 @@ from .explore_lif import Reader
 import json
 from pathlib2 import Path
 from skimage import io
+import pandas as pd
+from .predict import detect
 
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
 		self.dataset_path = dataset_path
 
+	def detect(self, *args, **kwargs):
+		return detect(*args, **kwargs)
+
 	def read_tif(self, path):
-		return io.imread(self.dataset_path+path)
+		return io.imread(path)
 
 	def explore_lif_reader(self, *args, **kwargs):
 		return Reader(*args, **kwargs)
@@ -317,6 +323,4 @@ class DeepColloid:
 		z, y, x = int(z), int(y), int(x)
 		array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
 		return array
-
-
 
