@@ -8,8 +8,8 @@ import numpy as np
 import random
 
 if __name__ == '__main__':
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -39,6 +39,9 @@ if __name__ == '__main__':
 			print(i, n, v, n+(i*100)-100, index)
 			print('\n', f'{index}/{len(volfracs.flatten())}', '\n')
 			
+			# index+=1
+			# continue
+
 			volfrac = v
 			types = {
 			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
@@ -67,10 +70,10 @@ if __name__ == '__main__':
 
 			# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 			# path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
-			if i > 500:
+			if index > 500:
 				path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
 			else:
-				path = f'{dataset_path}/Positions/phi_{volfrac*1000:.0f}.gsd'
+				path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
 			print(f'Reading: {path} ...')
 			hoomd_positions, diameters = read_gsd(path, n)
 			print(diameters.shape)
@@ -83,7 +86,7 @@ if __name__ == '__main__':
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
 
-			dc.view(canvas, centers,  label)
+			# dc.view(canvas, centers,  label)
 
 			# exit()
 
@@ -92,7 +95,7 @@ if __name__ == '__main__':
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			# dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
+			dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
 			# dc.write_hdf5(dataset_name+'_labels', n, label, metadata=None, positions=centers, dtype='float32')
 
 			# canvas, metadata, positions, diameters = dc.read_hdf5(dataset_name, n, read_metadata=True, read_diameters=True)
