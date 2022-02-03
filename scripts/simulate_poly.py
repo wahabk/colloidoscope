@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
 	canvas_size=(32,128,128)
 	dataset_name = 'janpoly'
-	n_samples_per_phi = 100 #5000
+	n_samples_per_phi = 99 #5000
 	num_workers = 10
 
 	# keys = dc.get_hdf5_keys(dataset_name)
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 	# more =  [[round(v, 2)]*n_samples_per_phi for v in  np.linspace(0.1,0.5,5)]
 	volfracs = np.array(volfracs)
 	print(volfracs.shape)
-
+	print(volfracs)
 
 	index = 1
 	for i, volfrac in enumerate(volfracs):
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 		for n, v in enumerate(volfrac):
 			
 			n+=1
-			print(i, n, v, n+(i*100)-100, index)
+			print(i, n, v, n+(i*n_samples_per_phi)-n_samples_per_phi, index)
 			print('\n', f'{index}/{len(volfracs.flatten())}', '\n')
 			
 			# index+=1
@@ -95,7 +95,7 @@ if __name__ == '__main__':
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
+			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
 			# dc.write_hdf5(dataset_name+'_labels', n, label, metadata=None, positions=centers, dtype='float32')
 
 			# canvas, metadata, positions, diameters = dc.read_hdf5(dataset_name, n, read_metadata=True, read_diameters=True)
