@@ -1,4 +1,5 @@
 import colloidoscope as cd
+import napari
 
 if __name__ == '__main__':
 	dataset_path = dataset_path = '/home/wahab/Data/HDD/Colloids/'
@@ -7,9 +8,8 @@ if __name__ == '__main__':
 	path = '/home/wahab/Data/HDD/Colloids/Real/Levke/Levke_smallParticles_betterData_2021_4_1/goodData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
 	array = dc.read_tif(path)
 
-	array = array[0]
-
-	array = dc.crop3d(array, (32,128,128))
+	array = array[0]	
+	# array = dc.crop3d(array, (32,128,128))
 
 	# reader = explore_lif.Reader('Data/i-ii.lif')
 	# series = reader.getSeries()
@@ -23,8 +23,12 @@ if __name__ == '__main__':
 
 	print(array.shape)
 
-	pos, label = dc.detect(array, debug=True)
+	# pos, label = dc.detect(array, debug=True)
+	# print(pos.shape)
+	# dc.view(array, positions=pos, label=label)
 
-	print(pos)
-	
-	dc.view(array, positions=pos, label=label)
+	viewer=napari.Viewer()
+	viewer.add_image(array)
+	napari.run()	
+
+	import pdb;pdb.set_trace()

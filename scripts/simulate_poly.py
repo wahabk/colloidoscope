@@ -24,8 +24,11 @@ if __name__ == '__main__':
 	
 	# make 100 scans of each volfrac
 	# make list of n_samples for each volfrac
-	volfracs = np.array([[round(v, 2)]*n_samples_per_phi for v in  np.linspace(0.1,0.5,5)])
+	volfracs = [[round(v, 2)]*n_samples_per_phi for v in  np.linspace(0.1,0.5,5)]*2
+	# more =  [[round(v, 2)]*n_samples_per_phi for v in  np.linspace(0.1,0.5,5)]
+	volfracs = np.array(volfracs)
 	print(volfracs.shape)
+
 
 	index = 1
 	for i, volfrac in enumerate(volfracs):
@@ -36,15 +39,15 @@ if __name__ == '__main__':
 			print(i, n, v, n+(i*100)-100, index)
 			print('\n', f'{index}/{len(volfracs.flatten())}', '\n')
 			
-			volfrac = 0.2
+			volfrac = v
 			types = {
-			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'min_brightness' : randrange(180,220), 'max_brightness' : randrange(221,255), 'noise': uniform(0, 0.01)},
-			'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
-			'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(0,4), 'z_gauss' : randrange(3,7), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
-			'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
+			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
+			'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
+			'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(0,4), 'z_gauss' : randrange(3,7), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
+			'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
 			}
 			keys = list(types)
-			this_type = 'large' #random.choice(keys)
+			this_type = random.choice(keys)
 
 			r = types[this_type]['r']
 			xy_gauss = types[this_type]['xy_gauss']
@@ -64,7 +67,10 @@ if __name__ == '__main__':
 
 			# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
 			# path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
-			path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
+			if i > 500:
+				path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
+			else:
+				path = f'{dataset_path}/Positions/phi_{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} ...')
 			hoomd_positions, diameters = read_gsd(path, n)
 			print(diameters.shape)
@@ -86,7 +92,7 @@ if __name__ == '__main__':
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			# dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, diameters=diameters, dtype='uint8')
+			# dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
 			# dc.write_hdf5(dataset_name+'_labels', n, label, metadata=None, positions=centers, dtype='float32')
 
 			# canvas, metadata, positions, diameters = dc.read_hdf5(dataset_name, n, read_metadata=True, read_diameters=True)

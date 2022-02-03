@@ -35,6 +35,8 @@ class DeepColloid:
 			positions = np.array(f[str(n)+'_positions'])
 			if read_diameters:
 				diameters = np.array(f[str(n)+'_diameters'])
+		
+		'''I'm sorry the mess below will be fixed with a dict'''
 
 		if read_metadata:
 			json_path = f'{self.dataset_path}/{dataset}.json'
@@ -53,9 +55,6 @@ class DeepColloid:
 			return canvas, positions
 
 	def read_metadata(self, dataset: str, n: int) -> dict:
-
-
-
 		json_path = f'{self.dataset_path}/{dataset}.json'
 		with open(json_path, "r+") as f:
 			json_data = json.load(f)
@@ -71,12 +70,13 @@ class DeepColloid:
 
 		return metadata, positions, diameters
 	
-	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, diameters=None, dtype:str='uint8') -> np.ndarray:
+	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, label:np.ndarray, diameters=None, dtype:str='uint8') -> np.ndarray:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
-			dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype=dtype, data = positions, compression=1)
+			dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype='float32', data = positions, compression=1)
+			dset = f.create_dataset(name=str(n)+'_labels', shape=label.shape, dtype='float32', data = label, compression=1)
 			if diameters is not None:
 				dset = f.create_dataset(name=str(n)+'_diameters', shape=positions.shape, dtype='float32', data = positions, compression=1)
 
