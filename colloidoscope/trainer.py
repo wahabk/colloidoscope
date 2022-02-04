@@ -294,8 +294,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 			pred_positions = find_positions(result, threshold)
-			ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-
+			prec, rec, pred = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 
 			m = {
 				'dataset': metadata['dataset'],
@@ -305,10 +304,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				'n_particles':  metadata['n_particles'],
 				**metadata['params'],
 				'loss'	 : float(loss),
-				'AP'	 : float(ap),
+				'precision'	 : float(prec),
+				'recall'	 : float(rec),
 			}
 
-			if first and run != None:
+			if first and (run != None):
 				x, y = dc.get_gr(true_positions, 7, 25, minimum_gas_number=1)
 				plt.plot(x, y, label='true')
 				x, y = dc.get_gr(pred_positions, 7, 25, minimum_gas_number=1)
@@ -318,18 +318,14 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				run['gr'].upload(fig)
 				plt.clf()
 
+				ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+
 				fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
+				run['ap'].upload(fig)
+				plt.clf()
 
-
-
+				first = False
 			losses.append(m)
-			
-
-	if run:
-		run['test/losses'] = losses
-
-	#TODO log mAP
-	#TODO log g(r)
 
 	return pd.DataFrame(losses)
 
@@ -430,7 +426,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		# run['model/weights'].upload(model_name)
 
 	# test one predict and upload to neptune
-	test_array, metadata, positions = dc.read_hdf5(params['dataset_name'], 1, read_metadata=True)
+	data = dc.read_hdf5(params['dataset_name'], 1)
+	test_array, metadata, positions = data['image'], data['metadata'], data['positions']
 	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
 	array_projection = np.max(test_array, axis=0)
 	label_projection = np.max(test_label, axis=0)*255
@@ -438,8 +435,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	sidebyside /= sidebyside.max()
 	run['prediction'].upload(File.as_image(sidebyside))
 
-	test_set = test_data
-	losses = test(model, dataset_path, dataset_name, test_set, device=device)
+	losses = test(model, dataset_path, dataset_name, test_data, run=run, device=device)
 
 	run['test/df'].upload(File.as_html(losses))
 

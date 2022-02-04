@@ -62,7 +62,7 @@ def detect(array, weights_path = 'output/weights/unet.pt', debug=False):
 	device = 'cpu'
 	roiSize = (32,128,128)
 	threshold = 0.5
-	patch_overlap=(16, 32, 32)
+	patch_overlap=(16, 0, 0)
 
 	print(f'predicting on {device}')
 

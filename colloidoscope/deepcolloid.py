@@ -27,32 +27,29 @@ class DeepColloid:
 	def explore_lif_reader(self, *args, **kwargs):
 		return Reader(*args, **kwargs)
 
-	def read_hdf5(self, dataset: str, n: int, read_metadata=False, read_diameters=False) -> np.ndarray:
+	def read_hdf5(self, dataset: str, n: int) -> dict:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
 			canvas = np.array(f[str(n)])
 			positions = np.array(f[str(n)+'_positions'])
-			if read_diameters:
-				diameters = np.array(f[str(n)+'_diameters'])
+			label = np.array(f[str(n)+'_labels'])
+			diameters = np.array(f[str(n)+'_diameters'])
 		
-		'''I'm sorry the mess below will be fixed with a dict'''
+		json_path = f'{self.dataset_path}/{dataset}.json'
+		with open(json_path, "r+") as f:
+			json_data = json.load(f)
+			metadata = json_data[str(n)]
 
-		if read_metadata:
-			json_path = f'{self.dataset_path}/{dataset}.json'
-			with open(json_path, "r+") as f:
-				json_data = json.load(f)
-				metadata = json_data[str(n)]
+		data = {
+			'image' : canvas,
+			'positions' : positions,
+			'label' : label,
+			'diameters' : diameters,
+			'metadata' : metadata,
+		}
 
-			if read_diameters:
-				return canvas, metadata, positions, diameters
-			else:
-				return canvas, metadata, positions
-
-		if read_diameters:
-			return canvas, positions, diameters
-		else:
-			return canvas, positions
+		return data
 
 	def read_metadata(self, dataset: str, n: int) -> dict:
 		json_path = f'{self.dataset_path}/{dataset}.json'

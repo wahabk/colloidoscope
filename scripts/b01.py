@@ -10,6 +10,7 @@ import neptune.new as neptune
 from neptune.new.types import File
 import os
 from ray import tune
+import random
 
 print(os.cpu_count())
 print ('Current cuda device ', torch.cuda.current_device())
@@ -25,23 +26,32 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'new_year'
-	train_data=range(2,1000)
-	val_data=range(1001,1501)
-	test_data=range(3000, 3051)
+
+	dataset_name = 'janpoly'
+	n_samples = dc.get_hdf5_keys(dataset_name)
+	print(len(n_samples))
+	all_data = list(range(2,990))
+	random.shuffle(all_data)
+
+	train_data = all_data[0:600]
+	val_data = all_data[601:801]
+	test_data =	all_data[801:]
 	name='deliver?'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
+
 
 	config = {
 		"lr": 0.005,
 		"batch_size": 4,
 		"n_blocks": 6,
 		"norm": 'batch',
-		"epochs": 10,
+		"epochs": 12,
 		"start_filters": 32,
 		"activation": 'relu',
 	}
+
+	#TODO add num_workers
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, 
