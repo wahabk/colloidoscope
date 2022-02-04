@@ -1,14 +1,14 @@
 import colloidoscope as cd
 import napari
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 	dataset_path = dataset_path = '/home/wahab/Data/HDD/Colloids/'
 
-	dc = cd.DeepColloid(dataset_path)
-	path = '/home/wahab/Data/HDD/Colloids/Real/Levke/Levke_smallParticles_betterData_2021_4_1/goodData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
-	array = dc.read_tif(path)
+	dataset_name = 'newyear'
 
-	array = array[0]	
+	dc = cd.DeepColloid(dataset_path)
+	
 	# array = dc.crop3d(array, (32,128,128))
 
 	# reader = explore_lif.Reader('Data/i-ii.lif')
@@ -21,14 +21,47 @@ if __name__ == '__main__':
 	# print(video.shape)
 	# t, x, y, z
 
-	print(array.shape)
+
+	# data = dc.read_hdf5(dataset_name, 645)
+	# true_positions = data['positions']
+	# array = data['image']
+	# diameters = data['diameters']
+	# print(data['metadata'])
 
 	# pos, label = dc.detect(array, debug=True)
 	# print(pos.shape)
 	# dc.view(array, positions=pos, label=label)
 
-	viewer=napari.Viewer()
-	viewer.add_image(array)
-	napari.run()	
 
-	import pdb;pdb.set_trace()
+	# x, y = dc.get_gr(true_positions, 7, 25, minimum_gas_number=1)
+	# plt.plot(x, y, label='true')
+	# x, y = dc.get_gr(pos, 7, 25, minimum_gas_number=1)
+	# plt.plot(x, y, label='pred')
+	# plt.legend()
+	# plt.show()
+	# plt.clf()
+
+	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pos, diameters=diameters)
+
+	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
+	# plt.show()
+	# plt.clf()
+
+	path = '/home/wahab/Data/HDD/Colloids/Real/Levke/LS51_4_binary_30nm_smallRange_decon.tif'	
+	array = dc.read_tif(path)
+
+	import pdb; pdb.set_trace()
+
+	pos, label = dc.detect(array, debug=True)
+	print(pos.shape)
+	dc.view(array, positions=pos, label=label)
+
+	x, y = dc.get_gr(pos, 50, 30)
+	plt.plot(x, y, label='pred')
+	plt.show()
+
+	# viewer=napari.Viewer()
+	# viewer.add_image(array)
+	# napari.run()	
+
+	# import pdb;pdb.set_trace()
