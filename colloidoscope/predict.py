@@ -24,9 +24,10 @@ def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_
 		out = model(array)  # send through model/network
 
 	out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
+	out_relu = torch.relu(out)
 	
 	# post process to numpy array
-	result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+	result = out_relu.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 	if return_positions:
