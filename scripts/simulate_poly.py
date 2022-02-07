@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
 			metadata = {
 				'dataset': dataset_name,
-				'n' 	 : n,
+				'n' 	 : index,
 				'type'	 : this_type,
 				'volfrac': volfrac,
 				'params' : types[this_type],

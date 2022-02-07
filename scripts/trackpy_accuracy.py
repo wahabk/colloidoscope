@@ -13,7 +13,7 @@ def run_trackpy(array, diameter=11):
 	f = [list(f[:]['z']), list(f[:]['x']), list(f[:]['y'])]
 	new = []
 	for i in range(0, len(f[0])):
-		new.append([ f[0][i], f[2][i], f[1][i] ])
+		new.append([ f[0][i], f[1][i], f[2][i] ])
 	tp_predictions = np.array(new)
 
 	return tp_predictions
@@ -52,26 +52,33 @@ def gr(positions, cutoff, bins, minimum_gas_number=1):
 
 
 if __name__ == '__main__':
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
-	dataset_name = 'new_year'
+	dataset_name = 'janpoly'
 
-	canvas, metadata, gt_positions = dc.read_hdf5(dataset_name, 3007, read_metadata=True)
+	# canvas, label, gt_positions, metadata = dc.read_hdf5_old(dataset_name, 3007)
+	data = dc.read_hdf5(dataset_name, 171)
+	canvas, metadata, gt_positions = data['image'], data['metadata'], data['positions']
 	print(metadata)
 	diameters = [metadata['params']['r']*2 for i in range(len(gt_positions))]
 
 	tp_predictions = run_trackpy(canvas, diameter=metadata['params']['r']*2-1)
-	print(metadata)
-	print(gt_positions.shape, tp_predictions.shape)
+
+
+	unet_pos, label = dc.detect(canvas, debug=True)
+	print(gt_positions.shape, tp_predictions.shape, unet_pos.shape)
+	print(gt_positions[0], tp_predictions[0], unet_pos[0])
 
 	# dc.view(canvas, tp_predictions)
 
-	x, y = gr(gt_positions, 7, 25)
+	x, y = dc.get_gr(gt_positions, 50, 50)
 	plt.plot(x, y, label='true')
-	x, y = gr(tp_predictions, 7, 25)
-	plt.plot(x, y, label='pred')
+	x, y = dc.get_gr(tp_predictions, 50, 50)
+	plt.plot(x, y, label='trackpy')
+	x, y = dc.get_gr(unet_pos, 50, 50)
+	plt.plot(x, y, label='unet')
 	plt.legend()
 	# plt.show()
 	plt.savefig('output/gr.png')
@@ -79,7 +86,10 @@ if __name__ == '__main__':
 	plt.clf()
 
 	ap, precisions, recalls, thresholds = dc.average_precision(gt_positions, tp_predictions, diameters=diameters)
-	fig = dc.plot_pr(ap, precisions=precisions, recalls=recalls, thresholds=thresholds, name='Trackpy')
+	fig = dc.plot_pr(ap, precisions=precisions, recalls=recalls, thresholds=thresholds, name='Trackpy', tag='bo-')
+	ap, precisions, recalls, thresholds = dc.average_precision(gt_positions, unet_pos, diameters=diameters)
+	fig = dc.plot_pr(ap, precisions=precisions, recalls=recalls, thresholds=thresholds, name='Unet', tag='ro-')
+	# plt.show()
 	plt.savefig('output/roc_trackpy.png')
 	
 

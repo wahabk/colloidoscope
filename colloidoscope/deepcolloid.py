@@ -32,8 +32,8 @@ class DeepColloid:
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
 			canvas = np.array(f[str(n)])
-			positions = np.array(f[str(n)+'_positions'])
 			label = np.array(f[str(n)+'_labels'])
+			positions = np.array(f[str(n)+'_positions'])
 			diameters = np.array(f[str(n)+'_diameters'])
 		
 		json_path = f'{self.dataset_path}/{dataset}.json'
@@ -50,6 +50,26 @@ class DeepColloid:
 		}
 
 		return data
+
+	def read_hdf5_old(self, dataset: str, n: int) -> dict:
+		path = f'{self.dataset_path}/{dataset}.hdf5'
+		# print(f'Reading hdf5 dataset: {path} sample number {n}')
+		with h5py.File(path, "r") as f:
+			canvas = np.array(f[str(n)])
+			positions = np.array(f[str(n)+'_positions'], dtype='float32')
+			# diameters = np.array(f[str(n)+'_diameters'])
+		
+		path = f'{self.dataset_path}/{dataset}_labels.hdf5'
+		with h5py.File(path, "r") as f:
+			label = np.array(f[str(n)])
+
+		json_path = f'{self.dataset_path}/{dataset}.json'
+		with open(json_path, "r+") as f:
+			json_data = json.load(f)
+			metadata = json_data[str(n)]
+
+
+		return canvas, label, positions, metadata
 
 	def read_metadata(self, dataset: str, n: int) -> dict:
 		json_path = f'{self.dataset_path}/{dataset}.json'
@@ -130,8 +150,6 @@ class DeepColloid:
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
 
-
-
 		bins = np.linspace(0, cutoff, bins)
 		drs = bins[1:] - bins[:-1]
 		distances = pdist(positions).ravel()
@@ -150,9 +168,8 @@ class DeepColloid:
 
 		hist = np.histogram(distances, bins=bins)[0]
 
-		print(hist, rg_hist)
-
-		rg_hist[rg_hist==0] = 0.000001
+		# print(hist, rg_hist)
+		# rg_hist[rg_hist==0] = 0.000001
 
 		hist = hist / rg_hist # pdfs
 		hist[np.isnan(hist)] = 0
@@ -296,14 +313,15 @@ class DeepColloid:
 
 		return ap, precisions, recalls, thresholds
 
-	def plot_pr(self, ap, precisions, recalls, thresholds, name):
+	def plot_pr(self, ap, precisions, recalls, thresholds, name, tag='bo-'):
 		# display = metrics.PrecisionRecallDisplay(precision=precisions, 
 		# 								recall=recalls, estimator_name=name).plot()
 
-		plt.plot(recalls, precisions, 'bo-')
-		plt.title(f'{name}. Average precision = {ap}')
+		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap}')
+		plt.title('Average Precision')
 		plt.xlim([-0.1,1.1])
 		plt.ylim([-0.1,1.1])
+		plt.legend()
 		return plt.gcf()
 
 	def crop3d(self, array, roiSize, center=None):
