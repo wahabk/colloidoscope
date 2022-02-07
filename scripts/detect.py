@@ -1,11 +1,13 @@
 import colloidoscope as cd
 import napari
 import matplotlib.pyplot as plt
+import numpy as np
 
 if __name__ == '__main__':
-	dataset_path = dataset_path = '/home/wahab/Data/HDD/Colloids/'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids/'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 
-	dataset_name = 'newyear'
+	dataset_name = 'janpoly'
 
 	dc = cd.DeepColloid(dataset_path)
 	
@@ -21,36 +23,24 @@ if __name__ == '__main__':
 	# print(video.shape)
 	# t, x, y, z
 
+	data = dc.read_hdf5(dataset_name, 1)
+	image, metadata, positions, label = data['image'], data['metadata'], data['positions'], data['label']
 
-	# data = dc.read_hdf5(dataset_name, 645)
-	# true_positions = data['positions']
-	# array = data['image']
-	# diameters = data['diameters']
-	# print(data['metadata'])
+	pos, pred_label = dc.detect(image, debug=True)
 
-	# pos, label = dc.detect(array, debug=True)
-	# print(pos.shape)
-	# dc.view(array, positions=pos, label=label)
+	print(np.min(label), np.min(pred_label))
+
+	array_projection = np.max(image, axis=0)
+	label_projection = np.max(pred_label, axis=0)*255
+	sidebyside = np.concatenate((array_projection, label_projection), axis=1)
+	sidebyside /= sidebyside.max()
+	plt.imsave('output/prediction.png', sidebyside)
 
 
-	# x, y = dc.get_gr(true_positions, 7, 25, minimum_gas_number=1)
-	# plt.plot(x, y, label='true')
-	# x, y = dc.get_gr(pos, 7, 25, minimum_gas_number=1)
-	# plt.plot(x, y, label='pred')
-	# plt.legend()
-	# plt.show()
-	# plt.clf()
-
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pos, diameters=diameters)
-
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
-	# plt.show()
-	# plt.clf()
+	exit()
 
 	path = '/home/wahab/Data/HDD/Colloids/Real/Levke/LS51_4_binary_30nm_smallRange_decon.tif'	
 	array = dc.read_tif(path)
-
-	import pdb; pdb.set_trace()
 
 	pos, label = dc.detect(array, debug=True)
 	print(pos.shape)

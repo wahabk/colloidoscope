@@ -1,6 +1,7 @@
 from colloidoscope.hoomd_sim_positions import convert_hoomd_positions, hooomd_sim_positions
 from colloidoscope import DeepColloid
 from colloidoscope.simulator import simulate
+from colloidoscope.hoomd_sim_positions import read_gsd
 import numpy as np
 from magicgui import magicgui
 from napari.layers import Image
@@ -12,21 +13,26 @@ import napari
 	r={"widget_type": "Slider", 'maximum': 30},
 	xy_gauss={"widget_type": "Slider", 'maximum': 10},
 	z_gauss={"widget_type": "Slider", 'maximum': 10},
-	brightness={"widget_type": "Slider", 'maximum': 255},
+	max_brightness={"widget_type": "Slider", 'maximum': 255, 'minimum':150},
+	min_brightness={"widget_type": "Slider", 'maximum': 150, 'minimum':50},
 	noise={"widget_type": "FloatSlider", 'maximum': 0.1},
 	layout='vertical',)
 def update_simulation(layer:Image, label_layer:Image, r:int=5, 
-						xy_gauss:int=1, z_gauss:int=2, brightness:int=255, 
-						noise:float=0) -> Image:
+						xy_gauss:int=1, z_gauss:int=2, max_brightness:int=255, 
+						min_brightness:int=100, noise:float=0) -> Image:
 	if layer is not None:
 		assert isinstance(layer.data, np.ndarray)  # it will be!
 
 		array = layer.data
-		canvas_shape = array.shape
-		hoomd_centers = layer.metadata['centers']
-		centers = convert_hoomd_positions(positions = hoomd_centers, canvas_size=canvas_shape, diameter=r*2)
-		new_array, label_array = simulate(canvas_shape, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, num_workers=10)
+		canvas_size = array.shape
+		hoomd_positions = layer.metadata['positions']
+		hoomd_diameters = layer.metadata['diameters']
+
+		centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=hoomd_diameters)
 		
+		new_array, label_array = simulate(canvas_size, centers, r, xy_gauss, z_gauss, min_brightness, max_brightness, 
+							noise, make_label=True, diameters=diameters, num_workers=10)
+
 		print(new_array.shape, new_array.max(), new_array.min(), r, centers.shape)
 		print(label_array.shape, label_array.max(), label_array.min(), r, centers.shape)
 		
@@ -44,10 +50,12 @@ if __name__ == "__main__":
 
 	canvas_size = (32,128,128)
 	volfrac = 0.1
+	centers_path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
 	
 	canvas = np.zeros(canvas_size, dtype='uint8')
-	centers = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
-	canvas_metadata = {'centers' : centers}
+	hoomd_positions, diameters = read_gsd(centers_path, 1)
+	canvas_metadata = {'positions' : hoomd_positions}
+	canvas_metadata = {'diameters' : diameters}
 
 	viewer = napari.Viewer()
 	viewer.add_image(canvas, name="Simulated colloids", metadata=canvas_metadata)

@@ -58,8 +58,8 @@ def find_positions(result, threshold) -> np.ndarray:
 	return np.array(positions)
 
 def detect(array, weights_path = 'output/weights/unet.pt', debug=False):
-	# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	device = 'cpu'
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	# device = torch.device("cpu")
 	roiSize = (32,128,128)
 	threshold = 0.5
 	patch_overlap=(8, 8, 8)
@@ -76,12 +76,17 @@ def detect(array, weights_path = 'output/weights/unet.pt', debug=False):
 				conv_mode='same',
 				dim=3)
 
-	model = torch.nn.DataParallel(model).to(device)
+	model = torch.nn.DataParallel(model, device_ids=None)
+	
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
 		# print(model_weights.keys())
 		model.load_state_dict(model_weights) # add weights to model
+
+	model = model.to(device)
+
+
 	
 	array = array.copy()
 	array = np.array(array/array.max(), dtype=np.float32)
@@ -101,8 +106,9 @@ def detect(array, weights_path = 'output/weights/unet.pt', debug=False):
 			locations = patch_batch[tio.LOCATION]
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
+			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-			aggregator.add_batch(out_sigmoid, locations)
+			aggregator.add_batch(out_relu, locations)
 
 	output_tensor = aggregator.get_output_tensor()
 	# post process to numpy array

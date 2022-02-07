@@ -52,8 +52,8 @@ def gr(positions, cutoff, bins, minimum_gas_number=1):
 
 
 if __name__ == '__main__':
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 	dataset_name = 'janpoly'

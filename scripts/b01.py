@@ -36,7 +36,7 @@ if __name__ == "__main__":
 	train_data = all_data[0:600]
 	val_data = all_data[601:801]
 	test_data =	all_data[801:]
-	name='deliver?'
+	name = 'test'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 		"batch_size": 4,
 		"n_blocks": 6,
 		"norm": 'batch',
-		"epochs": 12,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": 'relu',
 	}

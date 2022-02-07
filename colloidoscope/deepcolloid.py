@@ -13,6 +13,7 @@ from pathlib2 import Path
 from skimage import io
 import pandas as pd
 from .predict import detect
+from numba import njit
 
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
@@ -24,7 +25,7 @@ class DeepColloid:
 	def read_tif(self, path):
 		return io.imread(path)
 
-	def explore_lif_reader(self, *args, **kwargs):
+	def Explore_lif_reader(self, *args, **kwargs):
 		return Reader(*args, **kwargs)
 
 	def read_hdf5(self, dataset: str, n: int) -> dict:
@@ -80,10 +81,10 @@ class DeepColloid:
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "r") as f:
 			positions = np.array(f[str(n)+'_positions'])
-			try:
-				diameters = np.array(f[str(n)+'_diameters'])
-			except:
-				diameters = [metadata['params']['r']*2 for i in range(len(positions))]
+			diameters = np.array(f[str(n)+'_diameters'])
+			# try:
+			# except:
+			# 	diameters = [metadata['params']['r']*2 for i in range(len(positions))]
 
 		return metadata, positions, diameters
 	
@@ -94,8 +95,7 @@ class DeepColloid:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
 			dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype='float32', data = positions, compression=1)
 			dset = f.create_dataset(name=str(n)+'_labels', shape=label.shape, dtype='float32', data = label, compression=1)
-			if diameters is not None:
-				dset = f.create_dataset(name=str(n)+'_diameters', shape=positions.shape, dtype='float32', data = positions, compression=1)
+			dset = f.create_dataset(name=str(n)+'_diameters', shape=diameters.shape, dtype='float32', data = diameters, compression=1)
 
 		if metadata:
 			json_path = f'{self.dataset_path}/{dataset}.json'
@@ -181,17 +181,17 @@ class DeepColloid:
 		Measure distance between two spheres normalised by diameters
 		"""
 
-		dist = pdist([center1, center2])[0]
+		dist = pdist([center1, center2])
+		dist = float(dist[0])
 
-		iou_dist = 1 - (dist/(diameter))
-
+		iou_dist = 1 - (dist/diameter)
+		
 		if iou_dist < 0 : iou_dist = 0
 		return iou_dist
 
 	def get_results(self, gt, pred, diameters, threshold,):
 
 		tp, fp, fn = 0, 0, 0
-		predictions = [0 for i in gt]
 
 		if len(pred) == 0:
 			tp = 0
@@ -219,16 +219,7 @@ class DeepColloid:
 					gt_idx_thresh.append(igb)
 					pred_idx_thresh.append(ipb)
 					ious.append(iou)
-		ious = np.array(ious)
-
-		# all_ious = []
-		# for igb, gt_pos in enumerate(gt):
-		# 	best = 0
-		# 	for ipb, pred_pos in enumerate(pred):
-		# 		iou = self.calc_iou_dist(pred_pos, gt_pos, diameter)
-		# 		if iou > best:
-		# 			best = iou
-		# 	all_ious.append(best)			
+		ious = np.array(ious)	
 
 		# sort by higher iou
 		args_desc = np.argsort(ious)
@@ -262,16 +253,13 @@ class DeepColloid:
 			fn = len(gt) - len(gt_match_idx) # grount truths not in pred
 
 			# import pdb; pdb.set_trace()
-
-			for i , j in enumerate(gt_match_idx):
-				predictions[j] = iou_at_pred[i]
  
-		return tp, fp, fn, predictions
+		return tp, fp, fn
 
 	def get_precision_recall(self, ground_truths, predictions, diameters, threshold):
 
 		# take block of different images and find result
-		tp, fp, fn, predictions = self.get_results(ground_truths, predictions, diameters, threshold)
+		tp, fp, fn = self.get_results(ground_truths, predictions, diameters, threshold)
 
 		try:
 			precision = tp/(tp + fp)
@@ -284,7 +272,7 @@ class DeepColloid:
 		precision = precision
 		recall = recall
 
-		return precision, recall, predictions
+		return precision, recall
 
 	def average_precision(self, ground_truth, prediction, diameters):
 
@@ -299,10 +287,10 @@ class DeepColloid:
 		thresholds = np.linspace(0,1,10)
 		for thresh in thresholds:
 			print(thresh)
-			prec, rec, pred = self.get_precision_recall(ground_truth, prediction, diameters, thresh,)
+			prec, rec = self.get_precision_recall(ground_truth, prediction, diameters, thresh,)
 			precisions.append(prec)
 			recalls.append(rec)
-			predictions.append(pred) # predictions are here for testing sklearn.metrics from_estimator
+			# predictions.append(pred) # predictions are here for testing sklearn.metrics from_estimator
 		print('Done')
 
 		precisions = np.array(precisions)

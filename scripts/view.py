@@ -1,16 +1,26 @@
 from colloidoscope.deepcolloid import DeepColloid
 import napari
 import numpy as np
+import matplotlib.pyplot as plt
 
+dataset_path = '/home/wahab/Data/HDD/Colloids/'
 dataset_path = '/home/ak18001/Data/HDD/Colloids'
 dc = DeepColloid(dataset_path)
 
-dataset_name = 'new_year'
+dataset_name = 'janpoly'
 
-# TODO find consecutive time points and view
-sample, metadata, positions = dc.read_hdf5(dataset_name, 1, read_metadata=True)
-label, _ = dc.read_hdf5(dataset_name+'_labels', 1, read_metadata=False)
-nums = dc.get_hdf5_keys(dataset_name)
+# sample, metadata, positions = dc.read_hdf5(dataset_name, 1, read_metadata=True)
+# label, _ = dc.read_hdf5(dataset_name+'_labels', 1, read_metadata=False)
+# nums = dc.get_hdf5_keys(dataset_name)
 
-dc.view(sample, positions, label)
-napari.run()
+data = dc.read_hdf5(dataset_name, 1)
+image, metadata, positions, label = data['image'], data['metadata'], data['positions'], data['label']
+
+array_projection = np.max(image, axis=0)
+label_projection = np.max(label, axis=0)*255
+sidebyside = np.concatenate((array_projection, label_projection), axis=1)
+sidebyside /= sidebyside.max()
+plt.imsave('output/test.png', sidebyside)
+
+# dc.view(image, positions, label)
+# napari.run()

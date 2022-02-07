@@ -2,23 +2,7 @@
 
 A project to attempt tracking colloids using confocal and deep learning.
 
-# Dependencies
-
- - Python 3.8
- - pathlib2 
- - trackpy 
- - pytorch 
- - numpy 
- - numba 
- - matplotlib 
- - h5py 
- - napari 
- - scipy 
- - scikit-learn 
- - scikit-image 
- - torchio 
- - neptune 
- - hoomdblue (only for simulations)
+Pretrained weights and hyperparameter training history available upon request.
 
 # Installation
 
@@ -43,7 +27,45 @@ python3.8 -m pip install .
 
 # Usage: Quick Start
 
-I will provide custom jupyter notebooks in ```examples/```.
+I have no documentation for this project but I will endeavor to write nice docstrings. I will provide custom jupyter notebooks in ```examples/```.
+
+Colloidoscope centers around the class ```DeepColloid```. This contains all the functions you will need.
+
+First import and read your data:
+
+```Python
+import colloidoscope as cd
+
+dc = cd.DeepColloid()
+path = 'path/to/image.tif'
+image = dc.read_tif(path)
+# If you have a lif file Colloidoscope wraps the explore_lif Reader class
+Reader = dc.ExploreLifReader(args, kwargs)
+```
+
+Then simply use ```dc.detect()``` to track your image, this will return a pandas DataFrame just like TrackPy.
+
+```Python
+df = dc.detect(image, weights_path='path/to/model_weights.pt')
+```
+
+# Dependencies
+
+ - Python 3.8
+ - pathlib2 
+ - trackpy 
+ - pytorch 
+ - numpy 
+ - numba 
+ - matplotlib 
+ - h5py 
+ - napari 
+ - scipy 
+ - scikit-learn 
+ - scikit-image 
+ - torchio 
+ - neptune 
+ - hoomdblue (only for simulations)
 
 # Dev 
 ## Simulations

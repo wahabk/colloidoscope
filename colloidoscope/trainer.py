@@ -266,8 +266,10 @@ def find_positions(result, threshold) -> np.ndarray:
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
 
-def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=None, device='cpu'):
+def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=False, device='cpu'):
 	dc = DeepColloid(dataset_path)
+
+	print('Running test, this may take a while...')
 	
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
@@ -279,6 +281,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 		for idx, data in enumerate(test_loader):
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
+			#fix for now
+			diameters = [metadata['params']['r']*2 for i in range(len(true_positions))]
 
 			x, y = data
 			x, y = x.to(device), y.to(device)
@@ -288,13 +292,15 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			out = model(x)  # send through model/network
 			loss = criterion(out, y)
 			loss = loss.cpu().numpy()
+			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 			# post process to numpy array
-			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 			pred_positions = find_positions(result, threshold)
-			prec, rec, pred = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
+			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
+			print(pred_positions.shape)
 
 			m = {
 				'dataset': metadata['dataset'],
@@ -308,15 +314,18 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				'recall'	 : float(rec),
 			}
 
-			if first and (run != None):
-				x, y = dc.get_gr(true_positions, 7, 25, minimum_gas_number=1)
-				plt.plot(x, y, label='true')
-				x, y = dc.get_gr(pred_positions, 7, 25, minimum_gas_number=1)
-				plt.plot(x, y, label='pred')
-				plt.legend()
-				fig = plt.gcf()
-				run['gr'].upload(fig)
-				plt.clf()
+			if first and run:
+				if len(pred_positions) == 0:
+					print('Skipping gr() as bad pred')
+				else:		
+					x, y = dc.get_gr(true_positions, 50, 50)
+					plt.plot(x, y, label='true')
+					x, y = dc.get_gr(pred_positions, 50, 50)
+					plt.plot(x, y, label='pred')
+					plt.legend()
+					fig = plt.gcf()
+					run['gr'].upload(fig)
+					plt.clf()
 
 				ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
 
@@ -351,6 +360,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		roiSize = (32,128,128),
 		train_data = train_data,
 		val_data = val_data,
+		test_data = test_data,
 		dataset_name = dataset_name,
 		batch_size = config['batch_size'],
 		n_blocks = config['n_blocks'],
@@ -398,7 +408,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	model.to(device)
 
 	# loss function
-	criterion = torch.nn.BCEWithLogitsLoss()
+	# criterion = torch.nn.BCEWithLogitsLoss()
+	criterion = torch.nn.L1Loss()
 
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
@@ -435,7 +446,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	sidebyside /= sidebyside.max()
 	run['prediction'].upload(File.as_image(sidebyside))
 
-	losses = test(model, dataset_path, dataset_name, test_data, run=run, device=device)
+	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device)
 
 	run['test/df'].upload(File.as_html(losses))
 
