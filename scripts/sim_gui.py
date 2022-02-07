@@ -10,23 +10,23 @@ import napari
 # init magicgui parameters for sliders
 @magicgui(
 	call_button='Simulate', 
-	r={"widget_type": "Slider", 'maximum': 30},
-	xy_gauss={"widget_type": "Slider", 'maximum': 10},
-	z_gauss={"widget_type": "Slider", 'maximum': 10},
-	max_brightness={"widget_type": "Slider", 'maximum': 255, 'minimum':150},
-	min_brightness={"widget_type": "Slider", 'maximum': 150, 'minimum':50},
-	noise={"widget_type": "FloatSlider", 'maximum': 0.1},
+	r={"widget_type": "Slider", 'max': 30},
+	xy_gauss={"widget_type": "Slider", 'max': 30},
+	z_gauss={"widget_type": "Slider", 'max': 30},
+	max_brightness={"widget_type": "Slider", 'max': 255, 'min':150},
+	min_brightness={"widget_type": "Slider", 'max': 150, 'min':50},
+	noise={"widget_type": "FloatSlider", 'max': 0.2},
 	layout='vertical',)
-def update_simulation(layer:Image, label_layer:Image, r:int=5, 
-						xy_gauss:int=1, z_gauss:int=2, max_brightness:int=255, 
-						min_brightness:int=100, noise:float=0) -> Image:
+def update_simulation(layer:Image, label_layer:Image, r:int=6, 
+						xy_gauss:int=2, z_gauss:int=5, max_brightness:int=255, 
+						min_brightness:int=75, noise:float=0.01) -> Image:
 	if layer is not None:
 		assert isinstance(layer.data, np.ndarray)  # it will be!
 
 		array = layer.data
 		canvas_size = array.shape
-		hoomd_positions = layer.metadata['positions']
-		hoomd_diameters = layer.metadata['diameters']
+		hoomd_positions = layer.metadata['hoomd_positions']
+		hoomd_diameters = layer.metadata['hoomd_diameters']
 
 		centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=hoomd_diameters)
 		
@@ -43,23 +43,23 @@ def update_simulation(layer:Image, label_layer:Image, r:int=5,
 
 
 if __name__ == "__main__":
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
 	canvas_size = (32,128,128)
-	volfrac = 0.1
+	volfrac = 0.3
 	centers_path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
 	
 	canvas = np.zeros(canvas_size, dtype='uint8')
-	hoomd_positions, diameters = read_gsd(centers_path, 1)
-	canvas_metadata = {'positions' : hoomd_positions}
-	canvas_metadata = {'diameters' : diameters}
+	hoomd_positions, hoomd_diameters = read_gsd(centers_path, 1)
+	canvas_metadata = {'hoomd_diameters' : hoomd_diameters,
+						'hoomd_positions' : hoomd_positions}
 
 	viewer = napari.Viewer()
 	viewer.add_image(canvas, name="Simulated colloids", metadata=canvas_metadata)
-	viewer.add_image(canvas, name="Simulated labels", metadata=canvas_metadata)
+	viewer.add_image(canvas, name="Simulated labels", metadata=canvas_metadata, opacity=0.5, colormap='red')
 	# Add it to the napari viewer
 	viewer.window.add_dock_widget(update_simulation)
 	# update the layer dropdown menu when the layer list changes

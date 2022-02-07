@@ -84,10 +84,28 @@ def shake(centers, magnitude):
 		new_centers.append([cz, cy, cx])
 	return np.array(new_centers)
 
+def make_background(canvas_size, octaves, brightness, dtype='uint8'):
+	
+	from perlin_noise import PerlinNoise
+
+	noise = PerlinNoise(octaves=octaves)
+	zpix, xpix, ypix = canvas_size
+	pic = [[noise([i/xpix, j/ypix]) for j in range(xpix)] for i in range(ypix)] 
+	pic = [pic for _ in range(zpix)]
+
+	pic = np.array(pic)
+	pic = pic-pic.min()
+	pic = pic/pic.max()
+	pic = pic*brightness
+
+	pic = np.array(pic, dtype=dtype)
+	return pic
+
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
 			xy_gauss:int, z_gauss:int, min_brightness:int, max_brightness:int, noise:float, make_label=True, diameters=np.ndarray([]), num_workers=2):
 	brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
 	zoom = 0.5
+	pad = 0
 	gauss_kernel = (z_gauss, xy_gauss, xy_gauss)
 	# make bigger padded canvas
 	# this is to allow the gaussian blur to work on the edges
@@ -95,11 +113,13 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
-	# TODO make bigger canvas then crop
-	zoom_out_r = int(r/zoom)
 	zoom_out_size = [int(c/zoom) for c in canvas_size]
-	bigger_canvas_size = [int(c*1) for c in zoom_out_size]
-	canvas = np.zeros(bigger_canvas_size, dtype='uint8')
+	zoom_out_size_padded = [c+pad for c in zoom_out_size]
+	# canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
+	canvas = make_background(zoom_out_size_padded, 4, random.randint(0,50), dtype='uint8') #random.randint(0,20)
+	print('background', canvas.max())
+	
+	# convert centers to zoom out
 	zoom_out_centers=[]
 	for c in centers:
 		x,y,z = c
@@ -109,6 +129,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 	radii = [(d*r) for d in diameters]
 	zoom_out_radii = [r/zoom for r in radii]
+
 
 	# draw spheres slice by slice
 	print('Simulating scan...')

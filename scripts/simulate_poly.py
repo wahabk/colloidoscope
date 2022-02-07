@@ -14,7 +14,7 @@ if __name__ == '__main__':
 	dc = DeepColloid(dataset_path)
 
 	canvas_size=(32,128,128)
-	dataset_name = 'janpoly'
+	dataset_name = 'feb_blur'
 	n_samples_per_phi = 99 #5000
 	num_workers = 10
 
@@ -44,10 +44,10 @@ if __name__ == '__main__':
 
 			volfrac = v
 			types = {
-			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
-			'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
-			'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(0,4), 'z_gauss' : randrange(3,7), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
-			'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
+			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,6), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
+			'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(5,10), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
+			'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(1,5), 'z_gauss' : randrange(8,11), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
+			'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(2,5), 'z_gauss' : randrange(9,12), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0.01, 0.05)},
 			}
 			keys = list(types)
 			this_type = random.choice(keys)
