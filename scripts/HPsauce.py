@@ -22,7 +22,7 @@ if __name__ == "__main__":
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 
 	num_samples = 2
-	max_num_epochs = 15 # TODO feed this to train()
+	max_num_epochs = 15
 	gpus_per_trial = 1
 	dataset_name = 'new_year'
 	run_name = 'testing'
@@ -30,13 +30,13 @@ if __name__ == "__main__":
 	device_ids = [0,1]
 
 	config = {
-	"lr": tune.loguniform(0.01, 0.001),
-	"batch_size": tune.choice([4]),
-	"n_blocks": tune.choice([6]),
-	"norm": tune.choice(['batch']),
-	"epochs": tune.choice([15]),
-	"start_filters": tune.choice([32]),
-	"activation": tune.choice(['relu']),
+		"lr": tune.loguniform(0.01, 0.001),
+		"batch_size": tune.choice([4]),
+		"n_blocks": tune.choice([6]),
+		"norm": tune.choice(['batch']),
+		"epochs": tune.choice([15]),
+		"start_filters": tune.choice([32]),
+		"activation": tune.choice(['relu']),
 	}
 
 	# the scheduler will terminate badly performing trials

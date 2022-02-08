@@ -27,7 +27,7 @@ if __name__ == "__main__":
 	dc = DeepColloid(dataset_path)
 
 
-	dataset_name = 'janpoly'
+	dataset_name = 'febblur'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(2,990))
@@ -49,6 +49,7 @@ if __name__ == "__main__":
 		"epochs": 2,
 		"start_filters": 32,
 		"activation": 'relu',
+		"loss": torch.nn.CrossEntropyLoss(),
 	}
 
 	#TODO add num_workers

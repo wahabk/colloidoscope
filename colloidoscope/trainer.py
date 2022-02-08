@@ -274,7 +274,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
-	losses = []
+	losses = {}
 	first = True # save figs for first instance
 	model.eval()
 	with torch.no_grad():
@@ -328,15 +328,16 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 					plt.clf()
 
 				ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+				run['AP'].upload(ap)
 
 				fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
-				run['ap'].upload(fig)
+				run['PR_curve'].upload(fig)
 				plt.clf()
 
 				first = False
-			losses.append(m)
+			losses[idx] = m
 
-	return pd.DataFrame(losses)
+	return losses
 
 def renormalise(tensor: torch.Tensor):
 	array = tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
@@ -344,7 +345,7 @@ def renormalise(tensor: torch.Tensor):
 	array = array * 255
 	return array
 
-def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1]):
+def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
 	'''
 	by default for ray tune
 	'''
@@ -365,12 +366,13 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		batch_size = config['batch_size'],
 		n_blocks = config['n_blocks'],
 		norm = config['norm'],
-		num_workers = 4,
-		n_classes = 1,
+		loss = config['loss'],
 		lr = config['lr'],
 		epochs = config['epochs'],
 		start_filters = config['start_filters'],
 		activation = config['activation'],
+		num_workers = num_workers,
+		n_classes = 1,
 		random_seed = 42,
 	)
 	run['Tags'] = name
@@ -409,7 +411,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	# loss function
 	# criterion = torch.nn.BCEWithLogitsLoss()
-	criterion = torch.nn.L1Loss()
+	criterion = params['loss']
 
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
@@ -446,8 +448,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	sidebyside /= sidebyside.max()
 	run['prediction'].upload(File.as_image(sidebyside))
 
-	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device)
+	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
 
-	run['test/df'].upload(File.as_html(losses))
+	run['test'].log(losses)
 
 	run.stop()
