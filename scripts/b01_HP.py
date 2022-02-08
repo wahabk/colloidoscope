@@ -32,42 +32,42 @@ if __name__ == "__main__":
 	random.shuffle(all_data)
 
 	num_samples = 10
-	max_num_epochs = 10
+	max_num_epochs = 5
 	gpus_per_trial = 1
 
 	train_data = all_data[0:600]
 	val_data = all_data[601:801]
-	test_data =	all_data[801:]
-	name = 'test'
-	save = 'output/weights/unet.pt'
+	test_data =	all_data[801:901]
+	name = 'loss_filt'
+	save = '/home/ak18001/code/colloidoscope/output/weights/unet.pt'
 	device_ids = [0,]
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": tune.loguniform(0.01, 0.001),
-		"epochs": tune.choice([10]),
+		"lr": tune.loguniform(0.002, 0.001),
+		"epochs": 5,
 		"batch_size": tune.choice([4]),
-		"n_blocks": tune.choice([6]),
+		"n_blocks": tune.choice([5]),
 		"norm": tune.choice(['batch']),
-		"activation": tune.choice(['relu'], 'leaky_relu'),
-		"start_filters": tune.randint(3,33),
-		"loss": tune.choice([torch.nn.CrossEntropyLoss(), torch.nn.L1Loss(), torch.nn.MSELoss()]),
+		"activation": tune.grid_search(['relu', 'leaky']),
+		"start_filters": tune.choice([3, 5, 7, 11, 24, 32]),
+		"loss_function": tune.grid_search([torch.nn.L1Loss(), torch.nn.MSELoss()]),
 	}
 
-		# the scheduler will terminate badly performing trials
+	# the scheduler will terminate badly performing trials
 	scheduler = ASHAScheduler(
-		metric="loss",
+		metric="val_loss",
 		mode="min",
 		max_t=max_num_epochs,
 		grace_period=1,
 		reduction_factor=2)
 
 	result = tune.run(
-		partial(train, name, dataset_path=dataset_path, dataset_name=dataset_name, 
-				train_data=range(1,2000), val_data=range(2001,2501), save=save, 
+		partial(train, name=name, dataset_path=dataset_path, dataset_name=dataset_name, 
+				train_data=train_data, val_data=val_data, test_data=test_data, save=save, 
 				tuner=True, device_ids=device_ids),
-		resources_per_trial={"cpu": 4, "gpu": 1},
+		resources_per_trial={"cpu": 10, "gpu": 1},
 		config=config,
 		num_samples=num_samples,
-		scheduler=scheduler,
+		scheduler=None,
 		checkpoint_at_end=True)

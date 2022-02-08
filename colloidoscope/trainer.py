@@ -14,6 +14,8 @@ import os
 import torchio as tio
 import scipy
 from .predict import predict
+from torch.nn import BCELoss
+import copy
 
 class Trainer:
 	def __init__(self,
@@ -101,6 +103,10 @@ class Trainer:
 			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 			self.optimizer.zero_grad()  # zerograd the parameters
 			out = self.model(input_)  # one forward pass
+			# if self.criterion == 'BCELoss()':
+			# 	out_sigmoid = torch.nn.Sigmoid(out)
+			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
+
 			loss = self.criterion(out, target)  # calculate loss
 			loss_value = loss.item()
 			train_losses.append(loss_value)
@@ -139,7 +145,7 @@ class Trainer:
 				batch_iter.set_description(f'Validation: (loss {loss_value:.4f})')
 
 		self.validation_loss.append(np.mean(valid_losses))
-		if self.tuner: tune.report(loss=(np.sum(valid_losses) / len(self.validation_DataLoader)))
+		if self.tuner: tune.report(val_loss=(np.mean(valid_losses)))
 
 
 		batch_iter.close()
@@ -328,7 +334,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 					plt.clf()
 
 				ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-				run['AP'].upload(ap)
+				run['AP'] = ap
 
 				fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
 				run['PR_curve'].upload(fig)
@@ -366,7 +372,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		batch_size = config['batch_size'],
 		n_blocks = config['n_blocks'],
 		norm = config['norm'],
-		loss = config['loss'],
+		loss_function = config['loss_function'],
 		lr = config['lr'],
 		epochs = config['epochs'],
 		start_filters = config['start_filters'],
@@ -411,7 +417,9 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	# loss function
 	# criterion = torch.nn.BCEWithLogitsLoss()
-	criterion = params['loss']
+	criterion = params['loss_function']
+
+	params['loss_function'] = str(copy.deepcopy(params['loss_function']))
 
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
@@ -449,7 +457,9 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	run['prediction'].upload(File.as_image(sidebyside))
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
-
-	run['test'].log(losses)
+	
+	losses = pd.DataFrame(losses)
+	run['test/df'].upload(File.as_html(losses))
+	# run['test/test'].log(losses) #if dict
 
 	run.stop()
