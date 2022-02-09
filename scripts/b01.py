@@ -26,7 +26,6 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-
 	dataset_name = 'feb_blur'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
@@ -40,19 +39,16 @@ if __name__ == "__main__":
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
-
 	config = {
-		"lr": 0.005,
+		"lr": 0.002,
 		"batch_size": 4,
 		"n_blocks": 5,
 		"norm": 'batch',
-		"epochs": 2,
-		"start_filters": 3,
-		"activation": 'leaky',
-		"loss": torch.nn.MSELoss(),
+		"epochs": 6,
+		"start_filters": 5,
+		"activation": 'relu',
+		"loss_function": torch.nn.MSELoss(),
 	}
-
-	#TODO add num_workers
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, 
