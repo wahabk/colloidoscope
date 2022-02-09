@@ -58,20 +58,20 @@ def find_positions(result, threshold) -> np.ndarray:
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
 
-def detect(array, weights_path = 'output/weights/unet.pt', debug=False):
+def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 0), threshold = 0.5, debug=False):
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	# device = torch.device("cpu")
 	roiSize = (32,128,128)
-	threshold = 0.5
-	patch_overlap=(8, 8, 8)
+	
+	
 
 	print(f'predicting on {device}')
 
 	# model
 	model = UNet(in_channels=1,
 				out_channels=1,
-				n_blocks=6,
-				start_filters=32,
+				n_blocks=5,
+				start_filters=5,
 				activation='relu',
 				normalization='batch',
 				conv_mode='same',
