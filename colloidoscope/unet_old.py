@@ -355,7 +355,6 @@ class UNet(nn.Module):
     conv_mode: 'same', 'valid'
     dim: 2, 3
     up_mode: 'transposed', 'nearest', 'linear', 'bilinear', 'bicubic', 'trilinear'
-    skip_connect: None, 'res', 'dense'
     """
 
     def __init__(
@@ -369,7 +368,6 @@ class UNet(nn.Module):
         conv_mode: str = "same",
         dim: int = 2,
         up_mode: str = "transposed",
-        skip_connect: str = None
     ):
         super().__init__()
 

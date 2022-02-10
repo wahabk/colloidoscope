@@ -1,7 +1,8 @@
 # From https://github.com/johschmidt42/PyTorch-2D-3D-UNet-Tutorial
 # thank you joh
+from pytest import skip
 import torch
-from torch import nn
+from torch import batch_norm, nn
 
 
 @torch.jit.script
@@ -135,6 +136,84 @@ class Concatenate(nn.Module):
 
         return x
 
+def batch_norm(dim: int, num_channels):
+    if dim == 3:
+        return nn.BatchNorm3d(num_channels)
+    elif dim == 2:
+        return nn.BatchNorm2d(num_channels)
+
+
+class DenseTransition(nn.Module):
+    def __init__(self, in_channels, out_channels, dim) -> None:
+        super(DenseTransition, self).__init__()
+
+        self.dim = dim
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.norm = get_normalization(
+            normalization=self.normalization,
+            num_channels=self.out_channels,
+            dim=self.dim,
+        )
+
+        self.activ = get_activation('relu')
+
+        self.conv = get_conv_layer(self.in_channels,
+            self.out_channels,
+            kernel_size=2,
+            stride=1,
+            padding=0,
+            bias=False,
+            dim=self.dim,
+        )
+
+        if dim == 2:
+            self.pool = nn.AvgPool2d(kernel_size=2, stride=2)
+        if dim == 3:
+            self.pool = nn.AvgPool3d(kernel_size=2, stride=2)
+
+    def forward(self, x):
+
+        x = self.norm(x)
+        x = self.activ(x)
+        x = self.conv(x)
+        x = self.pool(x)
+
+        return x
+
+class ResSkip(nn.Module):
+    """
+    Please note this is not a bottleneck block 
+    """
+    def __init__(self, in_channels, out_channels, dim) -> None:
+        super(ResSkip, self).__init__()
+
+        self.dim = dim
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.conv = get_conv_layer(self.in_channels,
+            self.out_channels,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=True,
+            dim=self.dim,
+        )
+
+        self.norm = get_normalization(
+            normalization='batch',
+            num_channels=self.out_channels,
+            dim=self.dim,
+        )
+
+    def forward(self, x):
+
+        x = self.conv(x)
+        x = self.norm(x)
+
+        return x
 
 class DownBlock(nn.Module):
     """
@@ -152,6 +231,7 @@ class DownBlock(nn.Module):
         normalization: str = None,
         dim: str = 2,
         conv_mode: str = "same",
+        skip_connect: str = None,
     ):
         super().__init__()
 
@@ -165,6 +245,7 @@ class DownBlock(nn.Module):
             self.padding = 0
         self.dim = dim
         self.activation = activation
+        self.skip_connect = skip_connect
 
         # conv layers
         self.conv1 = get_conv_layer(
@@ -208,6 +289,20 @@ class DownBlock(nn.Module):
                 num_channels=self.out_channels,
                 dim=self.dim,
             )
+        
+        if self.skip_connect == 'res':
+            self.skip = ResSkip(
+                self.in_channels,
+                self.out_channels,
+                dim = self.dim
+            )
+
+        elif self.skip_connect == 'dense':
+            self.skip = DenseTransition(
+                self.in_channels,
+                self.out_channels,
+                dim = self.dim
+            )
 
     def forward(self, x):
         y = self.conv1(x)  # convolution 1
@@ -219,9 +314,15 @@ class DownBlock(nn.Module):
         if self.normalization:
             y = self.norm2(y)  # normalization 2
 
+        if self.skip_connect == 'res':
+            y = y + self.skip(x)
+        if self.skip_connect == 'dense':
+            y = Concatenate(y, self.skip(x))
+
         before_pooling = y  # save the outputs before the pooling operation
         if self.pooling:
             y = self.pool(y)  # pooling
+
         return y, before_pooling
 
 
@@ -241,6 +342,7 @@ class UpBlock(nn.Module):
         dim: int = 3,
         conv_mode: str = "same",
         up_mode: str = "transposed",
+        skip_connect: str = None,
     ):
         super().__init__()
 
@@ -254,6 +356,7 @@ class UpBlock(nn.Module):
         self.dim = dim
         self.activation = activation
         self.up_mode = up_mode
+        self.skip_connect = skip_connect
 
         # upconvolution/upsample layer
         self.up = get_up_layer(
@@ -355,6 +458,7 @@ class UNet(nn.Module):
     conv_mode: 'same', 'valid'
     dim: 2, 3
     up_mode: 'transposed', 'nearest', 'linear', 'bilinear', 'bicubic', 'trilinear'
+    skip_connect: None, 'res', 'dense'
     """
 
     def __init__(
@@ -368,6 +472,7 @@ class UNet(nn.Module):
         conv_mode: str = "same",
         dim: int = 2,
         up_mode: str = "transposed",
+        skip_connect: str = None,
     ):
         super().__init__()
 
@@ -380,6 +485,7 @@ class UNet(nn.Module):
         self.conv_mode = conv_mode
         self.dim = dim
         self.up_mode = up_mode
+        self.skip_connect = skip_connect
 
         self.down_blocks = []
         self.up_blocks = []
@@ -397,6 +503,7 @@ class UNet(nn.Module):
                 activation=self.activation,
                 normalization=self.normalization,
                 conv_mode=self.conv_mode,
+                skip_connect=self.skip_connect,
                 dim=self.dim,
             )
 
