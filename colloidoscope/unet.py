@@ -136,12 +136,6 @@ class Concatenate(nn.Module):
 
         return x
 
-def batch_norm(dim: int, num_channels):
-    if dim == 3:
-        return nn.BatchNorm3d(num_channels)
-    elif dim == 2:
-        return nn.BatchNorm2d(num_channels)
-
 
 class DenseTransition(nn.Module):
     def __init__(self, in_channels, out_channels, dim) -> None:
@@ -152,26 +146,26 @@ class DenseTransition(nn.Module):
         self.out_channels = out_channels
 
         self.norm = get_normalization(
-            normalization=self.normalization,
-            num_channels=self.out_channels,
+            normalization='batch',
+            num_channels=self.in_channels,
             dim=self.dim,
         )
 
         self.activ = get_activation('relu')
 
         self.conv = get_conv_layer(self.in_channels,
-            self.out_channels,
-            kernel_size=2,
+            self.in_channels,
+            kernel_size=1,
             stride=1,
             padding=0,
-            bias=False,
+            bias=True,
             dim=self.dim,
         )
 
         if dim == 2:
-            self.pool = nn.AvgPool2d(kernel_size=2, stride=2)
+            self.pool = nn.AvgPool2d(kernel_size=2, stride=1)
         if dim == 3:
-            self.pool = nn.AvgPool3d(kernel_size=2, stride=2)
+            self.pool = nn.AvgPool3d(kernel_size=2, stride=1)
 
     def forward(self, x):
 
@@ -317,7 +311,10 @@ class DownBlock(nn.Module):
         if self.skip_connect == 'res':
             y = y + self.skip(x)
         if self.skip_connect == 'dense':
-            y = Concatenate(y, self.skip(x))
+            s = self.skip(x)
+            print(x.shape, y.shape, s.shape)
+            print(self.in_channels, self.out_channels)
+            y = torch.cat((y, s), 1)
 
         before_pooling = y  # save the outputs before the pooling operation
         if self.pooling:
@@ -520,6 +517,7 @@ class UNet(nn.Module):
                 activation=self.activation,
                 normalization=self.normalization,
                 conv_mode=self.conv_mode,
+                skip_connect=self.skip_connect,
                 dim=self.dim,
                 up_mode=self.up_mode,
             )
