@@ -1,4 +1,5 @@
 # What it is
+## Author: Yushi Yang
 
 This folder contains script that generate hard sphere configurations with different polydispersities.
 It used the simulation package [hoomd-blue](https://hoomd-blue.readthedocs.io/en/stable/package-hpmc.html).
