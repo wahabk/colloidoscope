@@ -386,9 +386,17 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(1,2), flip_probability=0.5),
+		# tio.RandomAffine(),
 	])
 	transforms_img = tio.Compose([
-		tio.RandomAnisotropy(p=0.5),              # make images look anisotropic 25% of times
+		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
+		tio.RandomBlur(p=0.1),
+		tio.OneOf({
+			tio.RandomNoise(0.25, 0.01): 0.1,
+			tio.RandomBiasField(0.1): 0.1,
+			# tio.RandomMotion(): 0.3,
+		}),
+		tio.RescaleIntensity(),
 	])
 
 	# create a training data loader
@@ -411,7 +419,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				normalization=params['norm'],
 				conv_mode='same',
 				dim=3,
-				skip_connect='dense')
+				skip_connect=None)
 
 	model = torch.nn.DataParallel(model, device_ids=device_ids)
 	model.to(device)

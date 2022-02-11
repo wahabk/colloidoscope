@@ -35,19 +35,19 @@ if __name__ == "__main__":
 	train_data = all_data[0:600]
 	val_data = all_data[601:801]
 	test_data =	all_data[801:901]
-	name = 'test_skip'
+	name = 'new_augs'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": 0.002,
+		"lr": 0.00112668,
 		"batch_size": 4,
 		"n_blocks": 5,
 		"norm": 'batch',
 		"epochs": 6,
-		"start_filters": 5,
+		"start_filters": 32,
 		"activation": 'relu',
-		"loss_function": torch.nn.MSELoss(),
+		"loss_function": torch.nn.L1Loss(),
 	}
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
