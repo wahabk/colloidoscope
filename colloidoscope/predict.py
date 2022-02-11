@@ -38,9 +38,27 @@ def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_
 
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
+	print(label.shape, label.max(), label.min())
+	label = np.array(label, dtype='float32')
+	label = scipy.ndimage.zoom(label, 2, mode='nearest')
+	print(label.shape, label.max(), label.min())
 
-	label[label > threshold] = 1
+	label[label > threshold] = 255
 	label[label < threshold] = 0
+	label = np.array(label, dtype='uint8')
+	label = scipy.ndimage.gaussian_filter(label, (2,2,2))
+	print(label.shape, label.max(), label.min())
+	label = np.array(label, dtype='float32')
+	label = label/label.max()
+
+	print(label.shape, label.max(), label.min())
+	
+
+
+	label = scipy.ndimage.zoom(label, 0.5, mode='nearest')
+	label[label > threshold] = 255
+	label[label < threshold] = 0
+	print(label.shape, label.max(), label.min())
 
 	str_3D=np.array([[[0, 0, 0],
 					[0, 1, 0],
@@ -71,7 +89,7 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 	model = UNet(in_channels=1,
 				out_channels=1,
 				n_blocks=5,
-				start_filters=5,
+				start_filters=32,
 				activation='relu',
 				normalization='batch',
 				conv_mode='same',
@@ -98,7 +116,7 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap)
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=4)
-	aggregator = tio.inference.GridAggregator(grid_sampler)
+	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
 	
 	model.eval()
 	with torch.no_grad():
