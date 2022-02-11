@@ -35,7 +35,7 @@ if __name__ == "__main__":
 	train_data = all_data[0:600]
 	val_data = all_data[601:801]
 	test_data =	all_data[801:901]
-	name = 'test'
+	name = 'test_skip'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 

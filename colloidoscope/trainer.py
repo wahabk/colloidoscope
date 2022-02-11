@@ -410,7 +410,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				activation=params['activation'],
 				normalization=params['norm'],
 				conv_mode='same',
-				dim=3)
+				dim=3,
+				skip_connect='dense')
 
 	model = torch.nn.DataParallel(model, device_ids=device_ids)
 	model.to(device)
