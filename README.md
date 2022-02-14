@@ -1,6 +1,8 @@
 # Colloidoscope!
 
-A project to attempt tracking colloids using confocal and deep learning.
+A project to attempt tracking colloids using confocal and deep learning. Please note this is work-in-progress.
+
+Colloidoscope is essentially a U-net trained on simulated data. Before using colloidoscope I would use TrackPy or nplocate. This is designed to work on very small colloids (~200nm) with a very bad point spread function, that is anisotropic and has high z blur.
 
 Pretrained weights and hyperparameter training history available upon request.
 
@@ -48,6 +50,15 @@ Then simply use ```dc.detect()``` to track your image, this will return a pandas
 ```Python
 df = dc.detect(image, weights_path='path/to/model_weights.pt')
 ```
+
+## Model limitations
+- This only accepts np arrays that are at least [32,128,128] in size (z,x,y)
+- Note the dimension order is (z,x,y), this is important since the model has only been trained on simulations with z blur in this order
+- This has been tested on particles with size 4 - 12 pixel radius
+
+## Useful things
+- All available average precision functions only work with bounding boxes. Colloidoscope has a function ```dc.average_precision(true_positions, predicted_precisions)``` that will find AP based on positions alone - since the distance is more important for this project than the IOU.
+- You can use / adapt dc.simulate() if you want to quickly draw simulated particles in 3D. 
 
 # Dependencies
 
