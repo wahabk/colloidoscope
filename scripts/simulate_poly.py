@@ -87,19 +87,10 @@ if __name__ == '__main__':
 			print(label.shape, label.max(), label.min())
 
 			# dc.view(canvas, centers,  label)
-
-			# exit()
-
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
 			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
-			# dc.write_hdf5(dataset_name+'_labels', n, label, metadata=None, positions=centers, dtype='float32')
-
-			# canvas, metadata, positions, diameters = dc.read_hdf5(dataset_name, n, read_metadata=True, read_diameters=True)
-			# print(canvas.shape, positions.shape, diameters.shape)
-			# canvas, centers, label = None, None, None
-
 			index+=1
