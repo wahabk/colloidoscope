@@ -28,6 +28,7 @@ setup(
                 'neptune-client',
                 'ray[tune]',
                 'tqdm',
+                'psf',
         ],
         keywords=['python', 'colloidoscope'],
 )

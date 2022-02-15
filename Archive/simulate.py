@@ -1,116 +1,95 @@
-from numba import njit
+from colloidoscope import DeepColloid
+from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
 import numpy as np
-import matplotlib.pyplot as plt 
-from scipy import ndimage, spatial
-from mainviewer import mainViewer
-from concurrent.futures import ProcessPoolExecutor
+import matplotlib.pyplot as plt
+import napari
+from random import randrange, uniform
+import numpy as np
 import random
-from math import sqrt
-import skimage
-#255x255x128
 
-@njit
-def draw_multiple_spheres(canvas, centers, r):
-	for center in centers:
-		r2 = r * r
-		cx, cy, = center
-		for i in range(canvas.shape[0]):
-			for j in range(canvas.shape[1]):
-				if (i - cx)**2 + (j - cy)**2 <= r2:
-					canvas[i,j] = 255
+if __name__ == '__main__':
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
+	dc = DeepColloid(dataset_path)
 
+	canvas_size=(32,128,128)
+	dataset_name = 'jan22'
+	n_samples = 500 #5000
 
-def make_random_centers(canvas_size, n, zoom, min_dist=25):
-	'''
-	Generate random centers of particles
+	# keys = dc.get_hdf5_keys(dataset_name)
+	# print(keys)
+	# exit()
+	
+	# TODO change this to know which sim came from which pos
+	# make list of volfracs already simulated
+	volfracs= [round(x, 2) for x in np.linspace(0.1,0.55,10)]
+	# make list of n_samples for each volfrac
+	volfracs = np.array([[x]*n_samples for x in volfracs]).flatten()
 
-	This is a place holder for bringing in simulated particle trajectories from dynamo
-	'''
-	canvas_size = [int(c/zoom) for c in canvas_size]
-	min_dist = min_dist/zoom
-	x = random.randint(0, canvas_size[0])
-	y = random.randint(0, canvas_size[1])
-	centers = [(x,y)] # make first particle
-	for i in range(n):
-		too_close = True
-		while too_close:
-			x = random.randint(0,canvas_size[0])
-			y = random.randint(0,canvas_size[1])
-			centers.append((x,y))
-			distances = spatial.distance.pdist(centers)
-			if all(i > min_dist for i in distances):
-				too_close = False
-				break
-			else:
-				centers.pop()
-	return centers
+	print(volfracs)
+	for n, volfrac in enumerate(volfracs):
+		
+		n+=1
+		print('\n', f'{n}/{len(volfracs)}', '\n')
 
-def simulate_img2d(canvas_size, centers, r, zoom, gauss):
-	'''
-	Simulate 2d image of colloids
+		volfrac = random.choice(volfracs)
+		types = {
+		'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,3), 'min_brightness' : randrange(180,220), 'max_brightness' : randrange(221,255), 'noise': uniform(0, 0.01)},
+		'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(2,4), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
+		'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(0,4), 'z_gauss' : randrange(3,7), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
+		'large' 		: {'r' : randrange(10,12), 'xy_gauss' : randrange(0,5), 'z_gauss' : randrange(5,8), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
+		}
+		keys = list(types)
+		this_type = random.choice(keys)
 
-	centers : list of centers of each particle x,y
-	r : radius of particles
-	zoom : factor to zoom image out before generation then zoom in as a way to add aliasing
-	gauss : kernel for gaussian noise
+		r = types[this_type]['r']
+		xy_gauss = types[this_type]['xy_gauss']
+		z_gauss = types[this_type]['z_gauss']
+		brightness = types[this_type]['brightness']
+		noise = types[this_type]['noise']
 
-	TODO fix zooming, use cv2.affinetransform?
-	TODO add background
-	'''
-
-	zoom_out = [int(c/zoom) for c in canvas_size]
-	canvas = np.zeros(zoom_out)
-	draw_multiple_spheres(canvas, centers, r)
-	canvas = ndimage.zoom(canvas, zoom)
-	canvas = ndimage.gaussian_filter(canvas, gauss)
-	canvas[canvas<0]=0
-	# canvas = np.random.poisson(lam=canvas, size=None)
-	PEAK = 0.5
-	canvas[canvas<0]=0
-	poisson_noise = np.sqrt(canvas) * np.random.normal(0, 3, canvas.shape)
-	canvas = canvas + poisson_noise
-	canvas[canvas<0]=0
-
-	return canvas
-
-if __name__ == "__main__":
-	canvas_size = (256,256)
-	zoom = 0.6
-	n=20
-	r=30 # provide radius in nm?
-	min_dist = r+5
-	gauss = (11,11)
+		metadata = {
+			'dataset': dataset_name,
+			'n' 	 : n,
+			'type'	 : this_type,
+			'volfrac': volfrac,
+			'params' : types[this_type],
+		}
+		print(metadata)
 
 
-	centers = make_random_centers(canvas_size, n, zoom, min_dist)
-	canvas = simulate_img2d(canvas_size, centers, r, zoom, gauss)
-	print(np.mean(canvas), np.std(canvas), np.min(canvas), np.max(canvas))
-	plt.imshow(canvas)
-	plt.show()
+		# TODO fix crop size
+		# hoomd_positions = hooomd_sim_positions(phi=volfrac, canvas_size=canvas_size)
+		path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
+		hoomd_positions, diameters = read_gsd(path, randrange(0,500))
+		centers = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2)
+		metadata['n_particles'] = len(centers)
+		canvas, label = dc.simulate(canvas_size, centers, r, xy_gauss, z_gauss, brightness, noise, make_label=True, diameters=diameters, num_workers=10)
 
+		print(canvas.shape, canvas.max(), canvas.min())
+		print(label.shape, label.max(), label.min())
 
-# def make_vid(canvas, centers, frames, r=250, zoom=0.5, gauss = (55,111)):
-# 	'''
-# 	Generate video on a zero shaped array
+		# dc.view(canvas, centers)
+		# viewer = napari.view_image(canvas, opacity=0.75)
+		# viewer.add_image(label*255, opacity=0.75, colormap='red')
+		# viewer.add_points(centers)
+		# viewer.add_points(centers)
+		# napari.run()
 
-# 	TODO unpack centers from trajectories in trackpy format to draw them
-# 	For loop should take each frame in turn and redraw particles
-# 	'''
-# 	vid = []
-# 	for i in range(0, 1024, 50):
-# 		draw_multiple_spheres(canvas, centers, r)
-# 		big_sphere = ndimage.gaussian_filter(canvas, gauss)
-# 		vid.append(big_sphere)
-# 	vid = np.array(vid, dtype='uint8')
+		# projection = np.max(canvas, axis=0)
+		# projection_label = np.max(label, axis=0)*255
+		# sidebyside = np.concatenate((projection, projection_label), axis=1)
+		# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-# canvas = np.zeros((2024,2024))
-# vid = []
-# for i in range(0, 1024, 50):
-# 	centers = [[256+i,256+i], [768+i,768+i]]
-# 	big_sphere = np.zeros((2024,2024))
-# 	draw_multiple_spheres(big_sphere, centers, 256)
-# 	big_sphere = ndimage.zoom(big_sphere, 0.5)
-# 	big_sphere = ndimage.gaussian_filter(big_sphere, (55,111))
-# 	vid.append(big_sphere)
-# vid = np.array(vid, dtype='uint8')
-# mainViewer(vid)
+		# TODO SAVE DIAMETERS PLEASE
+		# TODO sort out indices of which one to sim
+
+		dc.write_hdf5(dataset_name, n, canvas, metadata=metadata, positions=centers, dtype='uint8')
+		dc.write_hdf5(dataset_name+'_labels', n, label, metadata=None, positions=centers, dtype='float32')
+
+		canvas, metadata, positions = dc.read_hdf5(dataset_name, n)
+		print(canvas.shape, positions.shape)
+
+		canvas, centers, label = None, None, None
+		
