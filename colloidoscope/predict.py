@@ -38,15 +38,15 @@ def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_
 
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
-	print(label.shape, label.max(), label.min())
+	# print(label.shape, label.max(), label.min())
 	label = np.array(label, dtype='float32')
-	label = scipy.ndimage.zoom(label, 2, mode='nearest')
-	print(label.shape, label.max(), label.min())
+	# label = scipy.ndimage.zoom(label, 2, mode='nearest')
+	# print(label.shape, label.max(), label.min())
 
 	label[label > threshold] = 255
 	label[label < threshold] = 0
 	label = np.array(label, dtype='uint8')
-	label = scipy.ndimage.gaussian_filter(label, (2,2,2))
+	# label = scipy.ndimage.gaussian_filter(label, (2,2,2))
 	print(label.shape, label.max(), label.min())
 	label = np.array(label, dtype='float32')
 	label = label/label.max()
@@ -55,7 +55,7 @@ def find_positions(result, threshold) -> np.ndarray:
 	
 
 
-	label = scipy.ndimage.zoom(label, 0.5, mode='nearest')
+	# label = scipy.ndimage.zoom(label, 0.5, mode='nearest')
 	label[label > threshold] = 255
 	label[label < threshold] = 0
 	print(label.shape, label.max(), label.min())

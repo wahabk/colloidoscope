@@ -30,7 +30,7 @@ if __name__ == '__main__':
 	array = array[0]
 	# array = dc.crop3d(array, (32,128,128))
 
-	pos, result = dc.detect(array, patch_overlap=(16,16,16), threshold=0.5, debug=True)
+	pos, result = dc.detect(array, patch_overlap=(16,32,32), threshold=0.5, debug=True)
 	print(pos.shape)
 	dc.view(array, positions=pos, label=result)
 
