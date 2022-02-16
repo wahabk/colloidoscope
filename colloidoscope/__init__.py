@@ -1,5 +1,5 @@
 from colloidoscope.deepcolloid import DeepColloid
-from colloidoscope.simulator import simulate
+from colloidoscope.simulator import simulate, crop_positions_for_label
 from colloidoscope.dataset import ColloidsDatasetSimulated
 from colloidoscope.trainer import Trainer, LearningRateFinder, predict, test, train, find_positions
 from colloidoscope.unet import UNet

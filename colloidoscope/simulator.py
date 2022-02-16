@@ -33,7 +33,7 @@ def draw_slice(args):
 				
 				if is_label:
 					if dist <= 4:
-						new_slice[i,j] = gaussian(dist, 0, 2, peak=255)
+						new_slice[i,j] = gaussian(dist, 0, 1, peak=255)
 				else:
 					if dist <= r:
 						new_slice[i,j] = brightness
@@ -86,6 +86,19 @@ def shake(centers, magnitude):
 		new_centers.append([cz, cy, cx])
 	return np.array(new_centers)
 
+def crop_positions_for_label(centers, canvas_size, diameters, diameter=10):
+	indices = []
+	divisor = 4
+	for idx, c in enumerate(centers):
+		if diameter/divisor<c[0]<(canvas_size[0]-diameter/divisor) and diameter/divisor<c[1]<(canvas_size[1]-diameter/divisor) and diameter/divisor<c[2]<(canvas_size[2]-diameter/divisor):
+			indices.append(idx)
+
+	centers = centers[indices]
+	diameters = diameters[indices]
+
+	return centers, diameters
+
+
 def make_background(canvas_size, octaves, brightness, dtype='uint8'):
 	
 	from perlin_noise import PerlinNoise
@@ -120,8 +133,8 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	zoom_out_size = [int(c/zoom) for c in canvas_size]
 	zoom_out_size_padded = [c+pad for c in zoom_out_size]
 	# canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
-	# canvas = make_background(zoom_out_size_padded, 4, random.randint(0,50), dtype='uint8') 
-	canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
+	canvas = make_background(zoom_out_size_padded, 4, random.randint(0,50), dtype='uint8') 
+	# canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
 	print('background', canvas.max())
 	
 	# convert centers to zoom out
@@ -152,11 +165,13 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	if make_label:
 		# draw label heatmap from centers
 		label = np.zeros(canvas_size, dtype='float64')
-		print('Simulating label...')
-		label = draw_spheres_sliced(label, centers, radii, is_label=True, num_workers=num_workers)
+		final_centers, final_diameters = crop_positions_for_label(centers, canvas_size, diameters, r*2)
+		print('Simulating label...', final_centers.shape, final_diameters.shape)
+		radii = [(d*r) for d in final_diameters]
+		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, num_workers=num_workers)
 		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
 		label = np.array(label ,dtype='float64')
-		return canvas, label
+		return canvas, label, final_centers, final_diameters
 	else:
 		return canvas
 

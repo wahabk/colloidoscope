@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -26,14 +26,15 @@ if __name__ == "__main__":
 		# tio.RandomAffine(),
 	])
 	transforms_img = tio.Compose([
-		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
-		tio.RandomBlur(p=0.1),
+		tio.RandomAnisotropy(p=0.25),              # make images look anisotropic 25% of times
+		tio.RandomBlur(p=0.25),
 		tio.OneOf({
-			tio.RandomNoise(0.25, 0.01): 0.1,
-			tio.RandomBiasField(0.1): 0.1,
+			tio.RandomNoise(0.25, 0.01): 0.25,
+			tio.RandomBiasField(0.1): 0.25,
+			tio.RandomGamma((-0.3,0.3)): 0.5,
 			# tio.RandomMotion(): 0.3,
 		}),
-		tio.RescaleIntensity(),
+		tio.RescaleIntensity((0.05,0.95)),
 	])
 
 
@@ -54,12 +55,12 @@ if __name__ == "__main__":
 	print(y.shape, y.max(), y.min())
 	print(type(x))
 
-	# dc.view(x, label=y)
+	dc.view(x, label=y)
 
-	array_projection = np.max(x, axis=0)
-	label_projection = np.max(y, axis=0)
-	sidebyside = np.concatenate((array_projection, label_projection), axis=1)
-	sidebyside /= sidebyside.max()
-	plt.imsave('output/test_genie.png', sidebyside, cmap='gray')
+	# array_projection = np.max(x, axis=0)
+	# label_projection = np.max(y, axis=0)
+	# sidebyside = np.concatenate((array_projection, label_projection), axis=1)
+	# sidebyside /= sidebyside.max()
+	# plt.imsave('output/test_genie.png', sidebyside, cmap='gray')
 
 	

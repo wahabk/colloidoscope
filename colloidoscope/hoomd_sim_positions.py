@@ -2,6 +2,7 @@ import os
 import sys
 
 import numpy as np
+import random
 
 import itertools
 
@@ -230,27 +231,25 @@ def hoomd_make_configurations_polydisp(phi:float, n_frames=100, output_folder='o
 
 
 
-def convert_hoomd_positions(positions, canvas_size, diameter=10, diameters=None,):
+def convert_hoomd_positions(positions, canvas_size, diameters, diameter=10):
 	# convert positions from physics to normal
 	centers = positions.copy()
 
 	# import pdb; pdb.set_trace()
 	centers = centers * diameter
 	centers = centers - (centers.min(axis=0) + [diameter,diameter,diameter] )
+
+	divisor = random.choice([-2,-1,1,2])
 	
 	indices = []
 	for idx, c in enumerate(centers):
-		if diameter/2<c[0]<(canvas_size[0]-diameter/2) and diameter/2<c[1]<(canvas_size[1]-diameter/2) and diameter/2<c[2]<(canvas_size[2]-diameter/2):
+		if -diameter/divisor<c[0]<(canvas_size[0]+diameter/divisor) and -diameter/divisor<c[1]<(canvas_size[1]+diameter/divisor) and -diameter/divisor<c[2]<(canvas_size[2]+diameter/divisor):
 			indices.append(idx)
 
 	centers = centers[indices]
+	diameters = diameters[indices]
 
-	if diameters is not None:
-		diameters = diameters[indices]
-		print(centers.shape, diameters.shape)
-		return centers, diameters
-	else:
-		return centers
+	return centers, diameters
 
 def read_gsd(file_name:str, i:int):
 	import gsd.hoomd

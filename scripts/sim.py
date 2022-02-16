@@ -1,5 +1,6 @@
 from colloidoscope import DeepColloid
 from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
+from colloidoscope.simulator import crop_positions_for_label
 import numpy as np
 import matplotlib.pyplot as plt
 import napari
@@ -10,18 +11,18 @@ import psf
 from scipy import ndimage
 
 if __name__ == '__main__':
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(32,128,128)
+	canvas_size=(64,64,64)
 	dataset_name = 'feb_psf_const'
 	n_samples_per_phi = 99 #5000
 	num_workers = 10
 	
 	# make 100 scans of each volfrac
-	# make list of n_samples for each volfrac
+	# make list of lists of n_samples for each volfrac
 	volfracs = [[round(v, 2)]*n_samples_per_phi for v in  np.linspace(0.1,0.5,5)]*2
 	volfracs = np.array(volfracs)
 	print(volfracs.shape)
@@ -30,17 +31,14 @@ if __name__ == '__main__':
 	index = 1
 	for i, volfrac in enumerate(volfracs):
 		i+=1
-		for n, v in enumerate(volfrac):
-			
-			n+=1
-			print(i, n, v, n+(i*n_samples_per_phi)-n_samples_per_phi, index)
+		for n, v in enumerate(volfrac):			
 			print('\n', f'{index}/{len(volfracs.flatten())}', '\n')
 
-			volfrac = v
+			volfrac = 0.5
 			types = {
-			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,6), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
-			'medium' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(5,10), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
-			'large' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(1,5), 'z_gauss' : randrange(8,11), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
+			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,6), 'min_brightness' : randrange(50,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.02)},
+			'medium' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(5,10), 'min_brightness' : randrange(50,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.03)},
+			'large' 		: {'r' : randrange(8,10), 'xy_gauss' : randrange(1,5), 'z_gauss' : randrange(8,11), 'min_brightness' : randrange(50,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.04)},
 			}
 			keys = list(types.keys())
 			this_type = random.choice(keys)
@@ -67,29 +65,29 @@ if __name__ == '__main__':
 			obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 			kernel = obsvol.volume()
 
-			kernel = ndimage.zoom(kernel, random.choice([0.25,0.5,1,1.5,2]))
+			kernel = ndimage.zoom(kernel, random.choice([0.1,0.2,0.3,0.4,0.5]))
 
 			if index > 500:
 				path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
 			else:
 				path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
 			print(f'Reading: {path} ...')
-			hoomd_positions, diameters = read_gsd(path, n)
+			hoomd_positions, diameters = read_gsd(path, n+1)
 			print(diameters.shape)
 			centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
 			metadata['n_particles'] = len(centers)
-			canvas, label = dc.simulate(canvas_size, centers, r, kernel, min_brightness, max_brightness,
+			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, centers, r, kernel, min_brightness, max_brightness,
 										noise, make_label=True, diameters=diameters, num_workers=num_workers)
 
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
 
-			# dc.view(canvas, centers, label)
+			dc.view(canvas, final_centers, label)
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
+			# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 			index+=1

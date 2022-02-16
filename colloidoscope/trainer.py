@@ -394,9 +394,10 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		tio.OneOf({
 			tio.RandomNoise(0.25, 0.01): 0.25,
 			tio.RandomBiasField(0.1): 0.25,
+			tio.RandomGamma((-0.3,0.3)): 0.5,
 			# tio.RandomMotion(): 0.3,
 		}),
-		tio.RescaleIntensity(),
+		tio.RescaleIntensity((0.05,0.95)),
 	])
 
 	# create a training data loader
