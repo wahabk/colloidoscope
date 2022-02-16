@@ -10,8 +10,8 @@ import psf
 from scipy import ndimage
 
 if __name__ == '__main__':
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -36,11 +36,11 @@ if __name__ == '__main__':
 			print(i, n, v, n+(i*n_samples_per_phi)-n_samples_per_phi, index)
 			print('\n', f'{index}/{len(volfracs.flatten())}', '\n')
 
-			volfrac = 0.5#v
+			volfrac = v
 			types = {
 			'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,6), 'min_brightness' : randrange(150,200), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.02)},
-			'small' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(5,10), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
-			'medium' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(1,5), 'z_gauss' : randrange(8,11), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
+			'medium' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(5,10), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.03)},
+			'large' 		: {'r' : randrange(8,11), 'xy_gauss' : randrange(1,5), 'z_gauss' : randrange(8,11), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(201,255), 'noise': uniform(0, 0.04)},
 			}
 			keys = list(types.keys())
 			this_type = random.choice(keys)
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 			}
 			print(metadata)
 
-			args = dict(shape=(64, 64), dims=(4, 4), ex_wavelen=481, em_wavelen=520,
+			args = dict(shape=(64, 64), dims=(4, 4), ex_wavelen=488, em_wavelen=520,
 						num_aperture=1.2, refr_index=1.4,
 						pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 			obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
@@ -85,11 +85,11 @@ if __name__ == '__main__':
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
 
-			dc.view(canvas, centers, label)
+			# dc.view(canvas, centers, label)
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
+			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=centers, label=label, diameters=diameters, dtype='uint8')
 			index+=1

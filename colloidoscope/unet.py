@@ -137,48 +137,9 @@ class Concatenate(nn.Module):
         return x
 
 
-class DenseTransition(nn.Module):
-    def __init__(self, in_channels, out_channels, dim) -> None:
-        super(DenseTransition, self).__init__()
-
-        self.dim = dim
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-
-        self.norm = get_normalization(
-            normalization='batch',
-            num_channels=self.in_channels,
-            dim=self.dim,
-        )
-
-        self.activ = get_activation('relu')
-
-        self.conv = get_conv_layer(self.in_channels,
-            self.in_channels,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            bias=True,
-            dim=self.dim,
-        )
-
-        if dim == 2:
-            self.pool = nn.AvgPool2d(kernel_size=2, stride=1)
-        if dim == 3:
-            self.pool = nn.AvgPool3d(kernel_size=2, stride=1)
-
-    def forward(self, x):
-
-        x = self.norm(x)
-        x = self.activ(x)
-        x = self.conv(x)
-        x = self.pool(x)
-
-        return x
-
 class ResSkip(nn.Module):
     """
-    Please note this is not a bottleneck block 
+    Please note this is not a bottleneck block (no maxpool)
     """
     def __init__(self, in_channels, out_channels, dim) -> None:
         super(ResSkip, self).__init__()
@@ -206,6 +167,45 @@ class ResSkip(nn.Module):
 
         x = self.conv(x)
         x = self.norm(x)
+
+        return x
+
+class DenseTransition(nn.Module):
+    def __init__(self, in_channels, out_channels, dim) -> None:
+        super(DenseTransition, self).__init__()
+
+        self.dim = dim
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.norm = get_normalization(
+            normalization='batch',
+            num_channels=self.in_channels,
+            dim=self.dim,
+        )
+
+        self.activ = get_activation('relu')
+
+        self.conv = get_conv_layer(self.in_channels,
+            self.out_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=False,
+            dim=self.dim,
+        )
+
+        if dim == 2:
+            self.pool = nn.AvgPool2d(kernel_size=2, stride=2)
+        if dim == 3:
+            self.pool = nn.AvgPool3d(kernel_size=2, stride=2)
+
+    def forward(self, x):
+
+        x = self.norm(x)
+        x = self.activ(x)
+        x = self.conv(x)
+        x = self.pool(x)
 
         return x
 
@@ -297,6 +297,7 @@ class DownBlock(nn.Module):
                 self.out_channels,
                 dim = self.dim
             )
+            self.concat = Concatenate()
 
     def forward(self, x):
         y = self.conv1(x)  # convolution 1
@@ -314,7 +315,7 @@ class DownBlock(nn.Module):
             s = self.skip(x)
             print(x.shape, y.shape, s.shape)
             print(self.in_channels, self.out_channels)
-            y = torch.cat((y, s), 1)
+            y = self.concat(y, s)
 
         before_pooling = y  # save the outputs before the pooling operation
         if self.pooling:
@@ -420,6 +421,20 @@ class UpBlock(nn.Module):
         # concatenate layer
         self.concat = Concatenate()
 
+        if self.skip_connect == 'res':
+            self.skip = ResSkip(
+                self.in_channels,
+                self.out_channels,
+                dim = self.dim
+            )
+
+        elif self.skip_connect == 'dense':
+            self.skip = DenseTransition(
+                self.in_channels,
+                self.out_channels,
+                dim = self.dim
+            )
+
     def forward(self, encoder_layer, decoder_layer):
         """Forward pass
         Arguments:
@@ -445,6 +460,16 @@ class UpBlock(nn.Module):
         y = self.act2(y)  # acivation 2
         if self.normalization:
             y = self.norm2(y)  # normalization 2
+
+        if self.skip_connect == 'res':
+            y = y + self.skip(merged_layer)
+        # if self.skip_connect == 'dense':
+        #     s = self.skip(x)
+        #     print(x.shape, y.shape, s.shape)
+        #     print(self.in_channels, self.out_channels)
+            # y = self.concat(y, s)    
+
+
         return y
 
 

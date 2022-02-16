@@ -389,11 +389,11 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		# tio.RandomAffine(),
 	])
 	transforms_img = tio.Compose([
-		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
-		tio.RandomBlur(p=0.1),
+		tio.RandomAnisotropy(p=0.25),              # make images look anisotropic 25% of times
+		tio.RandomBlur(p=0.25),
 		tio.OneOf({
-			tio.RandomNoise(0.25, 0.01): 0.1,
-			tio.RandomBiasField(0.1): 0.1,
+			tio.RandomNoise(0.25, 0.01): 0.25,
+			tio.RandomBiasField(0.1): 0.25,
 			# tio.RandomMotion(): 0.3,
 		}),
 		tio.RescaleIntensity(),
@@ -419,7 +419,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				normalization=params['norm'],
 				conv_mode='same',
 				dim=3,
-				skip_connect=None)
+				skip_connect='res')
 
 	model = torch.nn.DataParallel(model, device_ids=device_ids)
 	model.to(device)

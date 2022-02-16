@@ -26,7 +26,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'feb_blur'
+	dataset_name = 'feb_psf_const'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(2,990))
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 		"batch_size": 4,
 		"n_blocks": 5,
 		"norm": 'batch',
-		"epochs": 6,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": 'relu',
 		"loss_function": torch.nn.L1Loss(),
