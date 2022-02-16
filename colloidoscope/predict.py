@@ -101,7 +101,7 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
-		# print(model_weights.keys())
+		print(model_weights.keys())
 		model.load_state_dict(model_weights) # add weights to model
 
 	model = model.to(device)

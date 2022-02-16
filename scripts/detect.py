@@ -32,7 +32,8 @@ if __name__ == '__main__':
 	# t, x, y, z
 
 
-	path = '/home/wahab/Data/HDD/Colloids/Real/Levke/Levke_smallParticles_betterData_2021_4_1/goodData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
+	# path = '/home/wahab/Data/HDD/Colloids/Real/Levke/Levke_smallParticles_betterData_2021_4_1/goodData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
+	path = '/home/ak18001/Data/HDD/Colloids/Real/Levke/goodData_2021_4_1Levke_smallParticles_betterData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
 	array = dc.read_tif(path)
 	print(array.shape)
 	# array = array[:,0,:,:]
@@ -47,7 +48,7 @@ if __name__ == '__main__':
 
 	x, y = dc.get_gr(pos, 100, 100)
 	plt.plot(x, y, label='pred')
-	plt.show()
+	# plt.show()
 
 	# viewer=napari.Viewer()
 	# viewer.add_image(array)
