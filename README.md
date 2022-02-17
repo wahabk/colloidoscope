@@ -29,7 +29,7 @@ python3.8 -m pip install .
 
 # Usage: Quick Start
 
-I have no documentation for this project but I will endeavor to write nice docstrings. I will provide custom jupyter notebooks in ```examples/```.
+I have no documentation for this project but I will endeavor to write nice docstrings. I have provided custom jupyter notebooks in ```examples/```.
 
 Colloidoscope centers around the class ```DeepColloid```. This contains all the functions you will need.
 

@@ -2,7 +2,6 @@ from colloidoscope import hoomd_make_configurations, read_gsd, hoomd_make_config
 from colloidoscope import DeepColloid
 import numpy as np
 import matplotlib.pyplot as plt
-import napari
 from random import randrange, uniform
 import hoomd.hpmc
 import gsd.hoomd
@@ -15,10 +14,10 @@ if __name__ == '__main__':
 	# positions, diameters = read_gsd(path, 0)
 	# print(positions)
 
-	for phi in np.linspace(0.1,0.5,5):
+	for phi in np.linspace(0.1,0.55,10):
 		phi = round(phi, 2)
-		if phi==0.1: continue
+		# if phi==0.1: continue
 		print(phi)
-		hoomd_make_configurations_polydisp(phi, n_frames=500, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/poly/')
+		hoomd_make_configurations_polydisp(phi, n_frames=250, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/poly/')
 		# positions, diameters= read_gsd(f'/home/ak18001/Data/HDD/Colloids/Positions/test/phi_{phi*1000:.0f}_poly.gsd', 0)
 		# print(positions, diameters)
