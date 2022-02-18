@@ -364,7 +364,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 	)
 	params = dict(
-		roiSize = (32,128,128),
+		roiSize = (64,64,64),
 		train_data = train_data,
 		val_data = val_data,
 		test_data = test_data,
@@ -420,7 +420,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				normalization=params['norm'],
 				conv_mode='same',
 				dim=3,
-				skip_connect='res')
+				skip_connect=None)
 
 	model = torch.nn.DataParallel(model, device_ids=device_ids)
 	model.to(device)

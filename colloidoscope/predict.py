@@ -94,7 +94,7 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 				normalization='batch',
 				conv_mode='same',
 				dim=3,
-				skip_connect='res',)
+				skip_connect=None,)
 
 	model = torch.nn.DataParallel(model, device_ids=None)
 	
