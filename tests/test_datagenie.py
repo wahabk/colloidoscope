@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	
 
 	train_data = range(1,900)
-	dataset_name = 'feb_blur'
+	dataset_name = 'feb_final'
 
 
 	transforms_affine = tio.Compose([
