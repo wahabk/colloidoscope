@@ -79,7 +79,7 @@ def find_positions(result, threshold) -> np.ndarray:
 def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 0), threshold = 0.5, debug=False):
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	# device = torch.device("cpu")
-	roiSize = (32,128,128)
+	roiSize = (64,64,64)
 	
 	
 

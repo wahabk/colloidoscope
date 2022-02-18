@@ -32,15 +32,15 @@ if __name__ == '__main__':
 	# t, x, y, z
 
 
-	# path = '/home/wahab/Data/HDD/Colloids/Real/Levke/Levke_smallParticles_betterData_2021_4_1/goodData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
-	path = '/home/ak18001/Data/HDD/Colloids/Real/Levke/goodData_2021_4_1Levke_smallParticles_betterData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
+	path = '/home/wahab/Data/HDD/Colloids/Real/Levke/Levke_smallParticles_betterData_2021_4_1/goodData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
+	# path = '/home/ak18001/Data/HDD/Colloids/Real/Levke/goodData_2021_4_1Levke_smallParticles_betterData_2021_4_1/Levke_smallParticlesL1S_31_dense_1_4_21_Series006.tif'	
 	array = dc.read_tif(path)
 	print(array.shape)
 	# array = array[:,0,:,:]
 	array = array[0]
 	# array = dc.crop3d(array, (32,128,128))
 
-	pos, result = dc.detect(array, patch_overlap=(16,32,32), threshold=0.5, debug=True)
+	pos, result = dc.detect(array, patch_overlap=(16,16,16), threshold=0.5, debug=True)
 	print(pos.shape)
 	pos = run_trackpy(result, min_sep=(17,17,19))
 	print(pos.shape)
