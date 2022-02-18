@@ -3,8 +3,8 @@
 from pytest import skip
 import torch
 from torch import batch_norm, nn
-import dsntnn
-from coordconv import CoordConv2d, CoordConv3d
+from .dsntnn import flat_softmax, dsnt
+from .coordconv import CoordConv2d, CoordConv3d
 
 
 @torch.jit.script
@@ -670,9 +670,9 @@ class UNetDSNT(nn.Module):
         # 2. Use a 1x1 conv to get one unnormalized heatmap per location
         unnormalized_heatmaps = self.hm_conv(fcn_out)
         # 3. Normalize the heatmaps
-        heatmaps = dsntnn.flat_softmax(unnormalized_heatmaps)
+        heatmaps = flat_softmax(unnormalized_heatmaps)
         # 4. Calculate the coordinates
-        coords = dsntnn.dsnt(heatmaps)
+        coords = dsnt(heatmaps)
 
         return coords, heatmaps
 

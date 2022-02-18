@@ -9,6 +9,7 @@ from neptune.new.types import File
 from .deepcolloid import *
 from .dataset import *
 from .unet import UNet
+from .unet_dsnt import UNetCC
 from ray import tune
 import os
 import torchio as tio
@@ -389,14 +390,14 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		# tio.RandomAffine(),
 	])
 	transforms_img = tio.Compose([
-		tio.RandomAnisotropy(p=0.25),              # make images look anisotropic 25% of times
-		tio.RandomBlur(p=0.25),
-		tio.OneOf({
-			tio.RandomNoise(0.25, 0.01): 0.25,
-			tio.RandomBiasField(0.1): 0.25,
-			tio.RandomGamma((-0.3,0.3)): 0.5,
-			# tio.RandomMotion(): 0.3,
-		}),
+		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
+		tio.RandomBlur(p=0.1),
+		# tio.OneOf({
+		# 	tio.RandomNoise(0.1, 0.01): 0.1,
+		# 	tio.RandomBiasField(0.1): 0.1,
+		# 	tio.RandomGamma((-0.3,0.3)): 0.1,
+		# 	tio.RandomMotion(): 0.3,
+		# }),
 		tio.RescaleIntensity((0.05,0.95)),
 	])
 
@@ -412,7 +413,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	print(f'training on {device}')
 
 	# model
-	model = UNet(in_channels=1,
+	model = UNetCC(in_channels=1,
 				out_channels=params['n_classes'],
 				n_blocks=params['n_blocks'],
 				start_filters=params['start_filters'],

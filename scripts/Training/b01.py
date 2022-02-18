@@ -26,25 +26,25 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'feb_final'
+	dataset_name = 'feb_psf_const'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(2,4450))
+	all_data = list(range(2,990))
 	random.shuffle(all_data)
 
-	train_data = all_data[0:800]
-	val_data = all_data[801:1001]
-	test_data =	all_data[1001:1101]
+	train_data = all_data[0:600]
+	val_data = all_data[601:800]
+	test_data =	all_data[801:900]
 	name = 'new_augs'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": 0.001,
+		"lr": 0.002,
 		"batch_size": 4,
-		"n_blocks": 5,
+		"n_blocks": 4,
 		"norm": 'batch',
-		"epochs": 3,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": 'relu',
 		"loss_function": torch.nn.L1Loss(),
