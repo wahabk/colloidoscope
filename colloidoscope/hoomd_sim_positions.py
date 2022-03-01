@@ -239,7 +239,7 @@ def convert_hoomd_positions(positions, canvas_size, diameters, diameter=10):
 	centers = centers * diameter
 	centers = centers - (centers.min(axis=0) + [diameter,diameter,diameter] )
 
-	divisor = random.choice([-4,4])
+	divisor = 4
 	
 	indices = []
 	for idx, c in enumerate(centers):

@@ -17,48 +17,49 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(64,64,64)
-	dataset_name = 'feb_final'
+	canvas_size=(80,80,80)
+	label_size=(64,64,64)
+	
+	dataset_name = 'march_first'
 	num_workers = 10
 	
 	# make 100 scans of each volfrac
 	# make list of lists of n_samples for each volfrac
-	poly_volfracs = [[round(v, 2)]*90 for v in  np.linspace(0.1,0.5,5)]
-	poly_volfracs = np.array(poly_volfracs)
-	print(poly_volfracs.shape, poly_volfracs[0])
+	poly_phis = [[round(v, 2)]*90 for v in  np.linspace(0.2,0.5,4)]
+	poly_phis = np.array(poly_phis)
+	print(poly_phis.shape, poly_phis[0])
 	
-	volfracs= [round(x, 2) for x in np.linspace(0.1,0.55,10)]
+	phis= [round(x, 2) for x in np.linspace(0.25,0.55,4)]
 	# make list of n_samples for each volfrac
-	volfracs = np.array([[x]*400 for x in volfracs])
-	print(volfracs.shape, volfracs[0])
+	phis = np.array([[x]*400 for x in phis])
+	print(phis.shape, phis[0])
 
 
 	# exit()
 
 	index = 1
-	for l in [poly_volfracs, volfracs]:
+	for l in [poly_phis, phis]:
 		for i, volfracs in enumerate(l):
-			for n, v in enumerate(volfracs):			
-				print('\n', n, f'{index}/{4450}', '\n')
-				if index < 812 : 
-					index +=1
-					continue
+			for n, v in enumerate(volfracs):
+				print('\n', n, f'{index}/{len(poly_phis.flatten()) + len(phis.flatten())}', '\n')
+				# if index < 812 : 
+				# 	index +=1
+				# 	continue
 
 				volfrac = v
 				types = {
-				'very small' 	: {'r' : randrange(4,5), 'xy_gauss' : randrange(0,2), 'z_gauss' : randrange(1,6), 'min_brightness' : randrange(50,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.02)},
-				'medium' 		: {'r' : randrange(5,8), 'xy_gauss' : randrange(0,3), 'z_gauss' : randrange(5,10), 'min_brightness' : randrange(50,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.03)},
-				'large' 		: {'r' : randrange(8,10), 'xy_gauss' : randrange(1,5), 'z_gauss' : randrange(8,11), 'min_brightness' : randrange(50,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.04)},
+				'very small' 	: {'r' : randrange(4,5), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.02)},
+				'medium' 		: {'r' : randrange(5,8), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.03)},
+				'large' 		: {'r' : randrange(8,10), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.04)},
 				}
 				keys = list(types.keys())
 				this_type = random.choice(keys)
 
 				r = types[this_type]['r']
-				xy_gauss = types[this_type]['xy_gauss']
-				z_gauss = types[this_type]['z_gauss']
 				min_brightness = types[this_type]['min_brightness']
 				max_brightness = types[this_type]['max_brightness']
 				noise = types[this_type]['noise']
+				psf_zoom = types[this_type]['psf_zoom']
 
 				metadata = {
 					'dataset': dataset_name,
@@ -75,7 +76,7 @@ if __name__ == '__main__':
 				obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 				kernel = obsvol.volume()
 
-				kernel = ndimage.zoom(kernel, random.choice([0.1,0.2,0.3,0.4,0.5]))
+				kernel = ndimage.zoom(kernel, psf_zoom)
 
 				if index > 450:
 					path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
@@ -84,13 +85,13 @@ if __name__ == '__main__':
 					path = f'{dataset_path}/Positions/poly/phi_{volfrac*1000:.0f}_poly.gsd'
 					print(f'Reading: {path} at {n+1} ...')
 				hoomd_positions, diameters = read_gsd(path, n+1)
-								
+				
 				print(diameters.shape)
 				centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
-
 				metadata['n_particles'] = len(centers)
+
 				canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, centers, r, kernel, min_brightness, max_brightness,
-											noise, make_label=True, diameters=diameters, num_workers=num_workers)
+											noise, make_label=True, label_size=label_size, diameters=diameters, num_workers=num_workers)
 
 				print(canvas.shape, canvas.max(), canvas.min())
 				print(label.shape, label.max(), label.min())

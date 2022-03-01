@@ -88,9 +88,11 @@ def shake(centers, magnitude):
 
 def crop_positions_for_label(centers, canvas_size, diameters, diameter=10):
 	indices = []
-	divisor = 4
+	# divisor = -4
+	# diff = diameter / divisor
+	diff = 0
 	for idx, c in enumerate(centers):
-		if diameter/divisor<c[0]<(canvas_size[0]-diameter/divisor) and diameter/divisor<c[1]<(canvas_size[1]-diameter/divisor) and diameter/divisor<c[2]<(canvas_size[2]-diameter/divisor):
+		if diff<c[0]<(canvas_size[0]-diff) and diff<c[1]<(canvas_size[1]-diff) and diff<c[2]<(canvas_size[2]-diff):
 			indices.append(idx)
 
 	centers = centers[indices]
@@ -116,10 +118,15 @@ def make_background(canvas_size, octaves, brightness, dtype='uint8'):
 	pic = np.array(pic, dtype=dtype)
 	return pic
 
+
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
 			blur_kernel:np.ndarray, min_brightness:int, max_brightness:int, 
-			noise:float, make_label=True, diameters=np.ndarray([]), num_workers=2):
-	
+			noise:float, make_label:bool=True, label_size:list=(64,64,64), diameters=np.ndarray([]), num_workers=2):
+	'''
+	This will only work for a perfect cube eg 64x64x64
+	'''
+
+
 	brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
 	zoom = 0.5
 	pad = 64
@@ -164,11 +171,16 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	
 	if make_label:
 		# draw label heatmap from centers
-		label = np.zeros(canvas_size, dtype='float64')
-		final_centers, final_diameters = crop_positions_for_label(centers, canvas_size, diameters, r*2)
-		print('Simulating label...', final_centers.shape, final_diameters.shape)
-		radii = [(d*r) for d in final_diameters]
+		label = np.zeros(label_size, dtype='float64')
+
+		diff = (canvas.shape[0] - label.shape[0])/2
+		final_centers = centers - diff
+
+		print('Simulating label...')
+		radii = [(d*r) for d in diameters]
 		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, num_workers=num_workers)
+		final_centers, final_diameters = crop_positions_for_label(final_centers, label_size, diameters, r*2)
+
 		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
 		label = np.array(label ,dtype='float64')
 		return canvas, label, final_centers, final_diameters
