@@ -16,6 +16,7 @@ import torchio as tio
 import scipy
 from .predict import predict
 from torch.nn import BCELoss
+import torch.nn.functional as F
 import copy
 
 class Trainer:
@@ -108,7 +109,7 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			# print(out.shape, target.shape)
+			print(out.shape, target.shape)
 
 			loss = self.criterion(out, target)  # calculate loss
 			loss_value = loss.item()
@@ -353,6 +354,8 @@ def renormalise(tensor: torch.Tensor):
 	array = np.squeeze(array)  # remove batch dim and channel dim -> [H, W]
 	array = array * 255
 	return array
+
+
 
 def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
 	'''
