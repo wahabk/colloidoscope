@@ -79,7 +79,7 @@ def find_positions(result, threshold) -> np.ndarray:
 def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 0), threshold = 0.5, debug=False):
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	# device = torch.device("cpu")
-	roiSize = (64,64,64)
+	roiSize = (56,56,56)
 	
 	
 
@@ -88,7 +88,7 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 	# model
 	model = UNet(in_channels=1,
 				out_channels=1,
-				n_blocks=5,
+				n_blocks=4,
 				start_filters=32,
 				activation='relu',
 				normalization='batch',
@@ -101,7 +101,7 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
-		print(model_weights.keys())
+		# print(model_weights.keys())
 		model.load_state_dict(model_weights) # add weights to model
 
 	model = model.to(device)

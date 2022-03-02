@@ -17,7 +17,7 @@ if __name__ == '__main__':
 	# dataset_path = '/home/wahab/Data/HDD/Colloids/'
 	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 
-	dataset_name = 'janpoly'
+	dataset_name = 'march_first'
 
 	dc = cd.DeepColloid(dataset_path)
 	
