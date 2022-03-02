@@ -35,6 +35,8 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# dc.view(X)
 		# napari.run()
 
+		X = dc.crop3d(X, y.shape)
+
 		X = np.array(X/X.max(), dtype=np.float32)
 		y = np.array(y/y.max() , dtype=np.float32)
 		
@@ -52,9 +54,10 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		y = torch.from_numpy(y)
 
 		if self.transform:
-			stacked = torch.cat([X, y], dim=0) # shape=(2xHxW)
-			stacked = self.label_transform(stacked)
-			X, y = torch.chunk(stacked, chunks=2, dim=0)
+			if self.label_transform:
+				stacked = torch.cat([X, y], dim=0) # shape=(2xHxW)
+				stacked = self.label_transform(stacked)
+				X, y = torch.chunk(stacked, chunks=2, dim=0)
 			X = self.transform(X)
 
 		# print('x', np.min(X), np.max(X), X.shape)

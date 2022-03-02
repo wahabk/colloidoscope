@@ -108,6 +108,8 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
+			# print(out.shape, target.shape)
+
 			loss = self.criterion(out, target)  # calculate loss
 			loss_value = loss.item()
 			train_losses.append(loss_value)
@@ -386,7 +388,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	run['parameters'] = params
 
 	transforms_affine = tio.Compose([
-		tio.RandomFlip(axes=(1,2), flip_probability=0.5),
+		# tio.RandomFlip(axes=(1,2), flip_probability=0.5),
 		# tio.RandomAffine(),
 	])
 	transforms_img = tio.Compose([
@@ -402,7 +404,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	])
 
 	# create a training data loader
-	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=transforms_affine) 
+	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None) 
 	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
 	# create a validation data loader
 	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data']) 
@@ -413,13 +415,14 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	print(f'training on {device}')
 
 	# model
-	model = UNetCC(in_channels=1,
+	model = UNet(in_channels=1,
 				out_channels=params['n_classes'],
 				n_blocks=params['n_blocks'],
 				start_filters=params['start_filters'],
 				activation=params['activation'],
 				normalization=params['norm'],
 				conv_mode='same',
+				up_mode='transposed',
 				dim=3,
 				skip_connect=None)
 

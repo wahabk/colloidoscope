@@ -17,8 +17,8 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(80,80,80)
-	label_size=(64,64,64)
+	canvas_size=(64,64,64)
+	label_size=(56,56,56)
 	
 	dataset_name = 'march_first'
 	num_workers = 10
@@ -29,9 +29,10 @@ if __name__ == '__main__':
 	poly_phis = np.array(poly_phis)
 	print(poly_phis.shape, poly_phis[0])
 	
-	phis= [round(x, 2) for x in np.linspace(0.25,0.55,4)]
+	phis = [[round(x, 2)]*400 for x in np.linspace(0.25,0.55,7)]
+	phis = np.array(phis)
 	# make list of n_samples for each volfrac
-	phis = np.array([[x]*400 for x in phis])
+	# phis = np.array([[x]*400 for x in phis])
 	print(phis.shape, phis[0])
 
 
@@ -78,7 +79,7 @@ if __name__ == '__main__':
 
 				kernel = ndimage.zoom(kernel, psf_zoom)
 
-				if index > 450:
+				if index > 350:
 					path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
 					print(f'Reading: {path} at {n+1} ...')
 				else:
