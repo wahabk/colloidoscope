@@ -60,9 +60,9 @@ if __name__ == "__main__":
 	config = {
 		"lr": 0.0001,
 		"batch_size": 4,
-		"n_blocks": 5,
+		"n_blocks": 2,
 		"norm": 'batch',
-		"epochs": 10,
+		"epochs": 3,
 		"start_filters": 32,
 		"activation": 'relu',
 		"loss_function": torch.nn.L1Loss(),

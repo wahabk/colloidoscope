@@ -109,7 +109,7 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			print(out.shape, target.shape)
+			# print(out.shape, target.shape)
 
 			loss = self.criterion(out, target)  # calculate loss
 			loss_value = loss.item()
@@ -424,7 +424,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				start_filters=params['start_filters'],
 				activation=params['activation'],
 				normalization=params['norm'],
-				conv_mode='same',
+				conv_mode='valid',
 				up_mode='transposed',
 				dim=3,
 				skip_connect=None)
@@ -469,6 +469,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
 	array_projection = np.max(test_array, axis=0)
 	label_projection = np.max(test_label, axis=0)*255
+	new_label = np.zeros_like(array_projection)
 	sidebyside = np.concatenate((array_projection, label_projection), axis=1)
 	sidebyside /= sidebyside.max()
 	run['prediction'].upload(File.as_image(sidebyside))

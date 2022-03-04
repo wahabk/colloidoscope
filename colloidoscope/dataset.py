@@ -35,7 +35,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# dc.view(X)
 		# napari.run()
 
-		# X = dc.crop3d(X, (56,56,56))
+		y = dc.crop3d(y, (48,48,48))
 
 		X = np.array(X/X.max(), dtype=np.float32)
 		y = np.array(y/y.max() , dtype=np.float32)
