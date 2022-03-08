@@ -129,7 +129,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 	brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
 	zoom = 0.5
-	pad = 64
+	pad = 32
 	gauss_kernel = (2, 2, 2)
 	# make bigger padded canvas
 	# this is to allow the blur to work on the edges
