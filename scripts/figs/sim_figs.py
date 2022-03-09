@@ -87,8 +87,9 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
-	side_projection = np.rot90(np.max(scan, axis=1))
-	sidebyside = np.concatenate((projection, side_projection), axis=1)
+	side_projection = np.max(scan, axis=1)
+	# side_projection = np.rot90(side_projection)
+	sidebyside = np.concatenate((projection, side_projection), axis=0)
 	plt.imsave(path, sidebyside, cmap='gray')
 	plt.clf()
 
