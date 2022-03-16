@@ -58,7 +58,7 @@ if __name__ == "__main__":
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": 0.0001,
+		"lr": 0.001,
 		"batch_size": 4,
 		"n_blocks": 2,
 		"norm": 'batch',

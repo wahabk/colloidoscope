@@ -140,8 +140,8 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	zoom_out_size = [int(c/zoom) for c in canvas_size]
 	zoom_out_size_padded = [c+pad for c in zoom_out_size]
 	# canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
-	canvas = make_background(zoom_out_size_padded, 4, random.randint(0,50), dtype='uint8') 
-	# canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
+	# canvas = make_background(zoom_out_size_padded, 4, random.randint(0,50), dtype='uint8') 
+	canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
 	print('background', canvas.max())
 	
 	# convert centers to zoom out
