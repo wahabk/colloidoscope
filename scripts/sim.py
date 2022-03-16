@@ -11,6 +11,14 @@ import random
 import psf
 from scipy import ndimage
 
+def plot_with_side_view(scan, path):
+	projection = np.max(scan, axis=0)
+	side_projection = np.max(scan, axis=1)
+	# side_projection = np.rot90(side_projection)
+	sidebyside = np.concatenate((projection, side_projection), axis=0)
+	plt.imsave(path, sidebyside, cmap='gray')
+	plt.clf()
+
 if __name__ == '__main__':
 	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/home/wahab/Data/HDD/Colloids'
@@ -18,7 +26,7 @@ if __name__ == '__main__':
 	dc = DeepColloid(dataset_path)
 
 	canvas_size=(64,64,64)
-	label_size=(56,56,56)
+	label_size=(48,48,48)
 	
 	dataset_name = 'march_first'
 	num_workers = 10
@@ -47,7 +55,8 @@ if __name__ == '__main__':
 				# 	index +=1
 				# 	continue
 
-				volfrac = v
+				volfrac = v #random.choice([0.1,0.3,0.5])
+
 				types = {
 				'very small' 	: {'r' : randrange(4,5), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.02)},
 				'medium' 		: {'r' : randrange(5,8), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.03)},
@@ -98,6 +107,7 @@ if __name__ == '__main__':
 				print(label.shape, label.max(), label.min())
 
 				# dc.view(canvas, final_centers, label)
+				# plot_with_side_view(canvas, f'output/figs/simulation/{index}.png')
 				# projection = np.max(canvas, axis=0)
 				# projection_label = np.max(label, axis=0)*255
 				# sidebyside = np.concatenate((projection, projection_label), axis=1)

@@ -138,4 +138,5 @@ if __name__ == '__main__':
 																num_workers=num_workers)
 	
 
+	# plot_with_side_view(canvas, f'output/figs/simulation/{i}.png')
 	
