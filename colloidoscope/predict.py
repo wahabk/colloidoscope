@@ -76,10 +76,19 @@ def find_positions(result, threshold) -> np.ndarray:
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
 
+def put_in_center_like(test_array, test_label):
+	new_label = np.zeros_like(test_array)
+	a = test_array.shape[0]
+	l = test_label.shape[0]
+	diff = int((a-l)/2)
+	print(a, l, diff)
+	new_label[diff:a-diff, diff:a-diff, diff:a-diff] = test_label
+	return new_label
+
 def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 0), threshold = 0.5, debug=False):
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	# device = torch.device("cpu")
-	roiSize = (56,56,56)
+	roiSize = (64,64,64)
 	
 	
 
@@ -88,11 +97,11 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 	# model
 	model = UNet(in_channels=1,
 				out_channels=1,
-				n_blocks=4,
+				n_blocks=2,
 				start_filters=32,
 				activation='relu',
 				normalization='batch',
-				conv_mode='same',
+				conv_mode='valid',
 				dim=3,
 				skip_connect=None,)
 
@@ -128,7 +137,11 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 			out = model(input_tensor)  # send through model/network
 			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-			aggregator.add_batch(out_relu, locations)
+			
+			out = put_in_center_like(input_tensor, out_relu)
+			
+			print(out.shape, input_tensor.shape)
+			aggregator.add_batch(out, locations)
 
 	output_tensor = aggregator.get_output_tensor()
 	# post process to numpy array
