@@ -32,8 +32,8 @@ def draw_slice(args):
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				
 				if is_label:
-					if dist <= 4:
-						new_slice[i,j] = gaussian(dist, 0, 1, peak=255)
+					if dist <= r:
+						new_slice[i,j] = gaussian(dist*3, 0, r, peak=255)
 				else:
 					if dist <= r:
 						new_slice[i,j] = brightness

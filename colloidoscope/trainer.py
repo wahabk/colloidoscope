@@ -427,7 +427,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				conv_mode='valid',
 				up_mode='transposed',
 				dim=3,
-				skip_connect=None)
+				skip_connect='res')
 
 	model = torch.nn.DataParallel(model, device_ids=device_ids)
 	model.to(device)
@@ -467,11 +467,9 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	data = dc.read_hdf5(params['dataset_name'], 1)
 	test_array, metadata, positions = data['image'], data['metadata'], data['positions']
 	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
-	array_projection = np.max(test_array, axis=0)
-	label_projection = np.max(test_label, axis=0)*255
-	new_label = np.zeros_like(array_projection)
-	sidebyside = np.concatenate((array_projection, label_projection), axis=1)
-	sidebyside /= sidebyside.max()
+	sidebyside = make_proj(test_array, test_label)
+
+
 	run['prediction'].upload(File.as_image(sidebyside))
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
@@ -481,3 +479,17 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# run['test/test'].log(losses) #if dict
 
 	run.stop()
+
+def make_proj(test_array, test_label):
+
+	array_projection = np.max(test_array, axis=0)
+	label_projection = np.max(test_label, axis=0)*255
+	# new_label = np.zeros_like(array_projection)
+
+	if label_projection.shape != array_projection.shape:
+		label_projection.resize(array_projection.shape)
+
+	sidebyside = np.concatenate((array_projection, label_projection), axis=1)
+	sidebyside /= sidebyside.max()
+
+	return sidebyside

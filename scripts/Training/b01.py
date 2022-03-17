@@ -44,7 +44,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'march_first'
+	dataset_name = 'r_width'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(2,3000))
@@ -53,12 +53,12 @@ if __name__ == "__main__":
 	train_data = all_data[0:600]
 	val_data = all_data[601:800]
 	test_data =	all_data[801:900]
-	name = 'trying march dice'
+	name = 'r width'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": 0.001,
+		"lr": 0.0001,
 		"batch_size": 4,
 		"n_blocks": 2,
 		"norm": 'batch',
