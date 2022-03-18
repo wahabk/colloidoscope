@@ -124,9 +124,9 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 	# array = torch.from_numpy(array)
 	subject = tio.Subject(scan = tio.ScalarImage(tensor=array))
 
-	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap)
+	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=4)
-	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
+	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop')
 	
 	model.eval()
 	with torch.no_grad():
@@ -137,11 +137,9 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 			out = model(input_tensor)  # send through model/network
 			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-			
-			out = put_in_center_like(input_tensor, out_relu)
-			
-			print(out.shape, input_tensor.shape)
-			aggregator.add_batch(out, locations)
+						
+			print(out_relu.shape, input_tensor.shape)
+			aggregator.add_batch(out_relu, locations)
 
 	output_tensor = aggregator.get_output_tensor()
 	# post process to numpy array

@@ -42,13 +42,13 @@ if __name__ == '__main__':
 
 	pos, result = dc.detect(array, patch_overlap=(16,16,16), threshold=0.5, debug=True)
 	print(pos.shape)
-	pos = run_trackpy(result, min_sep=(17,17,19))
+	pos = run_trackpy(result, )#min_sep=(17,17,19))
 	print(pos.shape)
 	dc.view(array, positions=pos, label=result)
 
 	x, y = dc.get_gr(pos, 100, 100)
 	plt.plot(x, y, label='pred')
-	# plt.show()
+	plt.show()
 
 	# viewer=napari.Viewer()
 	# viewer.add_image(array)
