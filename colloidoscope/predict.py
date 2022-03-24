@@ -1,7 +1,7 @@
 import scipy
 import torch
 import numpy as np
-from .unet import UNet
+from .models.unet import UNet
 import pandas as pd
 import torchio as tio
 

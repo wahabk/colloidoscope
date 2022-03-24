@@ -6,15 +6,15 @@ from tqdm import tqdm, trange
 import math
 import neptune.new as neptune
 from neptune.new.types import File
-from .deepcolloid import *
+from .deepcolloid import DeepColloid
+from .predict import *
 from .dataset import *
-from .unet import UNet
-from .unet_dsnt import UNetCC
+from .models.unet import UNet
+from .models.unet_dsnt import UNetCC
 from ray import tune
 import os
 import torchio as tio
 import scipy
-from .predict import predict
 from torch.nn import BCELoss
 import torch.nn.functional as F
 import copy
@@ -288,16 +288,16 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	first = True # save figs for first instance
 	model.eval()
 	with torch.no_grad():
-		for idx, data in enumerate(test_loader):
+		for idx, batch in enumerate(test_loader):
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
-			#fix for now
-			diameters = [metadata['params']['r']*2 for i in range(len(true_positions))]
 
-			x, y = data
+			x, y = batch
 			x, y = x.to(device), y.to(device)
 			# print(x.shape, x.max(), x.min())
 			# print(y.shape, y.max(), y.min())
+
+			#TODO make this dependant on criterion
 
 			out = model(x)  # send through model/network
 			loss = criterion(out, y)
@@ -305,7 +305,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 			# post process to numpy array
-			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			result = out_relu.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 			pred_positions = find_positions(result, threshold)
@@ -324,10 +324,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				'recall'	 : float(rec),
 			}
 
+			#TODO make this run on big sim
 			if first and run:
 				if len(pred_positions) == 0:
 					print('Skipping gr() as bad pred')
-				else:		
+				else:
 					x, y = dc.get_gr(true_positions, 50, 50)
 					plt.plot(x, y, label='true')
 					x, y = dc.get_gr(pred_positions, 50, 50)
@@ -355,7 +356,23 @@ def renormalise(tensor: torch.Tensor):
 	array = array * 255
 	return array
 
+class DiceLoss(torch.nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(DiceLoss, self).__init__()
 
+    def forward(self, inputs, targets, smooth=1):
+        
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        # inputs = torch.sigmoid(inputs)       
+        
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        
+        intersection = (inputs * targets).sum()                            
+        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
+        
+        return 1 - dice
 
 def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
 	'''

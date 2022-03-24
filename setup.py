@@ -18,6 +18,8 @@ setup(
                 'numba',
                 'pandas',
                 'matplotlib',
+                'seaborn',
+                'lxml',
                 'h5py',
                 'napari',
                 'PyQt5',

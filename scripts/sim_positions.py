@@ -28,10 +28,15 @@ def read_gsd_old(file_name):
 if __name__ == '__main__':
 
 	phi = 0.1
-	path = f'output/Positions/phi{phi*1000:.0f}.gsd'
 
-	positions = read_gsd(path, 0)
-	print(positions)
+	# path = f'output/Positions/phi{phi*1000:.0f}.gsd'
+	# positions = read_gsd(path, 0)
+	# print(positions)
+
+	hoomd_make_configurations(phi, n_frames=500, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/test/')
+	
+
+	exit()
 
 	for phi in [0.45, 0.5, 0.55] :#np.linspace(0.1,0.55,10):
 		phi = round(phi, 2)

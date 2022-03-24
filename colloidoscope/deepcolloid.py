@@ -9,11 +9,11 @@ import math
 from copy import deepcopy
 from .simulator import simulate
 from .explore_lif import Reader
+from .predict import detect
 import json
 from pathlib2 import Path
 from skimage import io
 import pandas as pd
-from .predict import detect
 from numba import njit
 
 class DeepColloid:
@@ -83,9 +83,6 @@ class DeepColloid:
 		with h5py.File(path, "r") as f:
 			positions = np.array(f[str(n)+'_positions'])
 			diameters = np.array(f[str(n)+'_diameters'])
-			# try:
-			# except:
-			# 	diameters = [metadata['params']['r']*2 for i in range(len(positions))]
 
 		return metadata, positions, diameters
 	

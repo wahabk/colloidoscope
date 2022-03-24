@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from .deepcolloid import *
+from .deepcolloid import DeepColloid
 
 class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 	"""
@@ -66,7 +66,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		return X, y,
 
 
-def compute_max_depth(shape= 1920, max_depth=10, print_out=True):
+def compute_max_depth(shape=1920, max_depth=10, print_out=True):
     shapes = []
     shapes.append(shape)
     for level in range(1, max_depth):
