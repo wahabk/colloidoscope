@@ -30,6 +30,17 @@ class DeepColloid:
 		return Reader(*args, **kwargs)
 
 	def read_hdf5(self, dataset: str, n: int) -> dict:
+		"""This reads simulated data stored in hdf5
+
+		note the first index is 1 not 0 unlike gsd
+
+		Args:
+			dataset (str): _description_
+			n (int): _description_
+
+		Returns:
+			dict: _description_
+		"""		
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:

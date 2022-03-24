@@ -34,8 +34,8 @@ def make_proj(array, label):
 	return sidebyside
 
 if __name__ == '__main__':
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 	label_size=(160,160,160)
 	
 	dataset_name = 'test'
-	num_workers = 10
+	num_workers = 12
 
 	index=1
 
@@ -93,8 +93,8 @@ if __name__ == '__main__':
 	print(canvas.shape, canvas.max(), canvas.min())
 	print(label.shape, label.max(), label.min())
 
-	# dc.view(canvas, final_centers, label)
+	dc.view(canvas, final_centers, label)
 	sidebyside = make_proj(canvas, label)
 	plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-	# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+	dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')

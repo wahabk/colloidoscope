@@ -286,6 +286,16 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 
 	# TODO pred on all real and on big gr
 
+	# test one predict and upload to neptune
+	data = dc.read_hdf5(dataset_name, 1)
+	test_array, metadata, positions = data['image'], data['metadata'], data['positions']
+	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
+	sidebyside = make_proj(test_array, test_label)
+
+	#TODO move to test
+	run['prediction'].upload(File.as_image(sidebyside))
+
+
 	losses = {}
 	first = True # save figs for first instance
 	model.eval()
@@ -482,15 +492,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		model_name = save
 		torch.save(model.state_dict(), model_name)
 		# run['model/weights'].upload(model_name)
-
-	# test one predict and upload to neptune
-	data = dc.read_hdf5(params['dataset_name'], 1)
-	test_array, metadata, positions = data['image'], data['metadata'], data['positions']
-	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
-	sidebyside = make_proj(test_array, test_label)
-
-	#TODO move to test
-	run['prediction'].upload(File.as_image(sidebyside))
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
 	
