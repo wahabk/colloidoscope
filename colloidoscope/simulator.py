@@ -9,6 +9,7 @@ import random
 import random
 import math
 from scipy.signal import convolve
+from tqdm import tqdm
 
 @njit()
 def gaussian(x, mu, sig, peak=1.):
@@ -48,10 +49,11 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 	args = [(s, z, radii, centers, brightnesses, is_label) for z, s in enumerate(canvas)]
 
 	print(canvas.shape, centers.shape, np.shape(radii))
-
-	with ProcessPoolExecutor(max_workers=num_workers) as pool:
-		for i in pool.map(draw_slice, args):
-			new_canvas.append(i)
+	with tqdm(total=len(args)) as pbar:
+		with ProcessPoolExecutor(max_workers=num_workers) as pool:
+			for i in pool.map(draw_slice, args):
+				new_canvas.append(i)
+				pbar.update(1)
 
 	canvas = list(new_canvas)
 

@@ -29,7 +29,7 @@ if __name__ == "__main__":
 	dataset_name = 'r_width'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(2,3000))
+	all_data = list(range(1,3000))
 	random.shuffle(all_data)
 
 	train_data = all_data[0:600]

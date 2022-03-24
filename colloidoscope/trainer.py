@@ -284,6 +284,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
+	# TODO pred on all real and on big gr
+
 	losses = {}
 	first = True # save figs for first instance
 	model.eval()
@@ -298,6 +300,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			# print(y.shape, y.max(), y.min())
 
 			#TODO make this dependant on criterion
+			#TODO add bog standard trackpy from sim params
 
 			out = model(x)  # send through model/network
 			loss = criterion(out, y)
@@ -324,7 +327,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				'recall'	 : float(rec),
 			}
 
-			#TODO make this run on big sim
+			#TODO make this run on big sim and add trackpy
 			if first and run:
 				if len(pred_positions) == 0:
 					print('Skipping gr() as bad pred')
@@ -486,7 +489,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
 	sidebyside = make_proj(test_array, test_label)
 
-
+	#TODO move to test
 	run['prediction'].upload(File.as_image(sidebyside))
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
