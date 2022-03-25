@@ -41,6 +41,14 @@ if __name__ == '__main__':
 	plt.legend()
 	plt.show()
 
+	tp_ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters)
+	fig = dc.plot_pr(tp_ap, precisions, recalls, thresholds, name='tp sim')
+	plt.show()
+	label_ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters)
+	fig = dc.plot_pr(label_ap, precisions, recalls, thresholds, name='tp label')
+	plt.show()
+
+
 
 	exit()
 

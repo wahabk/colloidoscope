@@ -15,6 +15,7 @@ from pathlib2 import Path
 from skimage import io
 import pandas as pd
 from numba import njit
+from tqdm import tqdm
 
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
@@ -298,7 +299,7 @@ class DeepColloid:
 		recalls = []
 		predictions = []
 		thresholds = np.linspace(0,1,10)
-		for thresh in thresholds:
+		for thresh in tqdm(thresholds):
 			print(thresh)
 			prec, rec = self.get_precision_recall(ground_truth, prediction, diameters, thresh,)
 			precisions.append(prec)
@@ -308,7 +309,7 @@ class DeepColloid:
 
 		precisions = np.array(precisions)
 		recalls = np.array(recalls)
-		recalls = np.flip(recalls) # why do i need to flip ????
+		recalls = np.flip(recalls) # TODO why do i need to flip ????
 
 		ap = np.trapz(precisions, x=recalls) # integrate
 
