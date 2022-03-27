@@ -44,10 +44,10 @@ if __name__ == "__main__":
 		"batch_size": 4,
 		"n_blocks": 2,
 		"norm": 'batch',
-		"epochs": 3,
+		"epochs": 50,
 		"start_filters": 32,
 		"activation": 'relu',
-		"loss_function": torch.nn.L1Loss(),
+		"loss_function": torch.nn.BCEWithLogitsLoss(),
 	}
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 

@@ -101,6 +101,8 @@ class Trainer:
 		batch_iter = tqdm(enumerate(self.training_DataLoader), 'Training', total=len(self.training_DataLoader),
 						  leave=False)
 
+		sig = torch.nn.Sigmoid()
+
 		for i, (x, y) in batch_iter:
 			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 			self.optimizer.zero_grad()  # zerograd the parameters
@@ -109,10 +111,12 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			# print(out.shape, target.shape)
+			print(out.shape, target.shape)
+			print(out.max(), target.max())
+			# out_sigmoid = sig(out)
 
 			loss = self.criterion(out, target)  # calculate loss
-			loss_value = loss.item()
+			loss_value = loss.item() # .item? for other losses
 			train_losses.append(loss_value)
 			if self.logger: self.logger['train/loss'].log(loss_value)
 			loss.backward()  # one backward pass
@@ -457,7 +461,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				conv_mode='valid',
 				up_mode='transposed',
 				dim=3,
-				skip_connect='res')
+				skip_connect=None)
 
 	model = torch.nn.DataParallel(model, device_ids=device_ids)
 	model.to(device)
@@ -493,10 +497,9 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		torch.save(model.state_dict(), model_name)
 		# run['model/weights'].upload(model_name)
 
-	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
-	
-	losses = pd.DataFrame(losses)
-	run['test/df'].upload(File.as_html(losses))
+	# losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
+	# losses = pd.DataFrame(losses)
+	# run['test/df'].upload(File.as_html(losses))
 	# run['test/test'].log(losses) #if dict
 
 	run.stop()
