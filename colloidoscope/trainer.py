@@ -18,6 +18,8 @@ import scipy
 from torch.nn import BCELoss
 import torch.nn.functional as F
 import copy
+from skimage import io
+import seaborn as sns
 
 class Trainer:
 	def __init__(self,
@@ -111,8 +113,8 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			print(out.shape, target.shape)
-			print(out.max(), target.max())
+			# print(out.shape, target.shape)
+			# print(out.max(), target.max())
 			# out_sigmoid = sig(out)
 
 			loss = self.criterion(out, target)  # calculate loss
@@ -280,25 +282,56 @@ def find_positions(result, threshold) -> np.ndarray:
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
 
+def read_real_examples():
+
+	d = {}
+
+	d['abraham'] = io.imread('examples/Data/abraham.tiff')
+	d['emily'] = io.imread('examples/Data/emily.tiff')
+	d['katherine'] = io.imread('examples/Data/katherine.tiff')
+	d['levke'] = io.imread('examples/Data/levke.tiff')
+
+	return d
+
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=False, device='cpu'):
 	dc = DeepColloid(dataset_path)
-
 	print('Running test, this may take a while...')
 	
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
-	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
+	# test on real data
+	real_dict = read_real_examples()
+	for name, array in real_dict.items():
+		pred_positions, label = dc.detect(test_array, diameter = metadata['params']['r'], model=model)
+		sidebyside = make_proj(array, label)
+		run[name].upload(File.as_image(sidebyside))
 
-	# TODO pred on all real and on big gr
-
-	# test one predict and upload to neptune
-	data = dc.read_hdf5(dataset_name, 1)
-	test_array, metadata, positions = data['image'], data['metadata'], data['positions']
-	test_label = predict(test_array, model, device, threshold=0.5, return_positions=False)
+	# test predict on sim
+	data_dict = dc.read_hdf5('test', 1)
+	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+	pred_positions, test_label = dc.detect(test_array, diameter = metadata['params']['r'], model=model)
 	sidebyside = make_proj(test_array, test_label)
-
-	#TODO move to test
 	run['prediction'].upload(File.as_image(sidebyside))
 
+	if len(pred_positions) == 0:
+		print('Skipping gr() as bad pred')
+	else:
+		x, y = dc.get_gr(true_positions, 50, 50)
+		plt.plot(x, y, label='true')
+		x, y = dc.get_gr(pred_positions, 50, 50)
+		plt.plot(x, y, label='pred')
+		plt.legend()
+		fig = plt.gcf()
+		run['gr'].upload(fig)
+		plt.clf()
+
+	# TODO make ap faster
+	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	# run['AP'] = ap
+	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
+	# run['PR_curve'].upload(fig)
+	# plt.clf()
+
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
+	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = {}
 	first = True # save figs for first instance
@@ -313,8 +346,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			# print(x.shape, x.max(), x.min())
 			# print(y.shape, y.max(), y.min())
 
-			#TODO make this dependant on criterion
-			#TODO add bog standard trackpy from sim params
+			#TODO make this dependant on criterion?
 
 			out = model(x)  # send through model/network
 			loss = criterion(out, y)
@@ -322,10 +354,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 			# post process to numpy array
-			result = out_relu.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 			pred_positions = find_positions(result, threshold)
+			pred_positions = run_trackpy(result, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 			print(pred_positions.shape)
 
@@ -341,29 +374,17 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				'recall'	 : float(rec),
 			}
 
-			#TODO make this run on big sim and add trackpy
-			if first and run:
-				if len(pred_positions) == 0:
-					print('Skipping gr() as bad pred')
-				else:
-					x, y = dc.get_gr(true_positions, 50, 50)
-					plt.plot(x, y, label='true')
-					x, y = dc.get_gr(pred_positions, 50, 50)
-					plt.plot(x, y, label='pred')
-					plt.legend()
-					fig = plt.gcf()
-					run['gr'].upload(fig)
-					plt.clf()
-
-				ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-				run['AP'] = ap
-
-				fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
-				run['PR_curve'].upload(fig)
-				plt.clf()
-
-				first = False
 			losses[idx] = m
+
+	losses = pd.DataFrame(losses)
+
+	fig, axs = plt.subplots(2,2)
+	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
+	sns.scatterplot(x='noise', y = 'loss', data=losses, ax=axs[0,1])
+	sns.scatterplot(x='psf_zoom', y = 'loss', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[1,1])
+	fig.tight_layout()
+	run['test/params_vs_loss'].upload(fig)
 
 	return losses
 
@@ -497,9 +518,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		torch.save(model.state_dict(), model_name)
 		# run['model/weights'].upload(model_name)
 
-	# losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
-	# losses = pd.DataFrame(losses)
-	# run['test/df'].upload(File.as_html(losses))
+	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
+	run['test/df'].upload(File.as_html(losses))
 	# run['test/test'].log(losses) #if dict
 
 	run.stop()

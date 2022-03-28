@@ -1,6 +1,8 @@
 import scipy
 import torch
 import numpy as np
+
+from scripts.detect import run_trackpy
 from .models.unet import UNet
 import pandas as pd
 import torchio as tio
@@ -27,7 +29,7 @@ def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_
 	out_relu = torch.relu(out)
 	
 	# post process to numpy array
-	result = out_relu.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+	result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 	if return_positions:
@@ -85,28 +87,25 @@ def put_in_center_like(test_array, test_label):
 	new_label[diff:a-diff, diff:a-diff, diff:a-diff] = test_label
 	return new_label
 
-def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 0), threshold = 0.5, debug=False):
+def detect(array, diameter=9, model=None, patch_overlap=(0, 0, 0), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	# device = torch.device("cpu")
-	roiSize = (64,64,64)
-	
-	
-
+	# weights_path = 'output/weights/unet.pt'
+	# device = torch.device("cpu")	
 	print(f'predicting on {device}')
 
 	# model
-	model = UNet(in_channels=1,
-				out_channels=1,
-				n_blocks=2,
-				start_filters=32,
-				activation='relu',
-				normalization='batch',
-				conv_mode='valid',
-				dim=3,
-				skip_connect=None,)
+	if model is None:
+		model = UNet(in_channels=1,
+					out_channels=1,
+					n_blocks=2,
+					start_filters=32,
+					activation='relu',
+					normalization='batch',
+					conv_mode='valid',
+					dim=3,
+					skip_connect=None,)
 
-	model = torch.nn.DataParallel(model, device_ids=None)
-	
+		model = torch.nn.DataParallel(model, device_ids=None)
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
@@ -114,16 +113,14 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 		model.load_state_dict(model_weights) # add weights to model
 
 	model = model.to(device)
-
-
 	
 	array = array.copy()
 	array = np.array(array/array.max(), dtype=np.float32)
-	array = np.expand_dims(array, 0)      # add channel axis
-	# array = np.expand_dims(array, 0)      # add batch axis
+	array = np.expand_dims(array, 0)      # add batch axis
+	# array = np.expand_dims(array, 0)      # add channel axis ?
 	# array = torch.from_numpy(array)
-	subject = tio.Subject(scan = tio.ScalarImage(tensor=array))
 
+	subject = tio.Subject(scan = tio.ScalarImage(tensor=array)) # use torchio subject to enable using grid sampling
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=4)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop')
@@ -135,19 +132,20 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 			locations = patch_batch[tio.LOCATION]
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
-			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 						
-			print(out_relu.shape, input_tensor.shape)
-			aggregator.add_batch(out_relu, locations)
+			print(out_sigmoid.shape, input_tensor.shape)
+			aggregator.add_batch(out_sigmoid, locations)
 
 	output_tensor = aggregator.get_output_tensor()
 	# post process to numpy array
 	result = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
-	positions = find_positions(result, threshold)
-
+	# find positions from label
+	# TODO change to trackpy or watershed?
+	positions = run_trackpy(result, diameter=diameter)
+	
 
 	if debug:
 		return positions, result
@@ -159,3 +157,9 @@ def detect(array, weights_path = 'output/weights/unet.pt', patch_overlap=(0, 0, 
 
 		return pd.DataFrame().from_dict(d) #, orient='index')
 
+def run_trackpy(array, diameter=5, *args, **kwargs):
+	df = tp.locate(array, diameter=5, *args, **kwargs)
+	f = list(zip(df['z'], df['y'], df['x']))
+	tp_predictions = np.array(f)
+
+	return tp_predictions
