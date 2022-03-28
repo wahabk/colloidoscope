@@ -35,16 +35,16 @@ if __name__ == "__main__":
 	train_data = all_data[0:600]
 	val_data = all_data[601:800]
 	test_data =	all_data[801:900]
-	name = 'r width'
+	name = 'testing CLR'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": 0.0001,
+		"lr": 0.001,
 		"batch_size": 4,
 		"n_blocks": 2,
 		"norm": 'batch',
-		"epochs": 50,
+		"epochs": 40,
 		"start_filters": 32,
 		"activation": 'relu',
 		"loss_function": torch.nn.BCEWithLogitsLoss(),

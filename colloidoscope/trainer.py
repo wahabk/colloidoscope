@@ -86,9 +86,9 @@ class Trainer:
 			"""Learning rate scheduler block"""
 			if self.lr_scheduler is not None:
 				if self.validation_DataLoader is not None and self.lr_scheduler.__class__.__name__ == 'ReduceLROnPlateau':
-					self.lr_scheduler.batch(self.validation_loss[i])  # learning rate scheduler step with validation loss
+					self.lr_scheduler.step(self.validation_loss[i])  # learning rate scheduler step with validation loss
 				else:
-					self.lr_scheduler.batch()  # learning rate scheduler step
+					self.lr_scheduler.step()  # learning rate scheduler step
 		return self.training_loss, self.validation_loss, self.learning_rate
 
 	def _train(self):
@@ -102,8 +102,6 @@ class Trainer:
 		train_losses = []  # accumulate the losses here
 		batch_iter = tqdm(enumerate(self.training_DataLoader), 'Training', total=len(self.training_DataLoader),
 						  leave=False)
-
-		sig = torch.nn.Sigmoid()
 
 		for i, (x, y) in batch_iter:
 			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
@@ -286,10 +284,18 @@ def read_real_examples():
 
 	d = {}
 
-	d['abraham'] = io.imread('examples/Data/abraham.tiff')
-	d['emily'] = io.imread('examples/Data/emily.tiff')
-	d['katherine'] = io.imread('examples/Data/katherine.tiff')
-	d['levke'] = io.imread('examples/Data/levke.tiff')
+	d['abraham'] = {}
+	d['abraham']['diameter'] = 15
+	d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
+	d['emily'] = {}
+	d['emily']['diameter'] = 9
+	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
+	d['katherine'] = {}
+	d['katherine']['diameter'] = 9
+	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
+	d['levke'] = {}
+	d['levke']['diameter'] = 9
+	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
 
 	return d
 
@@ -299,15 +305,23 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	
 	# test on real data
 	real_dict = read_real_examples()
-	for name, array in real_dict.items():
-		pred_positions, label = dc.detect(test_array, diameter = metadata['params']['r'], model=model)
-		sidebyside = make_proj(array, label)
+	for name, d in real_dict.items():
+		pred_positions, label = dc.detect(d['array'], diameter = d['diameter'], model=model, debug=True)
+		sidebyside = make_proj(d['array'], label)
 		run[name].upload(File.as_image(sidebyside))
+
+		x, y = dc.get_gr(pred_positions, 50, 50)
+		plt.plot(x, y, label=f'unet n ={len(pred_positions)}')
+		fig = plt.gcf()
+		run[name+'gr'].upload(fig)
+		plt.clf()
+
+		
 
 	# test predict on sim
 	data_dict = dc.read_hdf5('test', 1)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
-	pred_positions, test_label = dc.detect(test_array, diameter = metadata['params']['r'], model=model)
+	pred_positions, test_label = dc.detect(test_array, diameter = dc.round_up_to_odd(metadata['params']['r']*2), model=model, debug=True)
 	sidebyside = make_proj(test_array, test_label)
 	run['prediction'].upload(File.as_image(sidebyside))
 
@@ -315,9 +329,14 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 		print('Skipping gr() as bad pred')
 	else:
 		x, y = dc.get_gr(true_positions, 50, 50)
-		plt.plot(x, y, label='true')
+		plt.plot(x, y, label=f'true n ={len(true_positions)}')
 		x, y = dc.get_gr(pred_positions, 50, 50)
-		plt.plot(x, y, label='pred')
+		plt.plot(x, y, label=f'unet n ={len(pred_positions)}')
+
+		trackpy_positions = run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+
+		x, y = dc.get_gr(trackpy_positions, 50, 50)
+		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}')
 		plt.legend()
 		fig = plt.gcf()
 		run['gr'].upload(fig)
@@ -333,7 +352,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
-	losses = {}
+	losses = []
 	first = True # save figs for first instance
 	model.eval()
 	with torch.no_grad():
@@ -374,10 +393,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 				'recall'	 : float(rec),
 			}
 
-			losses[idx] = m
+			losses.append(m)
 
 	losses = pd.DataFrame(losses)
 
+	print(losses)
+	# TODO make this plot p and r
 	fig, axs = plt.subplots(2,2)
 	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
 	sns.scatterplot(x='noise', y = 'loss', data=losses, ax=axs[0,1])
@@ -496,6 +517,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
+	scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.1, cycle_momentum=False)
 
 	# trainer
 	trainer = Trainer(model=model,
@@ -504,7 +526,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 					optimizer=optimizer,
 					training_DataLoader=train_loader,
 					validation_DataLoader=val_loader,
-					lr_scheduler=None,
+					lr_scheduler=scheduler,
 					epochs=params['epochs'],
 					logger=run,
 					tuner=tuner,
@@ -512,6 +534,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	# start training
 	training_losses, validation_losses, lr_rates = trainer.run_trainer()
+
+	print(lr_rates)
 	
 	if save:
 		model_name = save

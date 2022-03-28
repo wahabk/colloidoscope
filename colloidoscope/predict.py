@@ -2,7 +2,7 @@ import scipy
 import torch
 import numpy as np
 
-from scripts.detect import run_trackpy
+import trackpy as tp
 from .models.unet import UNet
 import pandas as pd
 import torchio as tio
@@ -87,7 +87,11 @@ def put_in_center_like(test_array, test_label):
 	new_label[diff:a-diff, diff:a-diff, diff:a-diff] = test_label
 	return new_label
 
-def detect(array, diameter=9, model=None, patch_overlap=(0, 0, 0), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
+def detect(array, diameter=9, model=None, patch_overlap=(16, 16, 16), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
+	"""
+	overlap must be diff between input and output (if different)
+	"""
+	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	# weights_path = 'output/weights/unet.pt'
 	# device = torch.device("cpu")	
@@ -123,7 +127,7 @@ def detect(array, diameter=9, model=None, patch_overlap=(0, 0, 0), roiSize=(64,6
 	subject = tio.Subject(scan = tio.ScalarImage(tensor=array)) # use torchio subject to enable using grid sampling
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=4)
-	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop')
+	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc
 	
 	model.eval()
 	with torch.no_grad():
@@ -133,8 +137,8 @@ def detect(array, diameter=9, model=None, patch_overlap=(0, 0, 0), roiSize=(64,6
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-						
-			print(out_sigmoid.shape, input_tensor.shape)
+					
+			# print(out_sigmoid.shape, input_tensor.shape)
 			aggregator.add_batch(out_sigmoid, locations)
 
 	output_tensor = aggregator.get_output_tensor()

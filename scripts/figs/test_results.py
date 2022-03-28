@@ -9,6 +9,8 @@ print(df)
 
 fig, axs = plt.subplots(2,2)
 
+# TODO make this plot P and R
+
 sns.scatterplot(x='volfrac', y = 'loss', data=df, ax=axs[0,0])
 sns.scatterplot(x='noise', y = 'loss', data=df, ax=axs[0,1])
 sns.scatterplot(x='z_gauss', y = 'loss', data=df, ax=axs[1,0])
