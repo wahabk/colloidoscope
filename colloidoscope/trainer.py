@@ -517,7 +517,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.1, cycle_momentum=False)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2)
+	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
 
 	# trainer
 	trainer = Trainer(model=model,
@@ -535,7 +536,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# start training
 	training_losses, validation_losses, lr_rates = trainer.run_trainer()
 
-	print(lr_rates)
+	run['learning_rates'].log(lr_rates)
 	
 	if save:
 		model_name = save

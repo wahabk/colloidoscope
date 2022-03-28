@@ -28,7 +28,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(48,48,48)
 	
-	dataset_name = 'r_width'
+	dataset_name = 'heatmapr5'
 	num_workers = 10
 	
 	# make 100 scans of each volfrac
