@@ -53,8 +53,6 @@ def get_results(gt, pred, diameters, threshold,):
 	args_desc = np.argsort(ious)
 	args_desc = args_desc[::-1]
 
-
-	print('matching')
 	if len(args_desc) == 0:
 		# No matches
 		tp = 0
@@ -131,6 +129,7 @@ def average_precision(ground_truth, prediction, diameters):
 	return ap, precisions, recalls, thresholds
 
 def run_trackpy(array, diameter=5, *args, **kwargs):
+	df = None
 	df = tp.locate(array, diameter=5, *args, **kwargs)
 	f = list(zip(df['z'], df['y'], df['x']))
 	tp_predictions = np.array(f)
@@ -148,10 +147,18 @@ if __name__ == '__main__':
 	data_dict = dc.read_hdf5(dataset_name, 1)
 	array, true_positions, label, diameters, metadata = data_dict['image'],	data_dict['positions'],	data_dict['label'],	data_dict['diameters'],	data_dict['metadata']
 	print(metadata)
+	print(dc.round_up_to_odd(metadata['params']['r']*2))
 
-	trackpy_positions = run_trackpy(array, diameter = dc.round_up_to_odd(metadata['params']['r']*2))
+	trackpy_pos = run_trackpy(array/array.max(), diameter = dc.round_up_to_odd(metadata['params']['r']*2))
 	trackpy_on_label = run_trackpy(label, diameter = dc.round_up_to_odd(metadata['params']['r']*2))
 
+	print(array.shape, label.shape)
+	print(array.max(), label.max())
+
+	print(trackpy_pos.shape)
+	print(trackpy_on_label.shape)
+	print(trackpy_pos[0])
+	print(trackpy_on_label[0])
 
 	# x, y = dc.get_gr(true_positions, 50, 100)
 	# plt.plot(x, y, label=f'true (n={len(true_positions)})')
@@ -163,9 +170,12 @@ if __name__ == '__main__':
 	# plt.show()
 	# plt.clf()
 
-	tp_ap, precisions, recalls, thresholds = average_precision(true_positions, trackpy_positions, diameters)
+	tp_ap, precisions, recalls, thresholds = average_precision(true_positions, trackpy_pos, diameters)
+	print(precisions, recalls)
 	fig = dc.plot_pr(tp_ap, precisions, recalls, thresholds, name='tp sim')
 	plt.show()
-	label_ap, precisions, recalls, thresholds = average_precision(true_positions, trackpy_positions, diameters)
+	print(diameters.shape, diameters[0])
+	label_ap, precisions, recalls, thresholds = average_precision(true_positions, trackpy_on_label, diameters)
+	print(diameters.shape, diameters[0])
 	fig = dc.plot_pr(label_ap, precisions, recalls, thresholds, name='tp label')
 	plt.show()

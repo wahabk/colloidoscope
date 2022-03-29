@@ -162,7 +162,7 @@ class DeepColloid:
 		return volfrac
 
 	def round_up_to_odd(self, f):
-		return np.ceil(f) // 2 * 2 + 1 # // is floor division
+		return np.floor(f) // 2 * 2 + 1 # // is floor division
 
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
