@@ -123,14 +123,16 @@ def make_background(canvas_size, octaves, brightness, dtype='uint8'):
 
 
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
-			blur_kernel:np.ndarray, min_brightness:int, max_brightness:int, 
+			blur_kernel:np.ndarray, b:int, 
 			noise:float, make_label:bool=True, label_size:list=(64,64,64), diameters=np.ndarray([]), num_workers=2):
 	'''
 	This will only work for a perfect cube eg 64x64x64
 	'''
 
-
-	brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
+	
+	# brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
+	brightnesses = [b for _ in centers]
+	#TODO add brightness variation from data
 	zoom = 0.5
 	pad = 32
 	gauss_kernel = (2, 2, 2)

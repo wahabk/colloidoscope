@@ -26,7 +26,7 @@ if __name__ == '__main__':
 	dc = DeepColloid(dataset_path)
 
 	canvas_size=(64,64,64)
-	label_size=(48,48,48)
+	label_size=(64,64,64)
 	
 	dataset_name = 'heatmapr5'
 	num_workers = 10
@@ -55,19 +55,18 @@ if __name__ == '__main__':
 				# 	index +=1
 				# 	continue
 
-				volfrac = random.choice([0.1,0.3,0.5])
+				volfrac = v#random.choice([0.3,0.4,0.5])
 
 				types = {
-				'very small' 	: {'r' : 5, 'psf_zoom' : random.choice([0.2,0.3,0.4,0.5,0.6]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.02)},
-				'medium' 		: {'r' : randrange(5,8), 'psf_zoom' : random.choice([0.4,0.5,0.6,0.7,0.8]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.03)},
-				'large' 		: {'r' : randrange(8,10), 'psf_zoom' : random.choice([0.5,0.6,0.7,0.9,1.0]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.04)},
+				'very small' 	: {'r' : 5, 'psf_zoom' : random.choice([0.2,0.3,0.4,0.5,0.6]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
+				'medium' 		: {'r' : randrange(5,8), 'psf_zoom' : random.choice([0.4,0.5,0.6,0.7,0.8]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.03)},
+				'large' 		: {'r' : randrange(8,10), 'psf_zoom' : random.choice([0.5,0.6,0.7,0.9,1.0]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.04)},
 				}
 				keys = list(types.keys())
 				this_type = random.choice(keys)
 
 				r = types[this_type]['r']
-				min_brightness = types[this_type]['min_brightness']
-				max_brightness = types[this_type]['max_brightness']
+				b = types[this_type]['brightness']
 				noise = types[this_type]['noise']
 				psf_zoom = types[this_type]['psf_zoom']
 
@@ -100,7 +99,7 @@ if __name__ == '__main__':
 				centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 				metadata['n_particles'] = len(centers)
 
-				canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, centers, r, kernel, min_brightness, max_brightness,
+				canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, centers, r, kernel, b,
 											noise, make_label=True, label_size=label_size, diameters=diameters, num_workers=num_workers)
 
 				print(canvas.shape, canvas.max(), canvas.min())

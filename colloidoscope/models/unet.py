@@ -583,7 +583,7 @@ class UNet(nn.Module):
 
     def initialize_parameters(
         self,
-        method_weights=nn.init.xavier_uniform_,
+        method_weights=nn.init.kaiming_uniform_,
         method_bias=nn.init.zeros_,
         kwargs_weights={},
         kwargs_bias={},

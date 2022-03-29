@@ -98,19 +98,19 @@ if __name__ == "__main__":
 	train_data = all_data[0:600]
 	val_data = all_data[601:800]
 	test_data =	all_data[801:900]
-	name = 'reduce on plateau patience=2'
+	name = 'focal'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": 0.001,
+		"lr": 0.0001,
 		"batch_size": 4,
-		"n_blocks": 2,
+		"n_blocks": 1,
 		"norm": 'batch',
-		"epochs": 20,
+		"epochs": 7,
 		"start_filters": 32,
 		"activation": 'relu',
-		"loss_function": torch.nn.BCEWithLogitsLoss(),
+		"loss_function": BinaryFocalLoss(alpha=3, gamma=0.2),
 	}
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
