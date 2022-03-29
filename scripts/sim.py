@@ -55,12 +55,12 @@ if __name__ == '__main__':
 				# 	index +=1
 				# 	continue
 
-				volfrac = v #random.choice([0.1,0.3,0.5])
+				volfrac = random.choice([0.1,0.3,0.5])
 
 				types = {
-				'very small' 	: {'r' : randrange(4,5), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.02)},
-				'medium' 		: {'r' : randrange(5,8), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.03)},
-				'large' 		: {'r' : randrange(8,10), 'psf_zoom' : random.choice([0.1,0.2,0.3,0.4,0.5]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.04)},
+				'very small' 	: {'r' : 5, 'psf_zoom' : random.choice([0.2,0.3,0.4,0.5,0.6]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.02)},
+				'medium' 		: {'r' : randrange(5,8), 'psf_zoom' : random.choice([0.4,0.5,0.6,0.7,0.8]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.03)},
+				'large' 		: {'r' : randrange(8,10), 'psf_zoom' : random.choice([0.5,0.6,0.7,0.9,1.0]), 'min_brightness' : randrange(80,150), 'max_brightness' : randrange(155,250), 'noise': uniform(0, 0.04)},
 				}
 				keys = list(types.keys())
 				this_type = random.choice(keys)
