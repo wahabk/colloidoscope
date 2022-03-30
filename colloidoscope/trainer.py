@@ -11,6 +11,7 @@ from .predict import *
 from .dataset import *
 from .models.unet import UNet
 from .models.unet_dsnt import UNetCC
+from .simulator import crop_positions_for_label
 from ray import tune
 import os
 import torchio as tio
@@ -111,7 +112,7 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			print(input_.shape, out.shape, target.shape)
+			# print(input_.shape, out.shape, target.shape)
 			# print(out.max(), target.max())
 			# out_sigmoid = sig(out)
 
@@ -299,7 +300,15 @@ def read_real_examples():
 
 	return d
 
-def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=False, device='cpu'):
+def run_trackpy(array, diameter=5, *args, **kwargs):
+	df = None
+	df = tp.locate(array, diameter=5, *args, **kwargs)
+	f = list(zip(df['z'], df['y'], df['x']))
+	tp_predictions = np.array(f)
+
+	return tp_predictions
+
+def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=False, device='cpu', label_size:tuple=(64,64,64)):
 	dc = DeepColloid(dataset_path)
 	print('Running test, this may take a while...')
 	
@@ -307,58 +316,64 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	real_dict = read_real_examples()
 	for name, d in real_dict.items():
 		pred_positions, label = dc.detect(d['array'], diameter = d['diameter'], model=model, debug=True)
-		sidebyside = make_proj(d['array'], label)
-		run[name].upload(File.as_image(sidebyside))
+		print(pred_positions)
+		if len(pred_positions>0):
+			sidebyside = make_proj(d['array'], label)
+			run[name].upload(File.as_image(sidebyside))
 
-		x, y = dc.get_gr(pred_positions, 50, 50)
-		plt.plot(x, y, label=f'unet n ={len(pred_positions)}')
-		fig = plt.gcf()
-		run[name+'gr'].upload(fig)
-		plt.clf()
-
-		
+			trackpy_pos = run_trackpy(d['array'], diameter = dc.round_up_to_odd(d['diameter']))
+			x, y = dc.get_gr(trackpy_pos, 50, 100)
+			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
+			x, y = dc.get_gr(pred_positions, 50, 100)
+			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
+			plt.legend()
+			fig = plt.gcf()
+			run[name+'gr'].upload(fig)
+			plt.clf()
 
 	# test predict on sim
 	data_dict = dc.read_hdf5('test', 1)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
-	pred_positions, test_label = dc.detect(test_array, diameter = dc.round_up_to_odd(metadata['params']['r']*2), model=model, debug=True)
+	pred_positions, test_label = dc.detect(test_array, diameter = 5, model=model, debug=True)
 	sidebyside = make_proj(test_array, test_label)
 	run['prediction'].upload(File.as_image(sidebyside))
+	trackpy_positions = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+
 
 	if len(pred_positions) == 0:
 		print('Skipping gr() as bad pred')
 	else:
-		x, y = dc.get_gr(true_positions, 50, 50)
-		plt.plot(x, y, label=f'true n ={len(true_positions)}')
-		x, y = dc.get_gr(pred_positions, 50, 50)
-		plt.plot(x, y, label=f'unet n ={len(pred_positions)}')
+		x, y = dc.get_gr(true_positions, 50, 100)
+		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
+		x, y = dc.get_gr(pred_positions, 50, 100)
+		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
 
-		trackpy_positions = run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
-
-		x, y = dc.get_gr(trackpy_positions, 50, 50)
-		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}')
+		x, y = dc.get_gr(trackpy_positions, 50, 100)
+		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
 		plt.legend()
 		fig = plt.gcf()
 		run['gr'].upload(fig)
 		plt.clf()
 
-	# TODO make ap faster
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	# run['AP'] = ap
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet')
-	# run['PR_curve'].upload(fig)
-	# plt.clf()
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	run['AP'] = ap
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
 
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False) 
+	run['PR_curve'].upload(fig)
+	plt.clf()
+
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False, label_size=label_size) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = []
-	first = True # save figs for first instance
 	model.eval()
 	with torch.no_grad():
 		for idx, batch in enumerate(test_loader):
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
+			true_positions, diameters = crop_positions_for_label(true_positions, label_size, diameters=diameters)
 
 			x, y = batch
 			x, y = x.to(device), y.to(device)
@@ -370,7 +385,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 			out = model(x)  # send through model/network
 			loss = criterion(out, y)
 			loss = loss.cpu().numpy()
-			out_relu = torch.relu(out)
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 			# post process to numpy array
 			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
@@ -398,13 +412,31 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	losses = pd.DataFrame(losses)
 
 	print(losses)
-	# TODO make this plot p and r
+	fig, axs = plt.subplots(3,2)
+	sns.scatterplot(x='volfrac', y = 'precision', data=losses, ax=axs[0,0])
+	sns.scatterplot(x='noise', y = 'precision', data=losses, ax=axs[0,1])
+	sns.scatterplot(x='psf_zoom', y = 'precision', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='brightness', y = 'precision', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='r', y = 'precision', data=losses, ax=axs[2,1])
+	fig.tight_layout()
+	run['test/params_vs_prec'].upload(fig)
+
+	plt.clf()
+	fig, axs = plt.subplots(3,2)
+	sns.scatterplot(x='volfrac', y = 'recall', data=losses, ax=axs[0,0])
+	sns.scatterplot(x='noise', y = 'recall', data=losses, ax=axs[0,1])
+	sns.scatterplot(x='psf_zoom', y = 'recall', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='brightness', y = 'recall', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='r', y = 'recall', data=losses, ax=axs[2,1])
+	fig.tight_layout()
+	run['test/params_vs_rec'].upload(fig)
+
+	plt.clf()
 	fig, axs = plt.subplots(3,2)
 	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
 	sns.scatterplot(x='noise', y = 'loss', data=losses, ax=axs[0,1])
 	sns.scatterplot(x='psf_zoom', y = 'loss', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='min_brightness', y = 'loss', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='max_brightness', y = 'loss', data=losses, ax=axs[1,2])
+	sns.scatterplot(x='brightness', y = 'loss', data=losses, ax=axs[1,1])
 	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[2,1])
 	fig.tight_layout()
 	run['test/params_vs_loss'].upload(fig)
@@ -467,6 +499,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	)
 	run['Tags'] = name
 	run['parameters'] = params
+	if config['n_blocks'] == 2: label_size = (48,48,48)
+	if config['n_blocks'] == 3: label_size = (24,24,24)
 
 	transforms_affine = tio.Compose([
 		# tio.RandomFlip(axes=(1,2), flip_probability=0.5),
@@ -485,10 +519,10 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	])
 
 	# create a training data loader
-	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None) 
+	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None, label_size=label_size) 
 	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
 	# create a validation data loader
-	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data']) 
+	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data'], label_size=label_size) 
 	val_loader = torch.utils.data.DataLoader(val_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
 
 	# device
@@ -520,7 +554,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
 	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
 
 	# trainer
@@ -546,7 +580,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		torch.save(model.state_dict(), model_name)
 		# run['model/weights'].upload(model_name)
 
-	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers)
+	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers, label_size=label_size)
 	run['test/df'].upload(File.as_html(losses))
 	# run['test/test'].log(losses) #if dict
 

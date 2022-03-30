@@ -162,8 +162,9 @@ def detect(array, diameter=9, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 		return pd.DataFrame().from_dict(d) #, orient='index')
 
 def run_trackpy(array, diameter=5, *args, **kwargs):
-	df = tp.locate(array, diameter=5, *args, **kwargs)
+	df = None
+	df = tp.locate(array, diameter=diameter, *args, **kwargs)
 	f = list(zip(df['z'], df['y'], df['x']))
-	tp_predictions = np.array(f)
+	tp_predictions = np.array(f, dtype='float32')
 
 	return tp_predictions

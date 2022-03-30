@@ -163,7 +163,7 @@ class DeepColloid:
 		return volfrac
 
 	def round_up_to_odd(self, f):
-		return np.floor(f) // 2 * 2 + 1 # // is floor division
+		return np.floor(f) // 2 * 2 - 1 # // is floor division
 
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
@@ -292,11 +292,11 @@ class DeepColloid:
 
 		return ap, precisions, recalls, thresholds
 
-	def plot_pr(self, ap, precisions, recalls, thresholds, name, tag='bo-'):
+	def plot_pr(self, ap, precisions, recalls, thresholds, name, tag='o-', *args, **kwargs):
 		# display = metrics.PrecisionRecallDisplay(precision=precisions, 
 		# recall=recalls, estimator_name=name).plot()
 
-		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap}')
+		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap}', *args, **kwargs)
 		plt.title('Average Precision')
 		plt.xlim([-0.1,1.1])
 		plt.ylim([-0.1,1.1])

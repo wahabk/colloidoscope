@@ -89,28 +89,28 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'r_width'
+	dataset_name = 'heatmapr5'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,3000))
 	random.shuffle(all_data)
 
-	train_data = all_data[0:600]
-	val_data = all_data[601:800]
-	test_data =	all_data[801:900]
-	name = 'focal'
+	train_data = all_data[0:1000]
+	val_data = all_data[1001:1300]
+	test_data =	all_data[1301:1500]
+	name = 'trying tests'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
-		"lr": 0.0001,
+		"lr": 0.001,
 		"batch_size": 4,
-		"n_blocks": 1,
+		"n_blocks": 2,
 		"norm": 'batch',
-		"epochs": 7,
+		"epochs": 5,
 		"start_filters": 32,
 		"activation": 'relu',
-		"loss_function": BinaryFocalLoss(alpha=3, gamma=0.2),
+		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 

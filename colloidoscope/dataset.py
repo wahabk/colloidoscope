@@ -11,7 +11,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 
 	"""	
 
-	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None, return_metadata=False):	
+	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None, return_metadata=False, label_size:tuple=(64,64,64)):	
 		super().__init__()
 		self.dataset_path = dataset_path
 		self.dataset_name = dataset_name
@@ -19,6 +19,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		self.transform = transform
 		self.label_transform = label_transform
 		self.return_metadata = return_metadata
+		self.label_size = label_size
 
 
 	def __len__(self):
@@ -35,7 +36,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# dc.view(X)
 		# napari.run()
 
-		y = dc.crop3d(y, (48,48,48))
+		y = dc.crop3d(y, self.label_size)
 
 		X = np.array(X/X.max(), dtype=np.float32)
 		y = np.array(y/y.max() , dtype=np.float32)
