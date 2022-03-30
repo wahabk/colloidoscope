@@ -111,7 +111,7 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			# print(out.shape, target.shape)
+			print(input_.shape, out.shape, target.shape)
 			# print(out.max(), target.max())
 			# out_sigmoid = sig(out)
 
@@ -399,11 +399,13 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 
 	print(losses)
 	# TODO make this plot p and r
-	fig, axs = plt.subplots(2,2)
+	fig, axs = plt.subplots(3,2)
 	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
 	sns.scatterplot(x='noise', y = 'loss', data=losses, ax=axs[0,1])
 	sns.scatterplot(x='psf_zoom', y = 'loss', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='min_brightness', y = 'loss', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='max_brightness', y = 'loss', data=losses, ax=axs[1,2])
+	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[2,1])
 	fig.tight_layout()
 	run['test/params_vs_loss'].upload(fig)
 
@@ -503,7 +505,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				conv_mode='valid',
 				up_mode='transposed',
 				dim=3,
-				skip_connect=None)
+				skip_connect=None,
+				)
 
 	model = torch.nn.DataParallel(model, device_ids=device_ids)
 	model.to(device)
@@ -517,7 +520,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3)
 	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
 
 	# trainer
