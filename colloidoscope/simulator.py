@@ -33,7 +33,7 @@ def draw_slice(args):
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				
 				if is_label:
-					r=5
+					r=7
 					if dist <= r:
 						new_slice[i,j] = gaussian(dist*3, 0, r, peak=255)
 				else:

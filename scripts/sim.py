@@ -28,7 +28,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'heatmapr5'
+	dataset_name = 'heatmapr7'
 	num_workers = 10
 	
 	# make 100 scans of each volfrac
@@ -58,8 +58,8 @@ if __name__ == '__main__':
 				volfrac = v#random.choice([0.3,0.4,0.5])
 
 				types = {
-				'very small' 	: {'r' : 5, 'psf_zoom' : random.choice([0.2,0.3,0.4,0.5,0.6]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
-				'medium' 		: {'r' : randrange(5,8), 'psf_zoom' : random.choice([0.4,0.5,0.6,0.7,0.8]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.03)},
+				# 'very small' 	: {'r' : 5, 'psf_zoom' : random.choice([0.2,0.3,0.4,0.5,0.6]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
+				'medium' 		: {'r' : randrange(7,8), 'psf_zoom' : random.choice([0.4,0.5,0.6,0.7,0.8]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.03)},
 				'large' 		: {'r' : randrange(8,10), 'psf_zoom' : random.choice([0.5,0.6,0.7,0.9,1.0]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.04)},
 				}
 				keys = list(types.keys())
