@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import napari
 import h5py
 import torch
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, cdist
 import math
 from copy import deepcopy
 from .simulator import simulate
@@ -16,6 +16,7 @@ from skimage import io
 import pandas as pd
 from numba import njit
 from tqdm import tqdm
+import trackpy as tp
 
 class DeepColloid:
 	def __init__(self, dataset_path) -> None:
@@ -193,21 +194,7 @@ class DeepColloid:
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 
-	def calc_iou_dist(self, center1, center2, diameter):
-		"""
-		Measure distance between two spheres normalised by diameters
-		"""
-
-		dist = pdist([center1, center2])
-		dist = float(dist[0])
-
-		iou_dist = 1 - (dist/diameter)
-		
-		if iou_dist < 0 : iou_dist = 0
-		return iou_dist
-
 	def get_results(self, gt, pred, diameters, threshold,):
-
 		tp, fp, fn = 0, 0, 0
 
 		if len(pred) == 0:
@@ -221,27 +208,15 @@ class DeepColloid:
 			fn = 0
 			return tp, fp, fn
 		
-		gt_idx_thresh = []
-		pred_idx_thresh = []
-		ious = []
-
 		# for each prediction, measure its iou with ALL ground truths 
 		# and append if more than the threshold
-		for ipb, pred_pos in enumerate(pred):
-			for igb, gt_pos in enumerate(gt):
-				diameter = diameters[igb]
-				iou = self.calc_iou_dist(pred_pos, gt_pos, diameter)
-				
-				if iou > threshold:
-					gt_idx_thresh.append(igb)
-					pred_idx_thresh.append(ipb)
-					ious.append(iou)
-		ious = np.array(ious)	
+		dists = cdist(pred, gt)
+		gt_idx_thresh, pred_idx_thresh, ious = calc_iou_dist(dists, diameters, threshold)
+		ious = np.array(ious)
 
 		# sort by higher iou
 		args_desc = np.argsort(ious)
 		args_desc = args_desc[::-1]
-
 
 		if len(args_desc) == 0:
 			# No matches
@@ -270,7 +245,7 @@ class DeepColloid:
 			fn = len(gt) - len(gt_match_idx) # grount truths not in pred
 
 			# import pdb; pdb.set_trace()
- 
+
 		return tp, fp, fn
 
 	def get_precision_recall(self, ground_truths, predictions, diameters, threshold):
@@ -303,7 +278,6 @@ class DeepColloid:
 		predictions = []
 		thresholds = np.linspace(0,1,10)
 		for thresh in tqdm(thresholds):
-			print(thresh)
 			prec, rec = self.get_precision_recall(ground_truth, prediction, diameters, thresh,)
 			precisions.append(prec)
 			recalls.append(rec)
@@ -320,7 +294,7 @@ class DeepColloid:
 
 	def plot_pr(self, ap, precisions, recalls, thresholds, name, tag='bo-'):
 		# display = metrics.PrecisionRecallDisplay(precision=precisions, 
-		# 								recall=recalls, estimator_name=name).plot()
+		# recall=recalls, estimator_name=name).plot()
 
 		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap}')
 		plt.title('Average Precision')
@@ -328,6 +302,13 @@ class DeepColloid:
 		plt.ylim([-0.1,1.1])
 		plt.legend()
 		return plt.gcf()
+
+	def run_trackpy(self, array, diameter=5, *args, **kwargs):
+		df = tp.locate(array, diameter=diameter, *args, **kwargs)
+		f = list(zip(df['z'], df['y'], df['x']))
+		tp_predictions = np.array(f, dtype='float32')
+
+		return tp_predictions
 
 	def crop3d(self, array, roiSize, center=None):
 		roiZ, roiY, roiX = roiSize
@@ -344,3 +325,24 @@ class DeepColloid:
 		array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
 		return array
 
+@njit
+def calc_iou_dist(distances, diameters, threshold):
+	"""
+	Measure distance between two spheres normalised by diameters
+	"""
+
+	gt_idx_thresh = []
+	pred_idx_thresh = []
+	ious = []
+	for ipb, pred_list in enumerate(distances):
+		for igb, dist in enumerate(pred_list):
+			diameter = diameters[igb]
+
+			iou_dist = 1 - (dist/diameter)
+			if iou_dist < 0 : iou_dist = 0
+			iou = iou_dist
+			if iou > threshold:
+				gt_idx_thresh.append(igb)
+				pred_idx_thresh.append(ipb)
+				ious.append(iou)
+	return gt_idx_thresh, pred_idx_thresh, ious
