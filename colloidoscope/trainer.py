@@ -315,13 +315,13 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	# test on real data
 	real_dict = read_real_examples()
 	for name, d in real_dict.items():
-		pred_positions, label = dc.detect(d['array'], diameter = d['diameter'], model=model, debug=True)
+		pred_positions, label = dc.detect(d['array'], diameter = 7, model=model, debug=True)
 		print(pred_positions)
 		if len(pred_positions>0):
 			sidebyside = make_proj(d['array'], label)
 			run[name].upload(File.as_image(sidebyside))
 
-			trackpy_pos = run_trackpy(d['array'], diameter = dc.round_up_to_odd(d['diameter']))
+			trackpy_pos = run_trackpy(d['array'], diameter = dc.round_up_to_odd(d['diameter'])-2)
 			x, y = dc.get_gr(trackpy_pos, 50, 100)
 			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
 			x, y = dc.get_gr(pred_positions, 50, 100)
@@ -334,7 +334,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers
 	# test predict on sim
 	data_dict = dc.read_hdf5('test', 1)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
-	pred_positions, test_label = dc.detect(test_array, diameter = 5, model=model, debug=True)
+	pred_positions, test_label = dc.detect(test_array, diameter = 7, model=model, debug=True)
 	sidebyside = make_proj(test_array, test_label)
 	run['prediction'].upload(File.as_image(sidebyside))
 	trackpy_positions = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))

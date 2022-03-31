@@ -89,7 +89,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'heatmapr5'
+	dataset_name = 'heatmapr7'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,3000))
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 		"batch_size": 4,
 		"n_blocks": 2,
 		"norm": 'batch',
-		"epochs": 5,
+		"epochs": 20,
 		"start_filters": 32,
 		"activation": 'relu',
 		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
