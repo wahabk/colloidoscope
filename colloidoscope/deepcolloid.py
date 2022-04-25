@@ -143,7 +143,7 @@ class DeepColloid:
 			viewer.add_image(label*255, opacity=0.5, colormap='red', name='label', translate=diff)	
 		
 		if positions is not None:
-			if label is None: diff=0
+			if label is None: diff=[0 for i in array.shape]
 			# array = np.array([np.stack((img,)*3, axis=-1) for img in array])
 			# array = self.label_scan(array, positions)
 			viewer.add_points(positions, n_dimensional=True, size=5, translate=diff)
@@ -303,12 +303,12 @@ class DeepColloid:
 		plt.legend()
 		return plt.gcf()
 
-	def run_trackpy(self, array, diameter=5, *args, **kwargs):
+	def run_trackpy(self, array, diameter=5, *args, **kwargs) -> np.ndarray: #, pd.DataFrame]
 		df = tp.locate(array, diameter=diameter, *args, **kwargs)
 		f = list(zip(df['z'], df['y'], df['x']))
 		tp_predictions = np.array(f, dtype='float32')
 
-		return tp_predictions
+		return tp_predictions, df
 
 	def crop3d(self, array, roiSize, center=None):
 		roiZ, roiY, roiX = roiSize

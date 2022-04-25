@@ -1,3 +1,13 @@
+"""
+Colloidoscope simulator
+
+This creates simulations of small particles with a bad point spread function blur, to see how to use it please see `scripts/sim.py`
+
+The usual method of creating simulations is a class-based approach, however, 
+I chose a functional method because I found it more intuitive to use NJIT compiling and to mulithread
+
+"""
+
 from .hoomd_sim_positions import hooomd_sim_positions, convert_hoomd_positions
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
