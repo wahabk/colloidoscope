@@ -1,4 +1,3 @@
-from turtle import position
 from colloidoscope import DeepColloid
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +10,9 @@ from numba import njit
 import math
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
+from torchvision.transforms.functional import equalize
+import seaborn as sns
+import napari
 
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
@@ -24,7 +26,7 @@ def read_real_examples():
 	d = {}
 
 	d['abraham'] = {}
-	d['abraham']['diameter'] = 19
+	d['abraham']['diameter'] = [15,15,15]
 	im = io.imread('examples/Data/abraham.tiff')
 	d['abraham']['array'] = ndimage.zoom(im, 0.5)
 	d['emily'] = {}
@@ -32,10 +34,10 @@ def read_real_examples():
 	im = io.imread('examples/Data/emily.tiff')
 	d['emily']['array'] = im
 	d['katherine'] = {}
-	d['katherine']['diameter'] = 9
+	d['katherine']['diameter'] = [7,7,7]
 	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
 	d['levke'] = {}
-	d['levke']['diameter'] = 9
+	d['levke']['diameter'] = [15,9,9]
 	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
 
 	return d
@@ -99,12 +101,16 @@ if __name__ == '__main__':
 	real_dict = read_real_examples()
 
 	for (name, d) in real_dict.items():
-		if name == "abraham": continue
 		array = d['array']
-		if name == 'emily': array = dc.crop3d(array, (128,128,128))
+		if name == "abraham": continue
+		if name == 'emily': 
+			array = dc.crop3d(array, (128,128,128))
+			# continue
+		if name == 'katherine': continue
+		if name == 'levke': continue
 		print(array.shape)
 
-		dc.view(array)
+		# dc.view(array)
 
 		positions, df = dc.run_trackpy(array, diameter = d['diameter'])
 
@@ -113,15 +119,38 @@ if __name__ == '__main__':
 		
 		mask = make_mask(array.shape, positions, diameter=d['diameter'])
 
-		dc.view(array, positions=positions, label=mask)
+		# dc.view(array, positions=positions, label=mask)
 
 		foreground = array[mask == 1]
 		background = array[mask == 0]
 		print(np.shape(foreground))
 		print(np.shape(background))
+		f_mean = foreground.mean()
+		f_std = foreground.std()
+		b_mean = background.mean()
+		b_std = background.mean()
 
-		plt.hist(x=[foreground, background], bins=50, label=['foreground', 'background'])
+		cnr = abs(f_mean - b_mean) / b_std
+
+		print(cnr, f_std)
+
+		# plt.hist(x=[foreground, background], bins=50, label=['foreground', 'background'], density=True)
+		# plt.legend()
+		# plt.show()
+
+		# exit()
+
+		point = [63, 85, 106]
+		particle = dc.crop3d(array, roiSize=[2,24,24], center=point)[1]
+		print(particle.shape)
+
+		dc.view(particle)
+
+		rows = [particle[:,i] for i in range(8,15)]
+
+		[plt.plot(row, label=str(i)) for i, row in enumerate(rows)]
+		plt.xlim((0,23))
+		plt.legend()
 		plt.show()
 
-		exit()
 

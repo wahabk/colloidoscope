@@ -136,10 +136,12 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 			blur_kernel:np.ndarray, b:int, 
 			noise:float, make_label:bool=True, label_size:list=(64,64,64), diameters=np.ndarray([]), num_workers=2):
 	'''
-	This will only work for a perfect cube eg 64x64x64
+	This will only work for a perfect cube eg 64x64x64 not cuboids
 	'''
 
-	
+	#TODO take heatmap radius as param	
+
+
 	# brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
 	brightnesses = [b for _ in centers]
 	#TODO add brightness variation from data
@@ -170,6 +172,8 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	radii = [(d*r) for d in diameters]
 	zoom_out_radii = [(r/zoom) for r in radii]
 
+	#TODO create psf here
+
 
 	# draw spheres slice by slice
 	print('Simulating scan...')
@@ -188,6 +192,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		# draw label heatmap from centers
 		label = np.zeros(label_size, dtype='float64')
 
+		# TODO this is the limit for label having to be square not rect
 		diff = (canvas.shape[0] - label.shape[0])/2
 		final_centers = centers - diff
 
