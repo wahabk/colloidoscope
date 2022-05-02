@@ -8,7 +8,6 @@ I chose a functional method because I found it more intuitive to use NJIT compil
 
 """
 
-from fcntl import F_NOCACHE
 from .hoomd_sim_positions import hooomd_sim_positions, convert_hoomd_positions
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
@@ -33,7 +32,7 @@ def gaussian(x, mu, sig, peak=1.):
 @njit()
 def draw_slice(args):
 	# extract args
-	s, z, radii, centers, brightnesses, is_label = args
+	s, z, radii, centers, brightnesses = args
 	#initiate new slice to be drawn
 	new_slice = s
 	#for each sphere check if this pixel is inside it
@@ -46,29 +45,55 @@ def draw_slice(args):
 				# euclidean distance
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				
-				if is_label:
-					r=7
-					if dist <= r:
-						new_slice[i,j] = gaussian(dist*3, 0, r, peak=255)
-				else:
-					if dist <= r:
-						new_slice[i,j] = brightness
+				if dist <= r:
+					new_slice[i,j] = brightness
 	return new_slice
 
-def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=False, num_workers=2):
+@njit()
+def draw_label_slice(args):
+	# extract args
+	s, z, heatmap_radii, centers  = args
+	#initiate new slice to be drawn
+	new_slice = s
+	#for each sphere check if this pixel is inside it
+	for i in range(s.shape[0]):
+		for j in range(s.shape[1]):
+			for k, center in enumerate(centers):
+				cz, cy, cx = center
+				heatmap_r = heatmap_radii[k]
+				# euclidean distance
+				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
+				
+				if dist <= heatmap_r:
+					new_slice[i,j] = gaussian(dist*3, 0, heatmap_r, peak=255)
+
+	return new_slice
+
+def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=False, heatmap_r='radius', num_workers=2):
 	new_canvas = []
 
-	if brightnesses == None or is_label == True:
+	if is_label == False:
+		args = [(s, z, radii, centers, brightnesses) for z, s in enumerate(canvas)]
+
+		print(canvas.shape, centers.shape, np.shape(radii))
+		with tqdm(total=len(args)) as pbar:
+			with ProcessPoolExecutor(max_workers=num_workers) as pool:
+				for i in pool.map(draw_slice, args):
+					new_canvas.append(i)
+					pbar.update(1)
+
+	elif is_label == True:
 		brightnesses = [255 for _ in centers]
+		if heatmap_r == 'radius': heatmap_radii = radii  
+		else					: heatmap_radii = [heatmap_r for i in radii]
+		args = [(s, z, heatmap_radii, centers) for z, s in enumerate(canvas)]
 
-	args = [(s, z, radii, centers, brightnesses, is_label) for z, s in enumerate(canvas)]
-
-	print(canvas.shape, centers.shape, np.shape(radii))
-	with tqdm(total=len(args)) as pbar:
-		with ProcessPoolExecutor(max_workers=num_workers) as pool:
-			for i in pool.map(draw_slice, args):
-				new_canvas.append(i)
-				pbar.update(1)
+		print(canvas.shape, centers.shape, np.shape(radii))
+		with tqdm(total=len(args)) as pbar:
+			with ProcessPoolExecutor(max_workers=num_workers) as pool:
+				for i in pool.map(draw_label_slice, args):
+					new_canvas.append(i)
+					pbar.update(1)
 
 	canvas = list(new_canvas)
 
@@ -119,7 +144,7 @@ def crop_positions_for_label(centers, canvas_size, diameters, diameter=10):
 
 
 def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='uint8'):
-	array = generate_perlin_noise_3d(canvas_shape, octaves)
+	array = generate_perlin_noise_3d(canvas_shape, (octaves, octaves, octaves), tileable=tileable)
 
 	# normalise to 0 - 1
 	array = array-array.min()
@@ -138,22 +163,18 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 
 
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
-			psf_size:int, f_mean:float, f_sigma:float, b_mean:float, b_sigma:float,
+			particle_size:float, f_mean:float, f_sigma:float, b_mean:float, b_sigma:float,
 			noise:float, diameters=np.ndarray([]), make_label:bool=True, label_size:list=(64,64,64), heatmap_r='radius', num_workers=2):
 	'''
+	particle size in um
+
 	This will only work for a perfect cube eg 64x64x64 not cuboids
 	'''
 
-	#TODO take heatmap radius as param	
-
-	
 	brightnesses = [random.gauss(f_mean, f_sigma) for _ in centers]
-
-	#TODO add brightness variation from data
 	zoom = 0.5
-	pad = 16
+	pad = 64
 	gauss_kernel = (2, 2, 2)
-
 
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
@@ -176,12 +197,10 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	zoom_out_radii = [(r/zoom) for r in radii]
 
 	# create PSF
-	args = dict(shape=(64, 64), dims=(4, 4), ex_wavelen=488, em_wavelen=520,
-						num_aperture=1.2, refr_index=1.4,
-						pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
+	args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 	obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 	psf_kernel = obsvol.volume()
-
+	psf_kernel = ndimage.zoom(psf_kernel, 0.25)
 
 	# draw spheres slice by slice
 	print('Simulating scan...')
@@ -207,9 +226,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		print('Simulating label...')
 		radii = [(d*r) for d in diameters]
 
-		# TODO feed heatmap radius
-
-		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, num_workers=num_workers)
+		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, heatmap_r=heatmap_r, num_workers=num_workers)
 		final_centers, final_diameters = crop_positions_for_label(final_centers, label_size, diameters, r*2)
 
 		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )

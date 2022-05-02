@@ -138,6 +138,8 @@ if __name__ == '__main__':
 
 		print(cnr, f_std)
 
+		print(f_mean, f_std, b_mean, b_std)
+
 		plt.hist(x=[foreground, background], bins=50, label=['foreground', 'background'], density=True)
 		plt.legend()
 		plt.show()

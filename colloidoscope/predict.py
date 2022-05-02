@@ -89,7 +89,7 @@ def put_in_center_like(test_array, test_label):
 
 def detect(array, diameter=9, model=None, patch_overlap=(16, 16, 16), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
 	"""
-	overlap must be diff between input and output (if different)
+	overlap must be diff between input and output shape (if they are not the same)
 	"""
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -124,6 +124,7 @@ def detect(array, diameter=9, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 	# array = np.expand_dims(array, 0)      # add channel axis ?
 	# array = torch.from_numpy(array)
 
+	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
 	subject = tio.Subject(scan = tio.ScalarImage(tensor=array)) # use torchio subject to enable using grid sampling
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=4)
