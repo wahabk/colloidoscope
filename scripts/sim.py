@@ -57,6 +57,12 @@ if __name__ == '__main__':
 			'large' 		: {'r' : randrange(8,11), 'cnr' : random.choice([0.5,0.7,0.9]), 'psf_zoom' : random.choice([0.5,0.6,0.7,0.9,1.0]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.04)},
 			}
 
+			new_types = {
+			'very small' 	: {'r' : randrange(5,6), 'cnr' : random.choice([0.5,0.7,0.9]), 'psf_zoom' : random.choice([0.2,0.3,0.4,0.5,0.6]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
+			'medium' 		: {'r' : randrange(7,8), 'cnr' : random.choice([0.5,0.7,0.9]), 'psf_zoom' : random.choice([0.4,0.5,0.6,0.7,0.8]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.03)},
+			'large' 		: {'r' : randrange(8,16), 'cnr' : random.choice([0.5,0.7,0.9]), 'psf_zoom' : random.choice([0.5,0.6,0.7,0.9,1.0]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.04)},
+			}
+
 			keys = list(types.keys())
 			this_type = random.choice(keys)
 
@@ -74,11 +80,7 @@ if __name__ == '__main__':
 			}
 			print(metadata)
 
-			args = dict(shape=(64, 64), dims=(4, 4), ex_wavelen=488, em_wavelen=520,
-						num_aperture=1.2, refr_index=1.4,
-						pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
-			obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
-			kernel = obsvol.volume()
+			
 
 			kernel = ndimage.zoom(kernel, psf_zoom)
 

@@ -8,6 +8,7 @@ I chose a functional method because I found it more intuitive to use NJIT compil
 
 """
 
+from fcntl import F_NOCACHE
 from .hoomd_sim_positions import hooomd_sim_positions, convert_hoomd_positions
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
@@ -20,6 +21,9 @@ import random
 import math
 from scipy.signal import convolve
 from tqdm import tqdm
+import psf
+from perlin_numpy import generate_perlin_noise_3d
+
 
 @njit()
 def gaussian(x, mu, sig, peak=1.):
@@ -114,54 +118,53 @@ def crop_positions_for_label(centers, canvas_size, diameters, diameter=10):
 	return centers, diameters
 
 
-def make_background(canvas_size, octaves, brightness, dtype='uint8'):
+def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='uint8'):
+	array = generate_perlin_noise_3d(canvas_shape, octaves)
+
+	# normalise to 0 - 1
+	array = array-array.min()
+	array = array/array.max()
+
+	# find linear transformation to shift mean and std to required
+	a = math.sqrt( brightness_std ** 2 / array.std() ** 2 )
+	b = brightness_mean - (a * array.mean())
+	array = a * array + b
+
+	array = ndimage.gaussian_filter(array, (3,3,3))
+
+	array = np.array(array, dtype=dtype)
 	
-	from perlin_noise import PerlinNoise
-
-	noise = PerlinNoise(octaves=octaves)
-	zpix, xpix, ypix = canvas_size
-	pic = [[noise([i/xpix, j/ypix]) for j in range(xpix)] for i in range(ypix)] 
-	pic = [pic for _ in range(zpix)]
-
-	pic = np.array(pic)
-	pic = pic-pic.min()
-	pic = pic/pic.max()
-	pic = pic*brightness
-
-	pic = np.array(pic, dtype=dtype)
-	return pic
+	return array
 
 
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
-			blur_kernel:np.ndarray, b:int, 
-			noise:float, make_label:bool=True, label_size:list=(64,64,64), diameters=np.ndarray([]), num_workers=2):
+			psf_size:int, f_mean:float, f_sigma:float, b_mean:float, b_sigma:float,
+			noise:float, diameters=np.ndarray([]), make_label:bool=True, label_size:list=(64,64,64), heatmap_r='radius', num_workers=2):
 	'''
 	This will only work for a perfect cube eg 64x64x64 not cuboids
 	'''
 
 	#TODO take heatmap radius as param	
 
+	
+	brightnesses = [random.gauss(f_mean, f_sigma) for _ in centers]
 
-	# brightnesses = [random.randrange(min_brightness, max_brightness) for _ in centers]
-	brightnesses = [b for _ in centers]
 	#TODO add brightness variation from data
 	zoom = 0.5
-	pad = 32
+	pad = 16
 	gauss_kernel = (2, 2, 2)
-	# make bigger padded canvas
-	# this is to allow the blur to work on the edges
-	
-	
+
+
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
 	zoom_out_size = [int(c/zoom) for c in canvas_size]
+	# make bigger padded canvas
+	# this is to allow the blur to work on the edges
 	zoom_out_size_padded = [c+pad for c in zoom_out_size]
-	# canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
-	# canvas = make_background(zoom_out_size_padded, 4, random.randint(0,50), dtype='uint8') 
+	canvas = make_background(zoom_out_size_padded, 4, b_mean, b_sigma, dtype='uint8') 
 	canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
-	print('background', canvas.max())
 	
-	# convert centers to zoom out
+	# convert centers to zoom out size
 	zoom_out_centers=[]
 	for c in centers:
 		x,y,z = c
@@ -172,14 +175,19 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	radii = [(d*r) for d in diameters]
 	zoom_out_radii = [(r/zoom) for r in radii]
 
-	#TODO create psf here
+	# create PSF
+	args = dict(shape=(64, 64), dims=(4, 4), ex_wavelen=488, em_wavelen=520,
+						num_aperture=1.2, refr_index=1.4,
+						pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
+	obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
+	psf_kernel = obsvol.volume()
 
 
 	# draw spheres slice by slice
 	print('Simulating scan...')
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_radii, brightnesses = brightnesses, is_label=False, num_workers=num_workers)
 	canvas = ndimage.gaussian_filter(canvas, gauss_kernel) # blur with gaussian filter
-	canvas = convolve(canvas, blur_kernel, mode='same') # apply psf
+	canvas = convolve(canvas, psf_kernel, mode='same') # apply psf
 	canvas = np.array((canvas/canvas.max())*255, dtype='uint8') # reconvert to 8 bit
 	canvas = crop3d(canvas, zoom_out_size) # crop to selected size to remove padding
 	canvas = ndimage.zoom(canvas, zoom)# zoom back in to original size for aliasing
@@ -198,6 +206,9 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 		print('Simulating label...')
 		radii = [(d*r) for d in diameters]
+
+		# TODO feed heatmap radius
+
 		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, num_workers=num_workers)
 		final_centers, final_diameters = crop_positions_for_label(final_centers, label_size, diameters, r*2)
 

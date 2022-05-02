@@ -309,6 +309,8 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 	return tp_predictions
 
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=False, device='cpu', label_size:tuple=(64,64,64)):
+	# TODO add detection r param
+	
 	dc = DeepColloid(dataset_path)
 	print('Running test, this may take a while...')
 	
