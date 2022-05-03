@@ -168,6 +168,8 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	'''
 	particle size in um
 
+	heatmap_r can be 'radius' to equal the particle or can be a constant int
+
 	This will only work for a perfect cube eg 64x64x64 not cuboids
 	'''
 

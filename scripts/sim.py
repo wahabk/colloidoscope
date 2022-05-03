@@ -29,7 +29,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'test_psf_cnr'
+	dataset_name = 'psf_cnr_radius'
 	num_workers = 10
 	heatmap_r = 'radius'
 	
@@ -51,21 +51,16 @@ if __name__ == '__main__':
 
 			volfrac = v
 
-			# types = {
-			# 'very small' 	: {'r' : randrange(5,6), 'cnr' : random.choice([0.5,0.7,0.9]), 'psf_zoom' : random.choice([0.2,0.3,0.4,0.5,0.6]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
-			# 'medium' 		: {'r' : randrange(7,8), 'cnr' : random.choice([0.5,0.7,0.9]), 'psf_zoom' : random.choice([0.4,0.5,0.6,0.7,0.8]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.03)},
-			# 'large' 		: {'r' : randrange(8,11), 'cnr' : random.choice([0.5,0.7,0.9]), 'psf_zoom' : random.choice([0.5,0.6,0.7,0.9,1.0]), 'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.04)},
-			# }
-
+			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 'particle_size' : uniform(0.1,1), 'cnr' : uniform(0.3, 10),  'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
-			'medium' 		: {'r' : randrange(7,8), 'particle_size' : uniform(0.1,1), 'cnr' : uniform(0.3, 10),  'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.03)},
-			'large' 		: {'r' : randrange(8,16), 'particle_size' : uniform(0.1,1), 'cnr' : uniform(0.3, 10),  'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.04)},
+			'very small' 	: {'r' : randrange(4,6), 'particle_size' : uniform(0.1,2), 'cnr' : uniform(0.1, 10),  'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
+			'medium' 		: {'r' : randrange(7,8), 'particle_size' : uniform(0.1,2), 'cnr' : uniform(0.1, 10),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.03)},
+			'large' 		: {'r' : randrange(8,16), 'particle_size' : uniform(0.1,2), 'cnr' : uniform(0.1, 10),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.04)},
 			}
 
 			keys = list(types.keys())
 			this_type = random.choice(keys)
-			params = types['very small']
+			params = types[this_type]
 
 			r = params['r']
 			particle_size = params['particle_size']
@@ -73,10 +68,16 @@ if __name__ == '__main__':
 			b = params['brightness']
 			noise = params['noise']
 			f_mean = params['brightness']
+
+			# calculate foreground and background STD from Contrast to Noise Ratio equation
 			f_sigma = 30
 			b_sigma = 20
 			b_mean = abs(cnr * b_sigma + f_sigma)
 			print('cnr', f_mean,f_sigma,b_sigma,b_mean)
+
+			params['f_sigma'] = f_sigma
+			params['b_sigma'] = b_sigma
+			params['b_mean'] = b_mean
 
 			metadata = {
 				'dataset': dataset_name,
@@ -85,7 +86,6 @@ if __name__ == '__main__':
 				'volfrac': volfrac,
 				'params' : params,
 			}
-			print(metadata)	
 
 			path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} at {n+1} ...')
@@ -97,7 +97,8 @@ if __name__ == '__main__':
 
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, centers, r, particle_size, f_mean, f_sigma, b_mean, b_sigma,
 										noise, diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers)
-			metadata['n_particles'] = len(final_centers)
+			metadata['n_particles'] = len(final_centers) # this might depend on label size 
+			print(metadata)	
 
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
