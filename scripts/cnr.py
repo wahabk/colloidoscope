@@ -26,18 +26,16 @@ def read_real_examples():
 	d = {}
 
 	d['abraham'] = {}
-	d['abraham']['diameter'] = [15,15,15]
-	im = io.imread('examples/Data/abraham.tiff')
-	d['abraham']['array'] = ndimage.zoom(im, 0.5)
+	d['abraham']['diameter'] = [13,11,11]
+	d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
 	d['emily'] = {}
 	d['emily']['diameter'] = [15,9,9]
-	im = io.imread('examples/Data/emily.tiff')
-	d['emily']['array'] = im
+	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
 	d['katherine'] = {}
 	d['katherine']['diameter'] = [7,7,7]
 	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
 	d['levke'] = {}
-	d['levke']['diameter'] = [15,9,9]
+	d['levke']['diameter'] = [15,11,11]
 	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
 
 	return d
@@ -101,29 +99,28 @@ if __name__ == '__main__':
 	real_dict = read_real_examples()
 
 	for (name, d) in real_dict.items():
+
+		print(name)
 		array = d['array']
-		if name == "abraham": continue
+
 		if name == 'emily': 
 			array = dc.crop3d(array, (128,128,128))
-			# continue
-		if name == 'katherine': continue
-		if name == 'levke': continue
-		print(array.shape)
 
+		print(array.shape)
 		# dc.view(array)
 
 		positions, df = dc.run_trackpy(array, diameter = d['diameter'])
 
-		x, y = dc.get_gr(positions, 50, 50)
-		plt.plot(x, y)
-		plt.show()
+		# x, y = dc.get_gr(positions, 100, 100)
+		# plt.plot(x, y)
+		# plt.show()
 
-		print(positions.shape)
-		print(df)
+		print('n_particles', positions.shape[0])
+		# print(df)
 		
 		mask = make_mask(array.shape, positions, diameter=d['diameter'])
 
-		dc.view(array, positions=positions, label=mask)
+		# dc.view(array, positions=positions, label=mask)
 
 		foreground = array[mask == 1]
 		background = array[mask == 0]
@@ -138,25 +135,29 @@ if __name__ == '__main__':
 
 		print(cnr, f_std)
 
-		print(f_mean, f_std, b_mean, b_std)
+		print('cnr, f_mean, f_std, b_mean, b_std')
+		print(cnr, f_mean, f_std, b_mean, b_std)
 
-		plt.hist(x=[foreground, background], bins=50, label=['foreground', 'background'], density=True)
+		plt.hist(x=[foreground, background], bins=50, label=[f'foreground {f_mean:.2f}±{f_std:.2f}', f'background {b_mean:.2f}±{b_std:.2f}'], density=True)
+		plt.title(f'{name}, cnr = {cnr:.2f}')
 		plt.legend()
-		plt.show()
+		# plt.show()
+		plt.savefig(f'output/figs/cnr/{name}_cnr.png')
+		plt.clf()
 
-		exit()
+		# exit()
 
-		point = [63, 85, 106]
-		particle = dc.crop3d(array, roiSize=[2,24,24], center=point)[1]
-		print(particle.shape)
+		# point = [63, 85, 106]
+		# particle = dc.crop3d(array, roiSize=[2,24,24], center=point)[1]
+		# print(particle.shape)
 
-		dc.view(particle)
+		# dc.view(particle)
 
-		rows = [particle[:,i] for i in range(8,15)]
+		# rows = [particle[:,i] for i in range(8,15)]
 
-		[plt.plot(row, label=str(i)) for i, row in enumerate(rows)]
-		plt.xlim((0,23))
-		plt.legend()
-		plt.show()
+		# [plt.plot(row, label=str(i)) for i, row in enumerate(rows)]
+		# plt.xlim((0,23))
+		# plt.legend()
+		# plt.show()
 
 

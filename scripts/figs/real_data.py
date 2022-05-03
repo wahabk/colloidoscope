@@ -44,8 +44,8 @@ if __name__ == '__main__':
 	array = dc.read_tif(path) 
 	print(path, array.shape)
 	array = array[0]
-	array = ndimage.zoom(array, 0.5)
-	# dc.view(array)
+	array = ndimage.zoom(array, 1)
+	dc.view(array)
 	print(array.shape)
 	imsave('examples/Data/levke.tiff', array)
 	Levke = plot_with_side_view(array, 'output/figs/real_data/Levke.png')
@@ -54,8 +54,8 @@ if __name__ == '__main__':
 	path = dataset_path + '/Real/Abraham/20210201_emulsion_centres.tif'
 	array = dc.read_tif(path)
 	print(path, array.shape)
-	array = ndimage.zoom(array, 0.5)
-	# dc.view(array)
+	array = ndimage.zoom(array, 0.25)
+	dc.view(array)
 	print(array.shape)
 	imsave('examples/Data/abraham.tiff', array)
 	Abraham = plot_with_side_view(array, 'output/figs/real_data/Abraham.png')
@@ -63,7 +63,7 @@ if __name__ == '__main__':
 	path = dataset_path + '/Real/Emily/0_45-newNewGood.lif - Series021.tif'
 	array = dc.read_tif(path)
 	print(path, array.shape)
-	# dc.view(array)
+	dc.view(array)
 
 	# array = dc.crop3d(array, (128,128,128))
 	print(array.shape)
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 	array = dc.read_tif(path)
 	array = array[0]
 	print(path, array.shape)
-	# dc.view(array)
+	dc.view(array)
 
 	# array = dc.crop3d(array, (64,64,64))
 	# array = ndimage.zoom(array, 2)

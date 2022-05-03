@@ -140,7 +140,7 @@ class DeepColloid:
 		
 		if label is not None:
 			diff = [(a-b)/2 for a, b in zip(array.shape, label.shape)]
-			viewer.add_image(label*255, opacity=0.5, colormap='red', name='label', translate=diff)	
+			viewer.add_image(label*255, opacity=0.25, colormap='red', name='label', translate=diff)	
 		
 		if positions is not None:
 			if label is None: diff=[0 for i in array.shape]
