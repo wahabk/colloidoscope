@@ -31,6 +31,7 @@ setup(
                 'ray[tune]',
                 'tqdm',
                 'psf',
+                'perlin-numpy @ git+https://github.com/pvigier/perlin-numpy',
         ],
         keywords=['python', 'colloidoscope'],
 )

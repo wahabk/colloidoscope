@@ -8,7 +8,14 @@ Pretrained weights and hyperparameter training history available upon request.
 
 # Installation
 
-Option 1:
+Quickest (not preferred)
+
+```
+pip3 install git+https://github.com/wahabk/colloidoscope
+```
+
+
+Option 1, make sure you use a virtual environment:
 
 ```
 cd <installation_dir>
