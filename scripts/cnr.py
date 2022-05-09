@@ -13,6 +13,7 @@ from tqdm import tqdm
 from torchvision.transforms.functional import equalize
 import seaborn as sns
 import napari
+from scipy.signal import convolve, convolve2d
 
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
@@ -90,6 +91,19 @@ def make_mask(shape, centers, diameter, num_workers=10):
 	mask = np.array(mask, dtype='uint8')
 	return mask
 
+def estimate_noise(I):
+
+  H, W = I.shape
+
+  M = [[1, -2, 1],
+       [-2, 4, -2],
+       [1, -2, 1]]
+
+  sigma = np.sum(np.sum(np.absolute(convolve2d(I, M))))
+  sigma = sigma * math.sqrt(0.5 * math.pi) / (6 * (W-2) * (H-2))
+
+  return sigma
+
 if __name__ == '__main__':
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	dataset_path = '/home/wahab/Data/HDD/Colloids'
@@ -117,10 +131,13 @@ if __name__ == '__main__':
 
 		print('n_particles', positions.shape[0])
 		# print(df)
-		
-		mask = make_mask(array.shape, positions, diameter=d['diameter'])
 
-		# dc.view(array, positions=positions, label=mask)
+
+		
+
+		# label to find CNR of foreground and backgreound
+		mask = make_mask(array.shape, positions, diameter=d['diameter'])
+		# dc.view(array, positions=positions, label=mask) # check tp preds
 
 		foreground = array[mask == 1]
 		background = array[mask == 0]
@@ -132,18 +149,27 @@ if __name__ == '__main__':
 		b_std = background.mean()
 
 		cnr = abs(f_mean - b_mean) / b_std
-
 		print(cnr, f_std)
 
 		print('cnr, f_mean, f_std, b_mean, b_std')
 		print(cnr, f_mean, f_std, b_mean, b_std)
 
+		#find SNR
+		noise = np.array([estimate_noise(s) for s in array])
+		snr = f_mean / noise.mean()
+
+
+		print("NOISE", name, noise.mean(), noise.std())
+		print("SNR", snr)
+
 		plt.hist(x=[foreground, background], bins=50, label=[f'foreground {f_mean:.2f}±{f_std:.2f}', f'background {b_mean:.2f}±{b_std:.2f}'], density=True)
-		plt.title(f'{name}, cnr = {cnr:.2f}')
+		plt.title(f'{name}, cnr = {cnr:.2f}, snr = {snr:.2f}')
 		plt.legend()
-		# plt.show()
-		plt.savefig(f'output/figs/cnr/{name}_cnr.png')
+		plt.show()
+		# plt.savefig(f'output/figs/cnr/{name}_cnr.png')
 		plt.clf()
+
+
 
 		# exit()
 

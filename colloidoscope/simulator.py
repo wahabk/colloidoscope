@@ -177,6 +177,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	zoom = 0.5
 	pad = 64
 	gauss_kernel = (2, 2, 2)
+	# noise = f_mean / snr
 
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing

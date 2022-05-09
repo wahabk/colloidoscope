@@ -5,12 +5,26 @@ from colloidoscope.simulator import crop_positions_for_label
 import numpy as np
 import matplotlib.pyplot as plt
 import napari
-from random import randrange, uniform
+from random import randrange, uniform, triangular
 import numpy as np
 import random
 import psf
 from scipy import ndimage
+import math
+from scipy.signal import convolve2d
 
+def estimate_noise(I):
+
+  H, W = I.shape
+
+  M = [[1, -2, 1],
+       [-2, 4, -2],
+       [1, -2, 1]]
+
+  sigma = np.sum(np.sum(np.absolute(convolve2d(I, M))))
+  sigma = sigma * math.sqrt(0.5 * math.pi) / (6 * (W-2) * (H-2))
+
+  return sigma
 
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
@@ -21,8 +35,8 @@ def plot_with_side_view(scan, path):
 	plt.clf()
 
 if __name__ == '__main__':
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -53,9 +67,9 @@ if __name__ == '__main__':
 
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 'particle_size' : uniform(0.1,2), 'cnr' : uniform(0.1, 3),  'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02)},
-			'medium' 		: {'r' : randrange(7,8), 'particle_size' : uniform(0.1,2), 'cnr' : uniform(0.1, 3),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.03)},
-			'large' 		: {'r' : randrange(8,16), 'particle_size' : uniform(0.1,2), 'cnr' : uniform(0.1, 3),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.04)},
+			'very small' 	: {'r' : randrange(4,6), 'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02), 'snr' : random.uniform(2,10)},
+			'medium' 		: {'r' : randrange(7,8), 'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.03), 'snr' : random.uniform(2,10)},
+			'large' 		: {'r' : randrange(8,16), 'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.04), 'snr' : random.uniform(2,10)},
 			}
 
 			keys = list(types.keys())
@@ -103,12 +117,25 @@ if __name__ == '__main__':
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
 
-			# dc.view(canvas, final_centers, label)
+			dc.view(canvas, final_centers, label)
 			# plot_with_side_view(canvas, f'output/figs/simulation/{index}.png')
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+			# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 			index+=1
+
+			estimated_noise = np.array([estimate_noise(s) for s in canvas]).mean()
+			foreground = canvas[label > 0.01]
+			f_m = foreground.mean()
+			snr = f_mean / estimated_noise
+
+			print(f"real brightness {f_mean} estimated {f_m}")
+			print(f"requested noise {noise}")
+
+			print("noise | snr", estimated_noise, snr)
+
+			exit()
+
