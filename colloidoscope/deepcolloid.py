@@ -194,7 +194,7 @@ class DeepColloid:
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 
-	def get_results(self, gt, pred, diameters, threshold,):
+	def _get_results(self, gt, pred, diameters, threshold,):
 		tp, fp, fn = 0, 0, 0
 
 		if len(pred) == 0:
@@ -211,7 +211,7 @@ class DeepColloid:
 		# for each prediction, measure its iou with ALL ground truths 
 		# and append if more than the threshold
 		dists = cdist(pred, gt)
-		gt_idx_thresh, pred_idx_thresh, ious = calc_iou_dist(dists, diameters, threshold)
+		gt_idx_thresh, pred_idx_thresh, ious = _calc_iou_dist(dists, diameters, threshold)
 		ious = np.array(ious)
 
 		# sort by higher iou
@@ -251,7 +251,7 @@ class DeepColloid:
 	def get_precision_recall(self, ground_truths, predictions, diameters, threshold):
 
 		# take block of different images and find result
-		tp, fp, fn = self.get_results(ground_truths, predictions, diameters, threshold)
+		tp, fp, fn = self._get_results(ground_truths, predictions, diameters, threshold)
 
 		try:
 			precision = tp/(tp + fp)
@@ -326,7 +326,7 @@ class DeepColloid:
 		return array
 
 @njit
-def calc_iou_dist(distances, diameters, threshold):
+def _calc_iou_dist(distances, diameters, threshold):
 	"""
 	Measure distance between two spheres normalised by diameters
 	"""
