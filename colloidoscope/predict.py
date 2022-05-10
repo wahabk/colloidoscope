@@ -87,7 +87,7 @@ def put_in_center_like(test_array, test_label):
 	new_label[diff:a-diff, diff:a-diff, diff:a-diff] = test_label
 	return new_label
 
-def detect(array, diameter=9, model=None, patch_overlap=(16, 16, 16), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
+def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
 	"""
 	overlap must be diff between input and output shape (if they are not the same)
 	"""
@@ -149,18 +149,20 @@ def detect(array, diameter=9, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 
 	# find positions from label
 	# TODO change to trackpy or watershed?
-	positions = run_trackpy(result, diameter=diameter)
-	
 
-	if debug:
-		return positions, result
-	else:
-		d = {
+	positions = run_trackpy(result, diameter=diameter)
+
+	d = {
 		'x' : positions[:,1],
 		'y' : positions[:,2],
-		'z' : positions[:,0],}
+		'z' : positions[:,0],
+		}
+	df = pd.DataFrame().from_dict(d) #, orient='index')
 
-		return pd.DataFrame().from_dict(d) #, orient='index')
+	if debug:
+		return df, positions, result
+	else:
+		return df
 
 def run_trackpy(array, diameter=5, *args, **kwargs):
 	df = None

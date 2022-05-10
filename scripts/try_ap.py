@@ -9,8 +9,8 @@ from scipy.spatial.distance import pdist, cdist
 from numba import njit
 
 if __name__ == '__main__':
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 
 	dataset_name = 'test'
 
@@ -26,9 +26,9 @@ if __name__ == '__main__':
 	trackpy_pos, df = dc.run_trackpy(array, diameter = 7) # dont go under or 
 	trackpy_on_label, df = dc.run_trackpy(label, diameter = 5)
 
-	print(true_positions.shape)
-	print(trackpy_pos.shape)
-	print(trackpy_on_label.shape)
+	# print(true_positions.shape)
+	# print(trackpy_pos.shape)
+	# print(trackpy_on_label.shape)
 
 	x, y = dc.get_gr(true_positions, 50, 100)
 	plt.plot(x, y, label=f'true (n={len(true_positions)})')
