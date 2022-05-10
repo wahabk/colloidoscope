@@ -9,8 +9,8 @@ from scipy.spatial.distance import pdist, cdist
 from numba import njit
 
 if __name__ == '__main__':
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
 
 	dataset_name = 'test'
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
 	# dc.view(array, positions=true_positions, label=label)
 
-	trackpy_pos, df = dc.run_trackpy(array, diameter = 5)
+	trackpy_pos, df = dc.run_trackpy(array, diameter = 7) # dont go under or 
 	trackpy_on_label, df = dc.run_trackpy(label, diameter = 5)
 
 	print(true_positions.shape)
@@ -37,17 +37,19 @@ if __name__ == '__main__':
 	x, y = dc.get_gr(trackpy_on_label, 50, 100)
 	plt.plot(x, y, label=f'tp label (n={len(trackpy_on_label)}')
 	plt.legend()
-	# plt.show()
+	plt.show()
 	plt.savefig('output/test/gr.png')
 	plt.clf()
 
-	# dc.view(array, label=label, positions=true_positions)
-	# dc.view(array, label=label, positions=trackpy_pos)
-	# dc.view(array, label=label, positions=trackpy_on_label)
+	dc.view(array, label=label, positions=true_positions)
+	dc.view(array, label=label, positions=trackpy_pos)
+	dc.view(array, label=label, positions=trackpy_on_label)
 
 	tp_ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_pos, diameters)
+	print(precisions, recalls)
 	fig = dc.plot_pr(tp_ap, precisions, recalls, thresholds, name='tp sim', tag='bo-')
 	label_ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_on_label, diameters)
+	print(precisions, recalls)
 	fig = dc.plot_pr(label_ap, precisions, recalls, thresholds, name='tp label', tag='ro-')
-	# plt.show()
+	plt.show()
 	plt.savefig('output/test/ap.png')

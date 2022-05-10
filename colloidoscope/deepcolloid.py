@@ -296,7 +296,7 @@ class DeepColloid:
 		# display = metrics.PrecisionRecallDisplay(precision=precisions, 
 		# recall=recalls, estimator_name=name).plot()
 
-		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap}', *args, **kwargs)
+		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap:.2f}', *args, **kwargs)
 		plt.title('Average Precision')
 		plt.xlim([-0.1,1.1])
 		plt.ylim([-0.1,1.1])
