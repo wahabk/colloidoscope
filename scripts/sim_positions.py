@@ -33,7 +33,7 @@ if __name__ == '__main__':
 	# positions = read_gsd(path, 0)
 	# print(positions)
 
-	hoomd_make_configurations(phi, n_frames=1, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/test/')
+	hoomd_make_configurations(phi, n_frames=1+1, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/test/')
 	
 
 	exit()
@@ -42,5 +42,5 @@ if __name__ == '__main__':
 		phi = round(phi, 2)
 		if phi == 0.1: continue
 		print(phi)
-		hoomd_make_configurations(phi, n_frames=500)
+		hoomd_make_configurations(phi, n_frames=500+1)
 		positions = read_gsd(f'output/Positions/phi{phi*1000:.0f}.gsd')

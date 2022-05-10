@@ -56,7 +56,7 @@ if __name__ == '__main__':
 	phis = [[round(x, 2)]*499 for x in np.linspace(0.25,0.55,7)]
 	phis = np.array(phis)
 	# make list of n_samples for each volfrac
-	print(phis.shape, phis[0])
+	print(phis.shape)
 
 	index = 1
 	for i, volfracs in enumerate(phis):
@@ -67,9 +67,9 @@ if __name__ == '__main__':
 
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'noise': uniform(0, 0.02), 'snr' : random.uniform(2,10)},
-			'medium' 		: {'r' : randrange(7,8), 'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.03), 'snr' : random.uniform(2,10)},
-			'large' 		: {'r' : randrange(8,16), 'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'noise': uniform(0.01, 0.04), 'snr' : random.uniform(2,10)},
+			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'snr' : triangular(0.1,10,3)},
+			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'snr' : triangular(0.1,10,3)},
+			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'snr' : triangular(0.1,10,3)},
 			}
 
 			keys = list(types.keys())
@@ -80,7 +80,7 @@ if __name__ == '__main__':
 			particle_size = params['particle_size']
 			cnr = params['cnr']
 			b = params['brightness']
-			noise = params['noise']
+			snr = params['snr']			
 			f_mean = params['brightness']
 
 			# calculate foreground and background STD from Contrast to Noise Ratio equation
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 			centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, centers, r, particle_size, f_mean, f_sigma, b_mean, b_sigma,
-										noise, diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers)
+										snr, diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
 			print(metadata)	
 
@@ -130,12 +130,14 @@ if __name__ == '__main__':
 			estimated_noise = np.array([estimate_noise(s) for s in canvas]).mean()
 			foreground = canvas[label > 0.01]
 			f_m = foreground.mean()
-			snr = f_mean / estimated_noise
+			estimated_snr = f_mean / estimated_noise
+			noise = (255 / snr) / (f_mean*10)
 
 			print(f"real brightness {f_mean} estimated {f_m}")
 			print(f"requested noise {noise}")
 
-			print("noise | snr", estimated_noise, snr)
+			print("estimated noise | estimated_snr", estimated_noise, estimated_snr)
+			print(f"requested snr {snr} measured {estimated_snr}")
 
 			exit()
 

@@ -32,7 +32,7 @@ def read_real_examples():
 
 	return d
 
-def signaltonoise(a, axis=0, ddof=0):
+def signaltonoise(a, axis=None, ddof=0):
     a = np.asanyarray(a)
     m = a.mean(axis)
     sd = a.std(axis=axis, ddof=ddof)

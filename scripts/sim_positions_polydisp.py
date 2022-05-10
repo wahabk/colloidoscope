@@ -18,6 +18,6 @@ if __name__ == '__main__':
 		phi = round(phi, 2)
 		# if phi==0.1: continue
 		print(phi)
-		hoomd_make_configurations_polydisp(phi, n_frames=250, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/poly/')
+		hoomd_make_configurations_polydisp(phi, n_frames=250+1, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/poly/')
 		# positions, diameters= read_gsd(f'/home/ak18001/Data/HDD/Colloids/Positions/test/phi_{phi*1000:.0f}_poly.gsd', 0)
 		# print(positions, diameters)

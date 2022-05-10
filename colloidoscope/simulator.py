@@ -164,7 +164,7 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 
 def simulate(canvas_size:list, centers:np.ndarray, r:int,
 			particle_size:float, f_mean:float, f_sigma:float, b_mean:float, b_sigma:float,
-			noise:float, diameters=np.ndarray([]), make_label:bool=True, label_size:list=(64,64,64), heatmap_r='radius', num_workers=2):
+			snr:float, diameters=np.ndarray([]), make_label:bool=True, label_size:list=(64,64,64), heatmap_r='radius', num_workers=2):
 	'''
 	particle size in um
 
@@ -177,7 +177,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	zoom = 0.5
 	pad = 64
 	gauss_kernel = (2, 2, 2)
-	# noise = f_mean / snr
+	noise = (255 / snr) / (f_mean*10)
 
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
