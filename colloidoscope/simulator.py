@@ -203,7 +203,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 	obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 	psf_kernel = obsvol.volume()
-	psf_kernel = ndimage.zoom(psf_kernel, 0.25)
+	psf_kernel = ndimage.zoom(psf_kernel, 0.5)
 
 	# draw spheres slice by slice
 	print('Simulating scan...')

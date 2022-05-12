@@ -102,7 +102,7 @@ if __name__ == "__main__":
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
-    #TODO ADD label size
+    #TODO ADD label size, currently doing it using nblocks
 
 	config = {
 		"lr": 0.001,

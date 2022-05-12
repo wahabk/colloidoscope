@@ -65,6 +65,7 @@ if __name__ == '__main__':
 
 			volfrac = v
 
+			#TODO add f_sigma in cnr calc
 			# define types of particles in simulation
 			types = {
 			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'snr' : triangular(0.1,10,3)},
@@ -82,6 +83,8 @@ if __name__ == '__main__':
 			b = params['brightness']
 			snr = params['snr']			
 			f_mean = params['brightness']
+			particle_size = 0.2
+			r = 5
 
 			# calculate foreground and background STD from Contrast to Noise Ratio equation
 			f_sigma = 30
