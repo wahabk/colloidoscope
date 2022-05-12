@@ -67,7 +67,7 @@ if __name__ == '__main__':
 	tp_predictions = run_trackpy(canvas, diameter=metadata['params']['r']*2-1)
 
 
-	unet_pos, label = dc.detect(canvas, debug=True)
+	df, unet_pos, label = dc.detect(canvas, debug=True)
 	print(gt_positions.shape, tp_predictions.shape, unet_pos.shape)
 	print(gt_positions[0], tp_predictions[0], unet_pos[0])
 

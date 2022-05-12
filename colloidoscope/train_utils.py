@@ -117,271 +117,6 @@ def compute_max_depth(shape=1920, max_depth=10, print_out=True):
     return shapes
 
 """
-Train and test
-"""
-
-
-def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
-	'''
-	by default for ray tune
-	'''
-
-	dc = DeepColloid(dataset_path)
-
-	# setup neptune
-	run = neptune.init(
-		project="wahabk/colloidoscope",
-		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
-	)
-	params = dict(
-		roiSize = (64,64,64),
-		train_data = train_data,
-		val_data = val_data,
-		test_data = test_data,
-		dataset_name = dataset_name,
-		batch_size = config['batch_size'],
-		n_blocks = config['n_blocks'],
-		norm = config['norm'],
-		loss_function = config['loss_function'],
-		lr = config['lr'],
-		epochs = config['epochs'],
-		start_filters = config['start_filters'],
-		activation = config['activation'],
-		num_workers = num_workers,
-		n_classes = 1,
-		random_seed = 42,
-	)
-	run['Tags'] = name
-	run['parameters'] = params
-	#TODO find a way to precalculate this - should i only unpad the first block?
-	if config['n_blocks'] == 2: label_size = (48,48,48)
-	if config['n_blocks'] == 3: label_size = (24,24,24)
-
-	transforms_affine = tio.Compose([
-		# tio.RandomFlip(axes=(1,2), flip_probability=0.5),
-		# tio.RandomAffine(),
-	])
-	transforms_img = tio.Compose([
-		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
-		tio.RandomBlur(p=0.1),
-		# tio.OneOf({
-		# 	tio.RandomNoise(0.1, 0.01): 0.1,
-		# 	tio.RandomBiasField(0.1): 0.1,
-		# 	tio.RandomGamma((-0.3,0.3)): 0.1,
-		# 	tio.RandomMotion(): 0.3,
-		# }),
-		tio.RescaleIntensity((0.05,0.95)),
-	])
-
-	# create a training data loader
-	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None, label_size=label_size) 
-	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
-	# create a validation data loader
-	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data'], label_size=label_size) 
-	val_loader = torch.utils.data.DataLoader(val_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
-
-	# device
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	print(f'training on {device}')
-
-	# model
-	model = UNet(in_channels=1,
-				out_channels=params['n_classes'],
-				n_blocks=params['n_blocks'],
-				start_filters=params['start_filters'],
-				activation=params['activation'],
-				normalization=params['norm'],
-				conv_mode='valid',
-				up_mode='transposed',
-				dim=3,
-				skip_connect=None,
-				)
-
-	model = torch.nn.DataParallel(model, device_ids=device_ids)
-	model.to(device)
-
-	# loss function
-	# criterion = torch.nn.BCEWithLogitsLoss()
-	criterion = params['loss_function']
-
-	params['loss_function'] = str(copy.deepcopy(params['loss_function']))
-
-	# optimizer
-	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
-	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
-
-	# trainer
-	trainer = Trainer(model=model,
-					device=device,
-					criterion=criterion,
-					optimizer=optimizer,
-					training_DataLoader=train_loader,
-					validation_DataLoader=val_loader,
-					lr_scheduler=scheduler,
-					epochs=params['epochs'],
-					logger=run,
-					tuner=tuner,
-					)
-
-	# start training
-	training_losses, validation_losses, lr_rates = trainer.run_trainer()
-
-	run['learning_rates'].log(lr_rates)
-	
-	if save:
-		model_name = save
-		torch.save(model.state_dict(), model_name)
-		# run['model/weights'].upload(model_name)
-
-	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers, label_size=label_size)
-	run['test/df'].upload(File.as_html(losses))
-	# run['test/test'].log(losses) #if dict
-
-	run.stop()
-
-
-def test(model, dataset_path, dataset_name, test_set, threshold=0.5, num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), run=False, device='cpu', label_size:tuple=(64,64,64)):
-	# TODO add detection r param
-	
-	dc = DeepColloid(dataset_path)
-	print('Running test, this may take a while...')
-	
-	# test on real data
-	real_dict = read_real_examples()
-	for name, d in real_dict.items():
-		pred_positions, label = dc.detect(d['array'], diameter = 7, model=model, debug=True)
-		print(pred_positions)
-		if len(pred_positions>0):
-			sidebyside = make_proj(d['array'], label)
-			run[name].upload(File.as_image(sidebyside))
-
-			trackpy_pos = run_trackpy(d['array'], diameter = dc.round_up_to_odd(d['diameter'])-2)
-			x, y = dc.get_gr(trackpy_pos, 50, 100)
-			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
-			x, y = dc.get_gr(pred_positions, 50, 100)
-			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-			plt.legend()
-			fig = plt.gcf()
-			run[name+'gr'].upload(fig)
-			plt.clf()
-
-	# test predict on sim
-	data_dict = dc.read_hdf5('test', 1)
-	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
-	pred_positions, test_label = dc.detect(test_array, diameter = 7, model=model, debug=True)
-	sidebyside = make_proj(test_array, test_label)
-	run['prediction'].upload(File.as_image(sidebyside))
-	trackpy_positions = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
-
-
-	if len(pred_positions) == 0:
-		print('Skipping gr() as bad pred')
-	else:
-		x, y = dc.get_gr(true_positions, 50, 100)
-		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
-		x, y = dc.get_gr(pred_positions, 50, 100)
-		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-
-		x, y = dc.get_gr(trackpy_positions, 50, 100)
-		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
-		plt.legend()
-		fig = plt.gcf()
-		run['gr'].upload(fig)
-		plt.clf()
-
-	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	run['AP'] = ap
-	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
-	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
-	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
-
-	run['PR_curve'].upload(fig)
-	plt.clf()
-
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False, label_size=label_size) 
-	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
-
-	losses = []
-	model.eval()
-	with torch.no_grad():
-		for idx, batch in enumerate(test_loader):
-			i = test_set[idx]
-			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
-			true_positions, diameters = crop_positions_for_label(true_positions, label_size, diameters=diameters)
-
-			x, y = batch
-			x, y = x.to(device), y.to(device)
-			# print(x.shape, x.max(), x.min())
-			# print(y.shape, y.max(), y.min())
-
-			#TODO make this dependant on criterion?
-
-			out = model(x)  # send through model/network
-			loss = criterion(out, y)
-			loss = loss.cpu().numpy()
-			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-			# post process to numpy array
-			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
-
-			pred_positions = find_positions(result, threshold)
-			pred_positions = run_trackpy(result, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
-			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-			print(pred_positions.shape)
-
-			m = {
-				'dataset': metadata['dataset'],
-				'n' 	 : metadata['n'],
-				'idx'	 : i,
-				'volfrac': metadata['volfrac'],
-				'n_particles':  metadata['n_particles'],
-				**metadata['params'],
-				'loss'	 : float(loss),
-				'precision'	 : float(prec),
-				'recall'	 : float(rec),
-			}
-
-			losses.append(m)
-
-	losses = pd.DataFrame(losses)
-
-	print(losses)
-	fig, axs = plt.subplots(3,2)
-	sns.scatterplot(x='volfrac', y = 'precision', data=losses, ax=axs[0,0])
-	sns.scatterplot(x='noise', y = 'precision', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='psf_zoom', y = 'precision', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='brightness', y = 'precision', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='r', y = 'precision', data=losses, ax=axs[2,1])
-	fig.tight_layout()
-	run['test/params_vs_prec'].upload(fig)
-
-	plt.clf()
-	fig, axs = plt.subplots(3,2)
-	sns.scatterplot(x='volfrac', y = 'recall', data=losses, ax=axs[0,0])
-	sns.scatterplot(x='noise', y = 'recall', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='psf_zoom', y = 'recall', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='brightness', y = 'recall', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='r', y = 'recall', data=losses, ax=axs[2,1])
-	fig.tight_layout()
-	run['test/params_vs_rec'].upload(fig)
-
-	plt.clf()
-	fig, axs = plt.subplots(3,2)
-	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
-	sns.scatterplot(x='noise', y = 'loss', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='psf_zoom', y = 'loss', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='brightness', y = 'loss', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[2,1])
-	fig.tight_layout()
-	run['test/params_vs_loss'].upload(fig)
-
-	return losses
-
-
-
-"""
 Trainer
 """
 
@@ -523,6 +258,297 @@ class Trainer:
 		batch_iter.close()
 
 
+"""
+Train and test
+"""
+
+
+def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
+	'''
+	by default for ray tune
+	'''
+
+	#TODO add activation for loss using isinstance()
+	#TODO calculate nblocks or only pad first block
+	#TODO adjust initialisation for focal loss
+
+	dc = DeepColloid(dataset_path)
+
+	# setup neptune
+	run = neptune.init(
+		project="wahabk/colloidoscope",
+		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
+	)
+	params = dict(
+		roiSize = (64,64,64),
+		train_data = train_data,
+		val_data = val_data,
+		test_data = test_data,
+		dataset_name = dataset_name,
+		batch_size = config['batch_size'],
+		n_blocks = config['n_blocks'],
+		norm = config['norm'],
+		loss_function = config['loss_function'],
+		lr = config['lr'],
+		epochs = config['epochs'],
+		start_filters = config['start_filters'],
+		activation = config['activation'],
+		num_workers = num_workers,
+		n_classes = 1,
+		random_seed = 42,
+	)
+	run['Tags'] = name
+	run['parameters'] = params
+	#TODO find a way to precalculate this - should i only unpad the first block?
+	if config['n_blocks'] == 2: label_size = (48,48,48)
+	if config['n_blocks'] == 3: label_size = (24,24,24)
+
+	transforms_affine = tio.Compose([
+		# tio.RandomFlip(axes=(1,2), flip_probability=0.5),
+		# tio.RandomAffine(),
+	])
+	transforms_img = tio.Compose([
+		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
+		tio.RandomBlur(p=0.1),
+		# tio.OneOf({
+		# 	tio.RandomNoise(0.1, 0.01): 0.1,
+		# 	tio.RandomBiasField(0.1): 0.1,
+		# 	tio.RandomGamma((-0.3,0.3)): 0.1,
+		# 	tio.RandomMotion(): 0.3,
+		# }),
+		tio.RescaleIntensity((0.05,0.95)),
+	])
+
+	# create a training data loader
+	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None, label_size=label_size) 
+	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
+	# create a validation data loader
+	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data'], label_size=label_size) 
+	val_loader = torch.utils.data.DataLoader(val_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
+
+	# device
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	print(f'training on {device}')
+
+	# model
+	model = UNet(in_channels=1,
+				out_channels=params['n_classes'],
+				n_blocks=params['n_blocks'],
+				start_filters=params['start_filters'],
+				activation=params['activation'],
+				normalization=params['norm'],
+				conv_mode='valid',
+				up_mode='transposed',
+				dim=3,
+				skip_connect=None,
+				)
+
+	model = torch.nn.DataParallel(model, device_ids=device_ids)
+	model.to(device)
+
+	# loss function
+	# criterion = torch.nn.BCEWithLogitsLoss()
+	criterion = params['loss_function']
+
+	params['loss_function'] = str(copy.deepcopy(params['loss_function']))
+
+	# optimizer
+	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
+	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
+
+	# trainer
+	trainer = Trainer(model=model,
+					device=device,
+					criterion=criterion,
+					optimizer=optimizer,
+					training_DataLoader=train_loader,
+					validation_DataLoader=val_loader,
+					lr_scheduler=scheduler,
+					epochs=params['epochs'],
+					logger=run,
+					tuner=tuner,
+					)
+
+	# start training
+	training_losses, validation_losses, lr_rates = trainer.run_trainer()
+
+	run['learning_rates'].log(lr_rates)
+	
+	if save:
+		model_name = save
+		torch.save(model.state_dict(), model_name)
+		# run['model/weights'].upload(model_name)
+
+	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers, label_size=label_size)
+	run['test/df'].upload(File.as_html(losses))
+	# run['test/test'].log(losses) #if dict
+
+	run.stop()
+
+
+def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
+		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
+		run=False, device='cpu', label_size:tuple=(64,64,64), heatmap_r="radius"):
+	
+
+
+	dc = DeepColloid(dataset_path)
+	print('Running test, this may take a while...')
+	
+	# test on real data
+	real_dict = read_real_examples()
+
+	for name, d in real_dict.items():
+
+		df, pred_positions, label = dc.detect(d['array'], diameter = heatmap_r, model=model, debug=True)
+		print(pred_positions)
+		if len(pred_positions>0):
+			sidebyside = make_proj(d['array'], label)
+			run[name].upload(File.as_image(sidebyside))
+
+			if heatmap_r == "radius":
+				detection_diameter = d['diameter']
+			else:
+				detection_diameter = heatmap_r
+
+			trackpy_pos = run_trackpy(d['array'], diameter = detection_diameter)
+			x, y = dc.get_gr(trackpy_pos, 50, 100)
+			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
+			x, y = dc.get_gr(pred_positions, 50, 100)
+			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
+			plt.legend()
+			fig = plt.gcf()
+			run[name+'gr'].upload(fig)
+			plt.clf()
+		else:
+			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
+
+	
+	# test predict on sim
+	data_dict = dc.read_hdf5('test', 1)
+	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+
+	if heatmap_r == "radius":
+		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+	else:
+		detection_diameter = heatmap_r
+
+	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True)
+	sidebyside = make_proj(test_array, test_label)
+	run['prediction'].upload(File.as_image(sidebyside))
+	trackpy_positions = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+
+
+	if len(pred_positions) == 0:
+		print('Skipping gr() as bad pred')
+	else:
+		x, y = dc.get_gr(true_positions, 50, 100)
+		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
+		x, y = dc.get_gr(pred_positions, 50, 100)
+		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
+
+		x, y = dc.get_gr(trackpy_positions, 50, 100)
+		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
+		plt.legend()
+		fig = plt.gcf()
+		run['gr'].upload(fig)
+		plt.clf()
+
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	run['AP'] = ap
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
+
+	run['PR_curve'].upload(fig)
+	plt.clf()
+
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False, label_size=label_size) 
+	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
+
+	losses = []
+	model.eval()
+	with torch.no_grad():
+		for idx, batch in enumerate(test_loader):
+			i = test_set[idx]
+			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
+			true_positions, diameters = crop_positions_for_label(true_positions, label_size, diameters=diameters)
+
+			x, y = batch
+			x, y = x.to(device), y.to(device)
+			# print(x.shape, x.max(), x.min())
+			# print(y.shape, y.max(), y.min())
+
+			#TODO make this dependant on criterion?
+			#TODO add sigmoid here for BCE using isinstance()
+
+			out = model(x)  # send through model/network
+			loss = criterion(out, y)
+			loss = loss.cpu().numpy()
+			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
+			# post process to numpy array
+			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+
+			pred_positions = find_positions(result, threshold)
+			pred_positions = run_trackpy(result, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
+			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
+			print(pred_positions.shape)
+
+			m = {
+				'dataset': metadata['dataset'],
+				'n' 	 : metadata['n'],
+				'idx'	 : i,
+				'volfrac': metadata['volfrac'],
+				'n_particles':  metadata['n_particles'],
+				**metadata['params'],
+				'loss'	 : float(loss),
+				'precision'	 : float(prec),
+				'recall'	 : float(rec),
+			}
+
+			losses.append(m)
+
+	losses = pd.DataFrame(losses)
+
+	print(losses)
+	fig, axs = plt.subplots(3,2)
+	sns.scatterplot(x='volfrac', y = 'precision', data=losses, ax=axs[0,0])
+	sns.scatterplot(x='snr', y = 'precision', data=losses, ax=axs[0,1])
+	sns.scatterplot(x='cnr', y = 'precision', data=losses, ax=axs[2,1])
+	sns.scatterplot(x='particle_size', y = 'precision', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='brightness', y = 'precision', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='r', y = 'precision', data=losses, ax=axs[2,1])
+	fig.tight_layout()
+	run['test/params_vs_prec'].upload(fig)
+
+	plt.clf()
+	fig, axs = plt.subplots(3,2)
+	sns.scatterplot(x='volfrac', y = 'recall', data=losses, ax=axs[0,0])
+	sns.scatterplot(x='snr', y = 'recall', data=losses, ax=axs[0,1])
+	sns.scatterplot(x='cnr', y = 'recall', data=losses, ax=axs[2,1])
+	sns.scatterplot(x='particle_size', y = 'recall', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='brightness', y = 'recall', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='r', y = 'recall', data=losses, ax=axs[2,1])
+	fig.tight_layout()
+	run['test/params_vs_rec'].upload(fig)
+
+	plt.clf()
+	fig, axs = plt.subplots(3,2)
+	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
+	sns.scatterplot(x='snr', y = 'loss', data=losses, ax=axs[0,1])
+	sns.scatterplot(x='cnr', y = 'loss', data=losses, ax=axs[2,1])
+	sns.scatterplot(x='particle_size', y = 'loss', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='brightness', y = 'loss', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[2,1])
+	fig.tight_layout()
+	run['test/params_vs_loss'].upload(fig)
+
+	return losses
+
+
 
 """
 LR finder
@@ -659,16 +685,16 @@ def read_real_examples():
 	d = {}
 
 	d['abraham'] = {}
-	d['abraham']['diameter'] = 15
+	d['abraham']['diameter'] = [13,11,11]
 	d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
 	d['emily'] = {}
-	d['emily']['diameter'] = 9
+	d['emily']['diameter'] = [15,9,9]
 	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
 	d['katherine'] = {}
-	d['katherine']['diameter'] = 9
+	d['katherine']['diameter'] = [7,7,7]
 	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
 	d['levke'] = {}
-	d['levke']['diameter'] = 9
+	d['levke']['diameter'] = [15,11,11]
 	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
 
 	return d

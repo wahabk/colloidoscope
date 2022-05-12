@@ -68,9 +68,9 @@ if __name__ == '__main__':
 			#TODO add f_sigma in cnr calc
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'snr' : triangular(0.1,10,3)},
-			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'snr' : triangular(0.1,10,3)},
-			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(80, 200), 'snr' : triangular(0.1,10,3)},
+			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
 			}
 
 			keys = list(types.keys())
