@@ -18,8 +18,9 @@ if __name__ == '__main__':
 	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
-	particle_size = 5
 
+
+	# particle_size = 5
 	# args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 	# obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 	# psf_kernel = obsvol.volume()
