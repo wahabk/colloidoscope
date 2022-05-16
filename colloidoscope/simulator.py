@@ -8,7 +8,7 @@ I chose a functional method because I found it more intuitive to use NJIT compil
 
 """
 
-from .hoomd_sim_positions import hooomd_sim_positions, convert_hoomd_positions
+from .hoomd_sim_positions import convert_hoomd_positions
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
 from skimage.util import random_noise
@@ -162,9 +162,10 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 	return array
 
 
-def simulate(canvas_size:list, centers:np.ndarray, r:int,
-			particle_size:float, f_mean:float, f_sigma:float, b_mean:float, b_sigma:float,
-			snr:float, diameters=np.ndarray([]), make_label:bool=True, label_size:list=(64,64,64), heatmap_r='radius', num_workers=2):
+def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
+			particle_size:float, f_mean:float, cnr:float,
+			snr:float, f_sigma:float=30, b_sigma:float=20, diameters=np.ndarray([]), make_label:bool=True, 
+			label_size:list=(64,64,64), heatmap_r='radius', num_workers=2,):
 	'''
 	particle size in um
 
@@ -172,12 +173,17 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 	This will only work for a perfect cube eg 64x64x64 not cuboids
 	'''
+	
+	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
+
+
+	b_mean = abs(cnr * b_sigma + f_sigma)
 
 	brightnesses = [random.gauss(f_mean, f_sigma) for _ in centers]
 	zoom = 0.5
 	pad = 64
 	gauss_kernel = (2, 2, 2)
-	noise = (255 / snr) / (f_mean*10)
+	noise = (f_mean / (snr * 255))/10 # TODO change this
 
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
@@ -203,7 +209,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 	args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 	obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 	psf_kernel = obsvol.volume()
-	psf_kernel = ndimage.zoom(psf_kernel, 0.5)
+	psf_kernel = ndimage.zoom(psf_kernel, 0.375)
 
 	# draw spheres slice by slice
 	print('Simulating scan...')
@@ -224,7 +230,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 
 		# TODO this is the limit for label having to be square not rect
 		diff = (canvas.shape[0] - label.shape[0])/2
-		final_centers = centers - diff
+		final_centers = centers - diff # if the label is smaller than the image then shift the difference
 
 		print('Simulating label...')
 		radii = [(d*r) for d in diameters]

@@ -13,18 +13,7 @@ from scipy import ndimage
 import math
 from scipy.signal import convolve2d
 
-def estimate_noise(I):
 
-  H, W = I.shape
-
-  M = [[1, -2, 1],
-       [-2, 4, -2],
-       [1, -2, 1]]
-
-  sigma = np.sum(np.sum(np.absolute(convolve2d(I, M))))
-  sigma = sigma * math.sqrt(0.5 * math.pi) / (6 * (W-2) * (H-2))
-
-  return sigma
 
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
@@ -35,8 +24,8 @@ def plot_with_side_view(scan, path):
 	plt.clf()
 
 if __name__ == '__main__':
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -68,33 +57,16 @@ if __name__ == '__main__':
 			#TODO add f_sigma in cnr calc
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
-			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
-			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 3, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
 			}
 
 			keys = list(types.keys())
 			this_type = random.choice(keys)
 			params = types[this_type]
-
-			r = params['r']
-			particle_size = params['particle_size']
-			cnr = params['cnr']
-			b = params['brightness']
-			snr = params['snr']			
-			f_mean = params['brightness']
-			particle_size = 0.2
-			r = 5
-
-			# calculate foreground and background STD from Contrast to Noise Ratio equation
-			f_sigma = 30
-			b_sigma = 20
-			b_mean = abs(cnr * b_sigma + f_sigma)
-			print('cnr', f_mean,f_sigma,b_sigma,b_mean)
-
-			params['f_sigma'] = f_sigma
-			params['b_sigma'] = b_sigma
-			params['b_mean'] = b_mean
+			params['f_sigma'] = 30
+			params['b_sigma'] = 20
 
 			metadata = {
 				'dataset': dataset_name,
@@ -108,15 +80,12 @@ if __name__ == '__main__':
 			print(f'Reading: {path} at {n+1} ...')
 
 			hoomd_positions, diameters = read_gsd(path, n+1)
-			
-			print(diameters.shape)
-			centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
-			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, centers, r, particle_size, f_mean, f_sigma, b_mean, b_sigma,
-										snr, diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers)
+			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
+										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
-			print(metadata)	
 
+			print(metadata)	
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
 
@@ -129,18 +98,4 @@ if __name__ == '__main__':
 
 			# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 			index+=1
-
-			estimated_noise = np.array([estimate_noise(s) for s in canvas]).mean()
-			foreground = canvas[label > 0.01]
-			f_m = foreground.mean()
-			estimated_snr = f_mean / estimated_noise
-			noise = (255 / snr) / (f_mean*10)
-
-			print(f"real brightness {f_mean} estimated {f_m}")
-			print(f"requested noise {noise}")
-
-			print("estimated noise | estimated_snr", estimated_noise, estimated_snr)
-			print(f"requested snr {snr} measured {estimated_snr}")
-
-			exit()
 

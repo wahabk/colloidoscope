@@ -1,22 +1,20 @@
-from fnmatch import translate
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import napari
 import h5py
-import torch
 from scipy.spatial.distance import pdist, cdist
-import math
-from copy import deepcopy
 from .simulator import simulate
 from .explore_lif import Reader
 from .predict import detect
 import json
 from pathlib2 import Path
 from skimage import io
-import pandas as pd
 from numba import njit
 from tqdm import tqdm
 import trackpy as tp
+import math
+from scipy.signal import convolve2d
 
 class DeepColloid:
 	def __init__(self, dataset_path='') -> None:
@@ -324,6 +322,19 @@ class DeepColloid:
 		z, y, x = int(z), int(y), int(x)
 		array = array[z - zl : z + zl, y - yl : y + yl, x - xl : x + xl]
 		return array
+
+	def estimate_noise(self, I):
+
+		H, W = I.shape
+
+		M = [[1, -2, 1],
+			[-2, 4, -2],
+			[1, -2, 1]]
+
+		sigma = np.sum(np.sum(np.absolute(convolve2d(I, M))))
+		sigma = sigma * math.sqrt(0.5 * math.pi) / (6 * (W-2) * (H-2))
+
+		return sigma
 
 @njit
 def _calc_iou_dist(distances, diameters, threshold):
