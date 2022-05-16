@@ -210,10 +210,6 @@ class Trainer:
 			# 	out_sigmoid = torch.nn.Sigmoid(out)
 			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			# print(input_.shape, out.shape, target.shape)
-			# print(out.max(), target.max())
-			# out_sigmoid = sig(out)
-
 			loss = self.criterion(out, target)  # calculate loss
 			loss_value = loss.item() # .item? for other losses
 			train_losses.append(loss_value)
@@ -268,6 +264,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	by default for ray tune
 	'''
 
+	# TODO use MONAI
 	#TODO add activation for loss using isinstance()
 	#TODO calculate nblocks or only pad first block
 	#TODO adjust initialisation for focal loss

@@ -222,11 +222,10 @@ if __name__ == "__main__":
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
-<<<<<<< HEAD
     #TODO ADD label size, currently doing it using nblocks
+	# TODO add criterion based final activation
+	# TODO write train_MONAI
 
-=======
->>>>>>> 46940b7bb65559ab97ac3b6c72d6a98a0f794a94
 	config = {
 		"lr": 0.001,
 		"batch_size": 4,

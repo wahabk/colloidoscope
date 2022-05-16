@@ -42,7 +42,7 @@ if __name__ == '__main__':
 	# poly_phis = np.array(poly_phis)
 	# print(poly_phis.shape, poly_phis[0])
 	
-	phis = [[round(x, 2)]*499 for x in np.linspace(0.25,0.55,7)]
+	phis = [[round(x, 2)]*150 for x in np.linspace(0.25,0.55,7)]
 	phis = np.array(phis)
 	# make list of n_samples for each volfrac
 	print(phis.shape)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
 
-			dc.view(canvas, final_centers, label)
+			# dc.view(canvas, final_centers, label)
 			# plot_with_side_view(canvas, f'output/figs/simulation/{index}.png')
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255

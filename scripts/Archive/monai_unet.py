@@ -182,7 +182,7 @@ if __name__ == '__main__':
 			inputs, labels = batch_data[0].to(device), batch_data[1].to(device)
 			# print('DataSet shape: ', inputs.shape, labels.shape)
 			optimizer.zero_grad()
-			outputs = model(inputs)
+			outputs = model(inputs) 
 			loss = loss_function(outputs, labels)
 			loss.backward()
 			optimizer.step()
