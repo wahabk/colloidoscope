@@ -32,7 +32,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'psf_cnr_radius'
+	dataset_name = 'psf_cnr_radius_3400'
 	num_workers = 10
 	heatmap_r = 'radius'
 	
@@ -42,7 +42,7 @@ if __name__ == '__main__':
 	# poly_phis = np.array(poly_phis)
 	# print(poly_phis.shape, poly_phis[0])
 	
-	phis = [[round(x, 2)]*150 for x in np.linspace(0.25,0.55,7)]
+	phis = [[round(x, 2)]*499 for x in np.linspace(0.25,0.55,7)]
 	phis = np.array(phis)
 	# make list of n_samples for each volfrac
 	print(phis.shape)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 			types = {
 			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
 			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
-			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
 			}
 
 			keys = list(types.keys())
@@ -96,6 +96,6 @@ if __name__ == '__main__':
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 			index+=1
 

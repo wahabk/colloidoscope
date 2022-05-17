@@ -398,19 +398,20 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	real_dict = read_real_examples()
 
 	for name, d in real_dict.items():
+		print(name, d['array'].shape)
 
-		df, pred_positions, label = dc.detect(d['array'], diameter = heatmap_r, model=model, debug=True)
-		print(pred_positions)
+		if heatmap_r == "radius":
+			detection_diameter = d['diameter']
+		else:
+			detection_diameter = heatmap_r
+
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
+
 		if len(pred_positions>0):
 			sidebyside = make_proj(d['array'], label)
 			run[name].upload(File.as_image(sidebyside))
 
-			if heatmap_r == "radius":
-				detection_diameter = d['diameter']
-			else:
-				detection_diameter = heatmap_r
-
-			trackpy_pos = run_trackpy(d['array'], diameter = detection_diameter)
+			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
 			x, y = dc.get_gr(trackpy_pos, 50, 100)
 			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
 			x, y = dc.get_gr(pred_positions, 50, 100)
@@ -435,23 +436,25 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True)
 	sidebyside = make_proj(test_array, test_label)
 	run['prediction'].upload(File.as_image(sidebyside))
-	trackpy_positions = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
 
+	print(true_positions.shape)
+	print(pred_positions.shape)
+	print(trackpy_positions.shape)
 
-	if len(pred_positions) == 0:
-		print('Skipping gr() as bad pred')
-	else:
+	try:
 		x, y = dc.get_gr(true_positions, 50, 100)
 		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
 		x, y = dc.get_gr(pred_positions, 50, 100)
-		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-
+		plt.plot(x, y, label=f'Unet n ={len(pred_positions)}', color='red')
 		x, y = dc.get_gr(trackpy_positions, 50, 100)
 		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
 		plt.legend()
 		fig = plt.gcf()
 		run['gr'].upload(fig)
 		plt.clf()
+	except:
+		print('Skipping gr() as bad pred')
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
 	run['AP'] = ap
@@ -489,10 +492,14 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
-			pred_positions = find_positions(result, threshold)
-			pred_positions = run_trackpy(result, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
+			if heatmap_r == "radius":
+				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+			else:
+				detection_diameter = heatmap_r
+
+			# pred_positions = find_positions(result, threshold)
+			pred_positions, df = dc.run_trackpy(result, diameter=detection_diameter)
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-			print(pred_positions.shape)
 
 			m = {
 				'dataset': metadata['dataset'],
@@ -510,13 +517,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	losses = pd.DataFrame(losses)
 
-	print(losses)
 	fig, axs = plt.subplots(3,2)
 	sns.scatterplot(x='volfrac', y = 'precision', data=losses, ax=axs[0,0])
 	sns.scatterplot(x='snr', y = 'precision', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='cnr', y = 'precision', data=losses, ax=axs[2,1])
-	sns.scatterplot(x='particle_size', y = 'precision', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='brightness', y = 'precision', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='cnr', y = 'precision', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='particle_size', y = 'precision', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='brightness', y = 'precision', data=losses, ax=axs[2,0])
 	sns.scatterplot(x='r', y = 'precision', data=losses, ax=axs[2,1])
 	fig.tight_layout()
 	run['test/params_vs_prec'].upload(fig)
@@ -525,9 +531,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	fig, axs = plt.subplots(3,2)
 	sns.scatterplot(x='volfrac', y = 'recall', data=losses, ax=axs[0,0])
 	sns.scatterplot(x='snr', y = 'recall', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='cnr', y = 'recall', data=losses, ax=axs[2,1])
-	sns.scatterplot(x='particle_size', y = 'recall', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='brightness', y = 'recall', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='cnr', y = 'recall', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='particle_size', y = 'recall', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='brightness', y = 'recall', data=losses, ax=axs[2,0])
 	sns.scatterplot(x='r', y = 'recall', data=losses, ax=axs[2,1])
 	fig.tight_layout()
 	run['test/params_vs_rec'].upload(fig)
@@ -536,9 +542,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	fig, axs = plt.subplots(3,2)
 	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
 	sns.scatterplot(x='snr', y = 'loss', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='cnr', y = 'loss', data=losses, ax=axs[2,1])
-	sns.scatterplot(x='particle_size', y = 'loss', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='brightness', y = 'loss', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='cnr', y = 'loss', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='particle_size', y = 'loss', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='brightness', y = 'loss', data=losses, ax=axs[2,0])
 	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[2,1])
 	fig.tight_layout()
 	run['test/params_vs_loss'].upload(fig)
@@ -681,9 +687,9 @@ def read_real_examples():
 
 	d = {}
 
-	d['abraham'] = {}
-	d['abraham']['diameter'] = [13,11,11]
-	d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
+	# d['abraham'] = {}
+	# d['abraham']['diameter'] = [13,11,11]
+	# d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
 	d['emily'] = {}
 	d['emily']['diameter'] = [15,9,9]
 	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
