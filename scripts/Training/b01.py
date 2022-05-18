@@ -141,7 +141,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
 	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
 
 	# trainer
@@ -202,14 +202,14 @@ if __name__ == "__main__":
 	# TODO write train_MONAI
 
 	config = {
-		"lr": 0.0001,
+		"lr": 0.001,
 		"batch_size": 16,
 		"n_blocks": 6,
 		"norm": 'batch',
-		"epochs": 40,
+		"epochs": 60,
 		"start_filters": 32,
 		"activation": "RELU",
-		"dropout": 0,
+		"dropout": 0.1,
 		"num_res_units": 6,
 		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
