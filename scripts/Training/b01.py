@@ -31,7 +31,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	by default for ray tune
 	'''
 
-	# TODO use MONAI
 	#TODO add activation for loss using isinstance()
 	#TODO calculate nblocks or only pad first block
 	#TODO adjust initialisation for focal loss
@@ -202,14 +201,14 @@ if __name__ == "__main__":
 	# TODO write train_MONAI
 
 	config = {
-		"lr": 0.001,
+		"lr": 0.0001,
 		"batch_size": 16,
 		"n_blocks": 6,
 		"norm": 'batch',
-		"epochs": 60,
+		"epochs": 120,
 		"start_filters": 32,
 		"activation": "RELU",
-		"dropout": 0.1,
+		"dropout": 0,
 		"num_res_units": 6,
 		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
