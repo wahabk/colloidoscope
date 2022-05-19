@@ -206,12 +206,13 @@ class Trainer:
 			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 			self.optimizer.zero_grad()  # zerograd the parameters
 			out = self.model(input_)  # one forward pass
-			# if self.criterion == 'BCELoss()':
-			# 	out_sigmoid = torch.nn.Sigmoid(out)
-			# 	loss_value = self.criterion(out_sigmoid, target)  # calculate loss
+			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss):
+				loss = self.criterion(out, target)  # calculate loss
+				loss_value = loss.item() # .item? for other losses
+			else:
+				out_sigmoid = torch.nn.Sigmoid(out)
+				loss_value = self.criterion(out_sigmoid, target)  # calculate loss
 
-			loss = self.criterion(out, target)  # calculate loss
-			loss_value = loss.item() # .item? for other losses
 			train_losses.append(loss_value)
 			if self.logger: self.logger['train/loss'].log(loss_value)
 			loss.backward()  # one backward pass
@@ -412,9 +413,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			run[name].upload(File.as_image(sidebyside))
 
 			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
-			x, y = dc.get_gr(trackpy_pos, 50, 100)
+			x, y = dc.get_gr(trackpy_pos, 100, 100)
 			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
-			x, y = dc.get_gr(pred_positions, 50, 100)
+			x, y = dc.get_gr(pred_positions, 100, 100)
 			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
 			plt.legend()
 			fig = plt.gcf()
@@ -443,11 +444,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	print(trackpy_positions.shape)
 
 	try:
-		x, y = dc.get_gr(true_positions, 50, 100)
+		x, y = dc.get_gr(true_positions, 100, 100)
 		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
-		x, y = dc.get_gr(pred_positions, 50, 100)
+		x, y = dc.get_gr(pred_positions, 100, 100)
 		plt.plot(x, y, label=f'Unet n ={len(pred_positions)}', color='red')
-		x, y = dc.get_gr(trackpy_positions, 50, 100)
+		x, y = dc.get_gr(trackpy_positions, 100, 100)
 		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
 		plt.legend()
 		fig = plt.gcf()

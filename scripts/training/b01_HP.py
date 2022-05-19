@@ -1,37 +1,35 @@
 import torch
 import numpy as np
-from colloidoscope.train_utils import Trainer, LearningRateFinder, predict, test
-from colloidoscope.unet import UNet
-from colloidoscope.dataset import ColloidsDatasetSimulated
 from colloidoscope.deepcolloid import DeepColloid
+from colloidoscope.train_utils import Trainer, LearningRateFinder, predict, test, ColloidsDatasetSimulated
 import torchio as tio
+from neptune.new.types import File
 import matplotlib.pyplot as plt
 import neptune.new as neptune
-from neptune.new.types import File
 import os
 from ray import tune
 import random
+from ray.tune.schedulers import ASHAScheduler
+from functools import partial
+
 import copy
 import monai
 import math
 from monai.networks.layers.factories import Act, Norm
 
-
 print(os.cpu_count())
-print ('Current cuda device ', torch.cuda.current_device())
 print(torch.cuda.is_available())
+print ('Current cuda device ', torch.cuda.current_device())
 print('------------num available devices:', torch.cuda.device_count())
 
 import torch.nn as nn
-import torch.nn.functional as F
-
+import torch.nn.functional as F 
 
 def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
 	'''
 	by default for ray tune
 	'''
 
-	#TODO add activation for loss using isinstance()
 	#TODO calculate nblocks or only pad first block
 	#TODO adjust initialisation for focal loss
 
@@ -56,7 +54,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		epochs = config['epochs'],
 		start_filters = config['start_filters'],
 		activation = config['activation'],
-		num_res_units = config['num_res_units'],
 		num_workers = num_workers,
 		n_classes = 1,
 		random_seed = 42,
@@ -110,8 +107,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		out_channels=params['n_classes'],
 		channels=channels,
 		strides=strides,
-		num_res_units=params["num_res_units"],
-		act=params['activation'], # TODO try PReLU
+		num_res_units=params["n_blocks"],
+		act=params['activation'],
 		norm=params["norm"],
 	)
 
@@ -140,7 +137,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=10, factor=0.5)
 	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
 
 	# trainer
@@ -183,36 +180,51 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'psf_cnr_radius'
+
+	dataset_name = 'psf_cnr_radius_3400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(1,1000))
+	all_data = list(range(1,3000))
 	random.shuffle(all_data)
 
-	train_data = all_data[0:800]
-	val_data = all_data[801:900]
-	test_data =	all_data[901:1000]
-	name = 'test new dataset'
-	save = 'output/weights/unet.pt'
+	num_samples = 10
+	max_num_epochs = 30
+	gpus_per_trial = 1
+
+	train_data = all_data[0:2000]
+	val_data = all_data[2000:2200]
+	test_data =	all_data[2201:2400]
+	name = 'search focal'
+	save = '/home/ak18001/code/colloidoscope/output/weights/unet.pt'
+	device_ids = [0,]
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
-    # TODO ADD label size, currently doing it using nblocks
-	# TODO add criterion based final activation
-	# TODO write train_MONAI
-
 	config = {
-		"lr": 0.0001,
-		"batch_size": 16,
-		"n_blocks": 6,
-		"norm": 'batch',
-		"epochs": 120,
+		"lr": tune.loguniform(0.01, 0.00001),
+		"batch_size": tune.choice([4,16]),
+		"n_blocks": tune.randint(2,7),
+		"norm": tune.choice(["BATCH", "INSTANCE", "LAYER"]),
+		"epochs": 20,
 		"start_filters": 32,
-		"activation": "RELU",
-		"dropout": 0,
-		"num_res_units": 6,
-		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+		"activation": tune.choice(["RELU", "PRELU", "SWISH"]),
+		"dropout": tune.randn(0,0.5),
+		"loss_function": tune.choice([torch.nn.BCEWithLogitsLoss(), torch.nn.L1Loss()]) #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 
-	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
-				train_data=train_data, val_data=val_data, test_data=test_data, 
-				save=save, tuner=False, device_ids=[0,])
+	# the scheduler will terminate badly performing trials
+	scheduler = ASHAScheduler(
+		metric="val_loss",
+		mode="min",
+		max_t=max_num_epochs,
+		grace_period=1,
+		reduction_factor=2)
+
+	result = tune.run(
+		partial(train, name=name, dataset_path=dataset_path, dataset_name=dataset_name, 
+				train_data=train_data, val_data=val_data, test_data=test_data, save=save, 
+				tuner=True, device_ids=device_ids),
+		resources_per_trial={"cpu": 10, "gpu": 1},
+		config=config,
+		num_samples=num_samples,
+		scheduler=None,
+		checkpoint_at_end=True)
