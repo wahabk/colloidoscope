@@ -209,11 +209,12 @@ class Trainer:
 			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss):
 				loss = self.criterion(out, target)  # calculate loss
 				loss_value = loss.item() # .item? for other losses
+				train_losses.append(loss_value)
 			else:
-				out_sigmoid = torch.nn.Sigmoid(out)
-				loss_value = self.criterion(out_sigmoid, target)  # calculate loss
+				out_sigmoid = torch.sigmoid(out)
+				loss = self.criterion(out_sigmoid, target)  # calculate loss
+				train_losses.append(loss)
 
-			train_losses.append(loss_value)
 			if self.logger: self.logger['train/loss'].log(loss_value)
 			loss.backward()  # one backward pass
 			self.optimizer.step()  # update the parameters
@@ -242,9 +243,16 @@ class Trainer:
 
 			with torch.no_grad():
 				out = self.model(input_)
-				loss = self.criterion(out, target)
-				loss_value = loss.item()
-				valid_losses.append(loss_value)
+
+				if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss):
+					loss = self.criterion(out, target)  # calculate loss
+					loss_value = loss.item() # .item? for other losses
+					valid_losses.append(loss_value)
+				else:
+					out_sigmoid = torch.sigmoid(out)
+					loss = self.criterion(out_sigmoid, target)  # calculate loss
+					valid_losses.append(loss)
+
 				if self.logger: self.logger['val/loss'].log(loss_value)
 				batch_iter.set_description(f'Validation: (loss {loss_value:.4f})')
 
@@ -394,6 +402,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	dc = DeepColloid(dataset_path)
 	print('Running test, this may take a while...')
+
+	os.chdir('/home/ak18001/code/colloidoscope')
 	
 	# test on real data
 	real_dict = read_real_examples()

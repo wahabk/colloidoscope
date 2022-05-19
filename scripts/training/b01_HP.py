@@ -11,6 +11,7 @@ from ray import tune
 import random
 from ray.tune.schedulers import ASHAScheduler
 from functools import partial
+from pathlib2 import Path
 
 import copy
 import monai
@@ -54,6 +55,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		epochs = config['epochs'],
 		start_filters = config['start_filters'],
 		activation = config['activation'],
+		dropout = config['dropout'],
 		num_workers = num_workers,
 		n_classes = 1,
 		random_seed = 42,
@@ -110,6 +112,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		num_res_units=params["n_blocks"],
 		act=params['activation'],
 		norm=params["norm"],
+		dropout=params["dropout"]
 	)
 
 	# model
@@ -191,9 +194,9 @@ if __name__ == "__main__":
 	max_num_epochs = 30
 	gpus_per_trial = 1
 
-	train_data = all_data[0:2000]
-	val_data = all_data[2000:2200]
-	test_data =	all_data[2201:2400]
+	train_data = all_data[0:800]
+	val_data = all_data[801:900]
+	test_data =	all_data[901:1100]
 	name = 'search focal'
 	save = '/home/ak18001/code/colloidoscope/output/weights/unet.pt'
 	device_ids = [0,]
@@ -203,11 +206,11 @@ if __name__ == "__main__":
 		"lr": tune.loguniform(0.01, 0.00001),
 		"batch_size": tune.choice([4,16]),
 		"n_blocks": tune.randint(2,7),
-		"norm": tune.choice(["BATCH", "INSTANCE", "LAYER"]),
-		"epochs": 20,
+		"norm": tune.choice(["BATCH", "INSTANCE"]),
+		"epochs": 10,
 		"start_filters": 32,
 		"activation": tune.choice(["RELU", "PRELU", "SWISH"]),
-		"dropout": tune.randn(0,0.5),
+		"dropout": tune.choice([0,0.1,0.2,0.5]),
 		"loss_function": tune.choice([torch.nn.BCEWithLogitsLoss(), torch.nn.L1Loss()]) #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 
@@ -219,6 +222,8 @@ if __name__ == "__main__":
 		grace_period=1,
 		reduction_factor=2)
 
+	print(f"LOCAL PATH {Path().parent.resolve()} \n\n")
+
 	result = tune.run(
 		partial(train, name=name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, save=save, 
@@ -227,4 +232,5 @@ if __name__ == "__main__":
 		config=config,
 		num_samples=num_samples,
 		scheduler=None,
-		checkpoint_at_end=True)
+		checkpoint_at_end=False,
+		local_dir=Path().parent.resolve()/'ray_results')

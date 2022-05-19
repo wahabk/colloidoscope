@@ -141,3 +141,5 @@ runs/
 .neptune/
 *.pth
 *.pt
+
+ray_results/
