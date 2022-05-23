@@ -198,8 +198,9 @@ if __name__ == "__main__":
 	val_data = all_data[801:900]
 	test_data =	all_data[901:1100]
 	name = 'search focal'
-	save = '/home/ak18001/code/colloidoscope/output/weights/unet.pt'
+	# save = '/home/ak18001/code/colloidoscope/output/weights/unet.pt'
 	device_ids = [0,]
+	save = False
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 
 	config = {
@@ -233,4 +234,4 @@ if __name__ == "__main__":
 		num_samples=num_samples,
 		scheduler=None,
 		checkpoint_at_end=False,
-		local_dir=Path().parent.resolve()/'ray_results')
+		local_dir='/home/ak18001/Data/HDD/Colloids/ray_results/') # Path().parent.resolve()/'ray_results'
