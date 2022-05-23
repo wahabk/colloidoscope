@@ -52,7 +52,7 @@ def draw_slice(args):
 @njit()
 def draw_label_slice(args):
 	# extract args
-	s, z, heatmap_radii, centers  = args
+	s, z, heatmap_radii, centers, is_seg = args
 	#initiate new slice to be drawn
 	new_slice = s
 	#for each sphere check if this pixel is inside it
@@ -65,7 +65,10 @@ def draw_label_slice(args):
 				dist = math.sqrt((z - cz)**2 + (i - cy)**2 + (j - cx)**2)
 				
 				if dist <= heatmap_r:
-					new_slice[i,j] = gaussian(dist*3, 0, heatmap_r, peak=255)
+					if is_seg:
+						new_slice[i,j] = 255
+					else:
+						new_slice[i,j] = gaussian(dist*3, 0, heatmap_r, peak=255)
 
 	return new_slice
 
@@ -83,10 +86,12 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 					pbar.update(1)
 
 	elif is_label == True:
-		brightnesses = [255 for _ in centers]
-		if heatmap_r == 'radius': heatmap_radii = radii  
-		else					: heatmap_radii = [heatmap_r for i in radii]
-		args = [(s, z, heatmap_radii, centers) for z, s in enumerate(canvas)]
+		is_seg = False
+		if heatmap_r == 'radius'			: heatmap_radii = radii 
+		elif isinstance(heatmap_r, int)		: heatmap_radii = [heatmap_r for i in radii]
+		elif 'seg' in heatmap_r 			: heatmap_radii = [r-int(heatmap_r[-1]) for r in radii]; is_seg = True
+		else: raise Exception('invalid heatmap type')
+		args = [(s, z, heatmap_radii, centers, is_seg) for z, s in enumerate(canvas)]
 
 		print(canvas.shape, centers.shape, np.shape(radii))
 		with tqdm(total=len(args)) as pbar:

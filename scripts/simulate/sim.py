@@ -33,9 +33,9 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'psf_huygens_1400'
+	dataset_name = 'psf_seg_1400'
 	num_workers = 10
-	heatmap_r = 'radius'
+	heatmap_r = 'seg-1'
 	psf_kernel = 'standard'
 	
 	# make 100 scans of each volfrac
