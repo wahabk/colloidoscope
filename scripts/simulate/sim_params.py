@@ -17,8 +17,8 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(64,64,64)
-	label_size=(64,64,64)
+	canvas_size=(160,160,160)
+	label_size=(160,160,160)
 	
 	dataset_name = 'test'
 	num_workers = 10

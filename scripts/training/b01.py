@@ -53,6 +53,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		epochs = config['epochs'],
 		start_filters = config['start_filters'],
 		activation = config['activation'],
+		dropout = config['dropout'],
 		num_workers = num_workers,
 		n_classes = 1,
 		random_seed = 42,
@@ -109,6 +110,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		num_res_units=params["n_blocks"],
 		act=params['activation'],
 		norm=params["norm"],
+		dropout=params["dropout"]
 	)
 
 	# model
@@ -136,7 +138,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=10, factor=0.5)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
 	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
 
 	# trainer
@@ -179,31 +181,32 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'psf_cnr_radius_3400'
+	dataset_name = 'psf_huygens_1400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(1,3400))
+	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
-	train_data = all_data[0:2000]
-	val_data = all_data[2000:2200]
-	test_data =	all_data[2201:2400]
-	name = 'test new dataset'
+	train_data = all_data[0:800]
+	val_data = all_data[801:900]
+	test_data =	all_data[901:1100]
+	name = 'trying huygens'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
+	save = False
 
     # TODO ADD label size padding for monai
-	# TODO add criterion based final activation?
 
+	#548
 	config = {
-		"lr": 0.0001,
+		"lr": 0.00122678,
 		"batch_size": 16,
 		"n_blocks": 6,
-		"norm": 'batch',
-		"epochs": 60,
+		"norm": 'INSTANCE',
+		"epochs": 20,
 		"start_filters": 32,
-		"activation": "RELU",
-		"dropout": 0,
+		"activation": "SWISH",
+		"dropout": 0.2,
 		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 

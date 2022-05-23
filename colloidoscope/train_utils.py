@@ -423,6 +423,21 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			fig = plt.gcf()
 			run[name+'gr'].upload(fig)
 			plt.clf()
+
+			if name == 'levke':
+				target_volfrac = 0.58
+				n_particles = len(pred_positions)
+				r = 11/2
+				single_vol = (4/3) * np.pi * r**3
+				measured_volume = n_particles * single_vol
+				measured_volfrac = measured_volume / d['array'].size
+				fraction_missing = 1 - (measured_volfrac / target_volfrac)
+
+				run['estimates/measured_volfrac'] = measured_volfrac
+				run['estimates/target_volfrac'] = target_volfrac
+				run['estimates/n_particles'] = n_particles
+				run['estimates/fraction_missing'] = fraction_missing
+
 		else:
 			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 

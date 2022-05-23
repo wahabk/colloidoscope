@@ -184,10 +184,10 @@ if __name__ == "__main__":
 	dc = DeepColloid(dataset_path)
 
 
-	dataset_name = 'psf_cnr_radius_3400'
+	dataset_name = 'psf_huygens_1400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(1,3000))
+	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
 	num_samples = 50
@@ -197,7 +197,7 @@ if __name__ == "__main__":
 	train_data = all_data[0:800]
 	val_data = all_data[801:900]
 	test_data =	all_data[901:1100]
-	name = 'search focal'
+	name = 'search psf'
 	# save = '/home/ak18001/code/colloidoscope/output/weights/unet.pt'
 	device_ids = [0,]
 	save = False

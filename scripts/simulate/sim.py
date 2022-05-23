@@ -33,7 +33,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'psf_cnr_radius_3400'
+	dataset_name = 'psf_huygens_1400'
 	num_workers = 10
 	heatmap_r = 'radius'
 	psf_kernel = 'standard'
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 	# poly_phis = np.array(poly_phis)
 	# print(poly_phis.shape, poly_phis[0])
 	
-	phis = [[round(x, 2)]*499 for x in np.linspace(0.25,0.55,7)]
+	phis = [[round(x, 2)]*200 for x in np.linspace(0.25,0.55,7)]
 	phis = np.array(phis)
 	# make list of n_samples for each volfrac
 	print(phis.shape)
