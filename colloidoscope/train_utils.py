@@ -206,16 +206,13 @@ class Trainer:
 			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 			self.optimizer.zero_grad()  # zerograd the parameters
 			out = self.model(input_)  # one forward pass
-			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss):
-				loss = self.criterion(out, target)  # calculate loss
-				loss_value = loss.item() # .item? for other losses
-				train_losses.append(loss_value)
-			else:
-				out_sigmoid = torch.sigmoid(out)
-				loss = self.criterion(out_sigmoid, target)  # calculate loss
-				train_losses.append(loss)
-
+			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss) == False:
+				out = torch.sigmoid(out)
+			loss = self.criterion(out, target)  # calculate loss
+			loss_value = loss.item()
+			train_losses.append(loss_value)
 			if self.logger: self.logger['train/loss'].log(loss_value)
+
 			loss.backward()  # one backward pass
 			self.optimizer.step()  # update the parameters
 
@@ -243,17 +240,13 @@ class Trainer:
 
 			with torch.no_grad():
 				out = self.model(input_)
-
-				if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss):
-					loss = self.criterion(out, target)  # calculate loss
-					loss_value = loss.item() # .item? for other losses
-					valid_losses.append(loss_value)
-				else:
-					out_sigmoid = torch.sigmoid(out)
-					loss = self.criterion(out_sigmoid, target)  # calculate loss
-					valid_losses.append(loss)
-
+				if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss) == False:
+					out = torch.sigmoid(out)
+				loss = self.criterion(out, target)  # calculate loss
+				loss_value = loss.item()
+				valid_losses.append(loss_value)
 				if self.logger: self.logger['val/loss'].log(loss_value)
+
 				batch_iter.set_description(f'Validation: (loss {loss_value:.4f})')
 
 		self.validation_loss.append(np.mean(valid_losses))
@@ -274,7 +267,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	'''
 
 	# TODO use MONAI
-	#TODO add activation for loss using isinstance()
 	#TODO calculate nblocks or only pad first block
 	#TODO adjust initialisation for focal loss
 
@@ -493,7 +485,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# print(y.shape, y.max(), y.min())
 
 			#TODO make this dependant on criterion?
-			#TODO add sigmoid here for BCE using isinstance()
 
 			out = model(x)  # send through model/network
 			loss = criterion(out, y)

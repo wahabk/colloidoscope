@@ -140,7 +140,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=10, factor=0.5)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
 	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
 
 	# trainer
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 	all_data = list(range(1,3000))
 	random.shuffle(all_data)
 
-	num_samples = 10
+	num_samples = 50
 	max_num_epochs = 30
 	gpus_per_trial = 1
 
@@ -211,7 +211,7 @@ if __name__ == "__main__":
 		"start_filters": 32,
 		"activation": tune.choice(["RELU", "PRELU", "SWISH"]),
 		"dropout": tune.choice([0,0.1,0.2,0.5]),
-		"loss_function": tune.choice([torch.nn.BCEWithLogitsLoss(), torch.nn.L1Loss()]) #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+		"loss_function": tune.choice([torch.nn.L1Loss(), torch.nn.BCEWithLogitsLoss()]) #BinaryFocalLoss(alpha=1.5, gamma=0.5), 
 	}
 
 	# the scheduler will terminate badly performing trials
