@@ -219,6 +219,10 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 	else:
 		psf_kernel = psf_kernel 
+		psf_zoom = -2*particle_size + 2.4
+		if psf_zoom < 0.1: psf_zoom=0.1
+
+		psf_kernel = ndimage.zoom(psf_kernel, psf_zoom)
 
 
 

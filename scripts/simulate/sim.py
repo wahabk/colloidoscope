@@ -87,6 +87,11 @@ if __name__ == '__main__':
 			psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
 			psf_kernel = dc.read_tif(str(psf_path))
 
+			psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
+			psf_kernel = dc.read_tif(str(psf_path))
+			psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
+			psf_kernel = psf_kernel/psf_kernel.max()
+
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 

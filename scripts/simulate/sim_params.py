@@ -27,7 +27,7 @@ if __name__ == '__main__':
 	volfrac = 0.4
 
 	r = 5
-	particle_size = 0.5
+	particle_size = 0.2
 	cnr = 10
 	f_mean = 200
 	snr = 10
@@ -35,14 +35,10 @@ if __name__ == '__main__':
 	path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
 	hoomd_positions, diameters = read_gsd(path, index)
 
-	zoom = -2*particle_size + 2.4
-	if zoom < 0.1: zoom=0.1
-
 	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
 	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
 	psf_kernel = psf_kernel/psf_kernel.max()
-	psf_kernel = ndimage.zoom(psf_kernel, zoom)
 	print(psf_kernel.shape, psf_kernel.max(), psf_kernel.dtype)
 	# dc.view(psf_kernel)
 
