@@ -8,6 +8,8 @@ import napari
 import numpy as np
 import math
 from scipy.signal import convolve2d
+from pathlib2 import Path
+from scipy import ndimage
 
 if __name__ == '__main__':
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
@@ -20,21 +22,42 @@ if __name__ == '__main__':
 	
 	dataset_name = 'test'
 	num_workers = 10
-	heatmap_r = 5#'radius'
+	heatmap_r = 'radius'
 	index = 1
-	volfrac = 0.5
+	volfrac = 0.4
 
-	r = 16
-	particle_size = 1.5
-	cnr = 5
+	r = 5
+	particle_size = 0.5
+	cnr = 10
 	f_mean = 200
 	snr = 10
 
 	path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
 	hoomd_positions, diameters = read_gsd(path, index)
 
+	zoom = -2*particle_size + 2.4
+	if zoom < 0.1: zoom=0.1
+
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
+	psf_kernel = dc.read_tif(str(psf_path))
+	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
+	psf_kernel = psf_kernel/psf_kernel.max()
+	psf_kernel = ndimage.zoom(psf_kernel, zoom)
+	print(psf_kernel.shape, psf_kernel.max(), psf_kernel.dtype)
+	# dc.view(psf_kernel)
+
+	# psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedZ.tif'
+	# psf_kernel = dc.read_tif(str(psf_path))
+	# psf_kernel = dc.crop3d(psf_kernel, (48,16,16), (24,159,160))
+	# print(psf_kernel.shape, psf_kernel.max(), psf_kernel.dtype)
+	# psf_kernel = psf_kernel/psf_kernel.max()
+	# psf_kernel = ndimage.zoom(psf_kernel, 1)
+	# dc.view(psf_kernel)
+
+	# psf_kernel = 'standard'
+
 	canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, r, particle_size, f_mean, cnr,
-								snr, diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers)
+								snr, diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 
 
 	dc.view(canvas, final_centers, label)

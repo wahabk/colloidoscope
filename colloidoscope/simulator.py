@@ -22,7 +22,7 @@ from scipy.signal import convolve
 from tqdm import tqdm
 import psf
 from perlin_numpy import generate_perlin_noise_3d
-
+from pathlib2 import Path
 
 @njit()
 def gaussian(x, mu, sig, peak=1.):
@@ -165,13 +165,17 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			particle_size:float, f_mean:float, cnr:float,
 			snr:float, f_sigma:float=30, b_sigma:float=20, diameters=np.ndarray([]), make_label:bool=True, 
-			label_size:list=(64,64,64), heatmap_r='radius', num_workers=2,):
+			label_size:list=(64,64,64), heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
 	'''
 	particle size in um
 
 	heatmap_r can be 'radius' to equal the particle or can be a constant int
 
 	This will only work for a perfect cube eg 64x64x64 not cuboids
+
+	psf_kernel = 'standard'
+
+	TODO add sim seg instead of heatmap
 	'''
 	
 	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
@@ -181,9 +185,9 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 	brightnesses = [random.gauss(f_mean, f_sigma) for _ in centers]
 	zoom = 0.5
-	pad = 64
+	pad = 80
 	gauss_kernel = (2, 2, 2)
-	noise = (f_mean / (snr * 255))/10 # TODO change this
+	noise = (f_mean / (snr * 255))/10
 
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
@@ -206,10 +210,17 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	zoom_out_radii = [(r/zoom) for r in radii]
 
 	# create PSF
-	args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
-	obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
-	psf_kernel = obsvol.volume()
-	psf_kernel = ndimage.zoom(psf_kernel, 0.375)
+	if psf_kernel is 'standard':
+		args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
+		obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
+		psf_kernel = obsvol.volume()
+		psf_kernel = ndimage.zoom(psf_kernel, 0.375)
+		
+
+	else:
+		psf_kernel = psf_kernel 
+
+
 
 	# draw spheres slice by slice
 	print('Simulating scan...')
