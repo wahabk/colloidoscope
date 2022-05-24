@@ -56,7 +56,6 @@ if __name__ == '__main__':
 
 			volfrac = v
 
-			#TODO add f_sigma in cnr calc
 			# define types of particles in simulation
 			types = {
 			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},

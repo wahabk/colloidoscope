@@ -101,15 +101,26 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	print(f"channels {channels}, strides {strides}")
 
-	model = monai.networks.nets.UNet(
+	# model = monai.networks.nets.UNet(
+	# 	spatial_dims=3,
+	# 	in_channels=1,
+	# 	out_channels=params['n_classes'],
+	# 	channels=channels,
+	# 	strides=strides,
+	# 	num_res_units=params["n_blocks"],
+	# 	act=params['activation'],
+	# 	norm=params["norm"],
+	# 	dropout=params["dropout"]
+	# )
+
+	model = monai.networks.nets.AttentionUnet(
 		spatial_dims=3,
 		in_channels=1,
 		out_channels=params['n_classes'],
 		channels=channels,
 		strides=strides,
-		num_res_units=params["n_blocks"],
-		act=params['activation'],
-		norm=params["norm"],
+		# act=params['activation'],
+		# norm=params["norm"],
 		dropout=params["dropout"]
 	)
 
@@ -190,7 +201,7 @@ if __name__ == "__main__":
 	train_data = all_data[0:800]
 	val_data = all_data[801:900]
 	test_data =	all_data[901:1100]
-	name = 'trying huygens'
+	name = 'attention unet'
 	save = 'output/weights/unet.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
 	save = False
@@ -200,10 +211,10 @@ if __name__ == "__main__":
 	#548
 	config = {
 		"lr": 0.00122678,
-		"batch_size": 16,
-		"n_blocks": 6,
+		"batch_size": 8,
+		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 20,
+		"epochs": 40,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
