@@ -202,9 +202,9 @@ if __name__ == "__main__":
 	val_data = all_data[801:900]
 	test_data =	all_data[901:1100]
 	name = 'attention unet'
-	save = 'output/weights/unet.pt'
-	# save = '/user/home/ak18001/scratch/Colloids/unet.pt'
-	save = False
+	save = 'output/weights/attention_unet_20220524.pt'
+	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
+	# save = False
 
     # TODO ADD label size padding for monai
 

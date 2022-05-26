@@ -109,7 +109,7 @@ def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 					dim=3,
 					skip_connect=None,)
 
-		model = torch.nn.DataParallel(model, device_ids=None)
+	model = torch.nn.DataParallel(model, device_ids=None)
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
@@ -150,7 +150,9 @@ def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 	# find positions from label
 	# TODO change to trackpy or watershed?
 
-	positions = run_trackpy(result, diameter=diameter)
+	positions = run_trackpy(result*255, diameter=diameter)
+
+	# positions = find_positions(result, threshold)
 
 	d = {
 		'x' : positions[:,1],
