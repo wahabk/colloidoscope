@@ -64,7 +64,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	#TODO find padding in MONAI
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
-	label_size = params['roiSize']
+	# label_size = params['roiSize']
+	label_size = (60,60,60)
 
 	transforms_affine = tio.Compose([
 		# tio.RandomFlip(axes=(1,2), flip_probability=0.5),
@@ -121,7 +122,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		strides=strides,
 		# act=params['activation'],
 		# norm=params["norm"],
-		dropout=params["dropout"]
+		dropout=params["dropout"],
+		padding='valid',
 	)
 
 	# model
