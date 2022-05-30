@@ -473,6 +473,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		plt.clf()
 	except:
 		print('Skipping gr() as bad pred')
+		run['gr'] = 'failed'
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
 	run['AP'] = ap
@@ -495,6 +496,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			true_positions, diameters = crop_positions_for_label(true_positions, label_size, diameters=diameters)
 
 			x, y = batch
+			for_tp = copy.deepcopy(x)
 			x, y = x.to(device), y.to(device)
 			# print(x.shape, x.max(), x.min())
 			# print(y.shape, y.max(), y.min())
@@ -502,11 +504,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			#TODO make this dependant on criterion?
 
 			out = model(x)  # send through model/network
+			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
+				out = torch.sigmoid(out)
 			loss = criterion(out, y)
 			loss = loss.cpu().numpy()
-			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 			# post process to numpy array
-			result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 			if heatmap_r == "radius":
@@ -518,51 +521,76 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			pred_positions, df = dc.run_trackpy(result, diameter=detection_diameter)
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 
+			array = for_tp.cpu().numpy()
+			tp_positions, df = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
+			tp_prec, tp_rec = dc.get_precision_recall(tp_positions, pred_positions, diameters, 0.5,)
+
 			m = {
-				'dataset': metadata['dataset'],
-				'n' 	 : metadata['n'],
-				'idx'	 : i,
-				'volfrac': metadata['volfrac'],
-				'n_particles':  metadata['n_particles'],
+				'dataset'		: metadata['dataset'],
+				'n' 	 		: metadata['n'],
+				'idx'	 		: i,
+				'volfrac'		: metadata['volfrac'],
+				'n_particles'	:  metadata['n_particles'],
 				**metadata['params'],
-				'loss'	 : float(loss),
-				'precision'	 : float(prec),
-				'recall'	 : float(rec),
+				'loss'	 		: float(loss),
+				'precision'	 	: float(prec),
+				'recall'	 	: float(rec),
+				'tp_precision'	: float(tp_prec),
+				'tp_recall'	 	: float(tp_rec),
 			}
 
 			losses.append(m)
 
 	losses = pd.DataFrame(losses)
 
+	plt.clf()
 	fig, axs = plt.subplots(3,2)
-	sns.scatterplot(x='volfrac', y = 'precision', data=losses, ax=axs[0,0])
-	sns.scatterplot(x='snr', y = 'precision', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='cnr', y = 'precision', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='particle_size', y = 'precision', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='brightness', y = 'precision', data=losses, ax=axs[2,0])
-	sns.scatterplot(x='r', y = 'precision', data=losses, ax=axs[2,1])
+	axs[0,0].scatter(x='volfrac', 		y = 'tp_precision', data=losses, color='black', marker='<')
+	axs[0,0].scatter(x='volfrac', 		y = 'precision', 	data=losses, color='red', marker='>')
+	axs[0,1].scatter(x='snr', 			y = 'tp_precision', data=losses, color='black', marker='<')
+	axs[0,1].scatter(x='snr', 			y = 'precision', 	data=losses, color='red', marker='>')
+	axs[1,0].scatter(x='cnr', 			y = 'tp_precision', data=losses, color='black', marker='<')
+	axs[1,0].scatter(x='cnr', 			y = 'precision', 	data=losses, color='red', marker='>')
+	axs[1,1].scatter(x='particle_size', y = 'tp_precision', data=losses, color='black', marker='<')
+	axs[1,1].scatter(x='particle_size', y = 'precision', 	data=losses, color='red', marker='>')
+	axs[2,0].scatter(x='brightness', 	y = 'tp_precision', data=losses, color='black', marker='<')
+	axs[2,0].scatter(x='brightness', 	y = 'precision', 	data=losses, color='red', marker='>')
+	axs[2,1].scatter(x='r', 			y = 'tp_precision', data=losses, color='black', marker='<')
+	axs[2,1].scatter(x='r', 			y = 'precision', 	data=losses, color='red', marker='>')
 	fig.tight_layout()
+	# for i in axs:
+	# 	for j in i:
+	# 		j.get_legend().remove()
 	run['test/params_vs_prec'].upload(fig)
 
 	plt.clf()
 	fig, axs = plt.subplots(3,2)
-	sns.scatterplot(x='volfrac', y = 'recall', data=losses, ax=axs[0,0])
-	sns.scatterplot(x='snr', y = 'recall', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='cnr', y = 'recall', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='particle_size', y = 'recall', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='brightness', y = 'recall', data=losses, ax=axs[2,0])
-	sns.scatterplot(x='r', y = 'recall', data=losses, ax=axs[2,1])
+	axs[0,0].scatter(x='volfrac', 		y = 'tp_recall', 	data=losses, color='black', marker='<')
+	axs[0,0].scatter(x='volfrac', 		y = 'recall', 		data=losses, color='red', marker='>')
+	axs[0,1].scatter(x='snr', 			y = 'tp_recall', 	data=losses, color='black', marker='<')
+	axs[0,1].scatter(x='snr', 			y = 'recall', 		data=losses, color='red', marker='>')
+	axs[1,0].scatter(x='cnr', 			y = 'tp_recall', 	data=losses, color='black', marker='<')
+	axs[1,0].scatter(x='cnr', 			y = 'recall', 		data=losses, color='red', marker='>')
+	axs[1,1].scatter(x='particle_size', y = 'tp_recall', 	data=losses, color='black', marker='<')
+	axs[1,1].scatter(x='particle_size', y = 'recall', 		data=losses, color='red', marker='>')
+	axs[2,0].scatter(x='brightness', 	y = 'tp_recall', 	data=losses, color='black', marker='<')
+	axs[2,0].scatter(x='brightness', 	y = 'recall', 		data=losses, color='red', marker='>')
+	axs[2,1].scatter(x='r', 			y = 'tp_recall', 	data=losses, color='black', marker='<')
+	axs[2,1].scatter(x='r', 			y = 'recall', 		data=losses, color='red', marker='>')
 	fig.tight_layout()
+	# for i in axs:
+	# 	for j in i:
+	# 		j.get_legend().remove()
 	run['test/params_vs_rec'].upload(fig)
 
 	plt.clf()
 	fig, axs = plt.subplots(3,2)
-	sns.scatterplot(x='volfrac', y = 'loss', data=losses, ax=axs[0,0])
-	sns.scatterplot(x='snr', y = 'loss', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='cnr', y = 'loss', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='particle_size', y = 'loss', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='brightness', y = 'loss', data=losses, ax=axs[2,0])
-	sns.scatterplot(x='r', y = 'loss', data=losses, ax=axs[2,1])
+	sns.scatterplot(x='volfrac', 		y = 'loss', data=losses, ax=axs[0,0])
+	sns.scatterplot(x='snr', 			y = 'loss', data=losses, ax=axs[0,1])
+	sns.scatterplot(x='cnr', 			y = 'loss', data=losses, ax=axs[1,0])
+	sns.scatterplot(x='particle_size', 	y = 'loss', data=losses, ax=axs[1,1])
+	sns.scatterplot(x='brightness', 	y = 'loss', data=losses, ax=axs[2,0])
+	sns.scatterplot(x='r', 				y = 'loss', data=losses, ax=axs[2,1])
 	fig.tight_layout()
 	run['test/params_vs_loss'].upload(fig)
 

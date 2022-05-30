@@ -214,7 +214,7 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 40,
+		"epochs": 15,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
