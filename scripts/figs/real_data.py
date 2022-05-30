@@ -83,12 +83,27 @@ if __name__ == '__main__':
 	# Katherine = plot_with_side_view(array, 'output/figs/real_data/Katherine.png')
 
 
-	path = dataset_path + '/Real/James/NBD_CS2_vf58_day6_time_2.lif'
-	reader = dc.Explore_lif_reader(path)
-	array = reader.getSeries(1)
-	print(path, array.shape)
-	array = ndimage.zoom(array, 1)
-	dc.view(array)
-	print(array.shape)
-	imsave('examples/Data/james.tiff', array)
-	James = plot_with_side_view(array, 'output/figs/real_data/james.png')
+	# conIndex = 1
+	# deconIndex = 2
+	# path = dataset_path + '/Real/James/NBD_CS2_vf58_day6_time_2.lif'
+	# reader = dc.Explore_lif_reader(path)
+	# index = reader.chooseSerieIndex()
+	# serie = reader.getSeries()[conIndex]
+	# array = serie.getXYZ().T
+	# print(path)
+	# print(array.shape)
+	# dc.view(array)
+	# imsave('examples/Data/james.tiff', array)
+	# James = plot_with_side_view(array, 'output/figs/real_data/james.png')
+
+	# path = dataset_path + '/Real/James/NBD_CS2_vf58_day6_time_2_decon.lif'
+	# reader = dc.Explore_lif_reader(path)
+	# index = reader.chooseSerieIndex()
+	# serie = reader.getSeries()[index]
+	# array = serie.getXYZ().T
+	# print(path)
+	# print(array.shape)
+	# dc.view(array)
+	# imsave('examples/Data/jamesdecon.tiff', array)
+	# Jamesdecon = plot_with_side_view(array, 'output/figs/real_data/jamesdecon.png')
+	
