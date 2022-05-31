@@ -10,7 +10,7 @@ from numba import njit
 import math
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
-from torchvision.transforms.functional import equalize
+# from torchvision.transforms.functional import equalize
 import seaborn as sns
 import napari
 from scipy.signal import convolve, convolve2d
@@ -38,6 +38,12 @@ def read_real_examples():
 	d['levke'] = {}
 	d['levke']['diameter'] = [15,11,11]
 	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
+	d['james'] = {}
+	d['james']['diameter'] = [17,15,15]
+	d['james']['array'] = io.imread('examples/Data/james.tiff')
+	d['jamesdecon'] = {}
+	d['jamesdecon']['diameter'] = [17,15,15]
+	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
 
 	return d
 
@@ -121,13 +127,14 @@ if __name__ == '__main__':
 			array = dc.crop3d(array, (128,128,128))
 
 		print(array.shape)
-		# dc.view(array)
 
 		positions, df = dc.run_trackpy(array, diameter = d['diameter'])
+		print(positions.shape)
+		dc.view(array, positions=positions)
 
-		# x, y = dc.get_gr(positions, 100, 100)
-		# plt.plot(x, y)
-		# plt.show()
+		x, y = dc.get_gr(positions, 100, 100)
+		plt.plot(x, y)
+		plt.show()
 
 		print('n_particles', positions.shape[0])
 		# print(df)

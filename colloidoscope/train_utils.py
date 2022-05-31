@@ -744,8 +744,15 @@ def read_real_examples():
 	d['levke'] = {}
 	d['levke']['diameter'] = [15,11,11]
 	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
+	d['james'] = {}
+	d['james']['diameter'] = [17,15,15]
+	d['james']['array'] = io.imread('examples/Data/james.tiff')
+	d['jamesdecon'] = {}
+	d['jamesdecon']['diameter'] = [17,15,15]
+	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
 
 	return d
+
 
 def run_trackpy(array, diameter=5, *args, **kwargs):
 	df = None

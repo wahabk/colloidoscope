@@ -13,6 +13,7 @@ import copy
 import monai
 import math
 from monai.networks.layers.factories import Act, Norm
+from torchinfo import summary
 
 
 print(os.cpu_count())
@@ -61,7 +62,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	run['Tags'] = name
 	run['parameters'] = params
 	#TODO find a way to precalculate this - should i only unpad the first block?
-	#TODO find padding in MONAI
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
 	# label_size = params['roiSize']
@@ -126,6 +126,13 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		padding='valid',
 	)
 
+	"""
+	if padding mode is valid use roisize+/-4
+	if padding is same, use roisize
+	"""
+
+	# summary(model, (8,1,68,68,68))
+
 	# model
 	# model = UNet(in_channels=1,
 	# 			out_channels=params['n_classes'],
@@ -143,9 +150,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	model.to(device)
 
 	# loss function
-	# criterion = torch.nn.BCEWithLogitsLoss()
 	criterion = params['loss_function']
-
 	params['loss_function'] = str(copy.deepcopy(params['loss_function']))
 
 	# optimizer
@@ -181,7 +186,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 				criterion=criterion, device=device, num_workers=num_workers, 
 				label_size=label_size, heatmap_r='radius')
 	run['test/df'].upload(File.as_html(losses))
-	# run['test/test'].log(losses) #if dict
 
 	run.stop()
 
@@ -208,7 +212,6 @@ if __name__ == "__main__":
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	# save = False
 
-    # TODO ADD label size padding for monai
 
 	#548
 	config = {
@@ -216,7 +219,7 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 15,
+		"epochs": 30,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
