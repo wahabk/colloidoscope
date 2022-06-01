@@ -563,6 +563,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# 		j.get_legend().remove()
 	run['test/params_vs_prec'].upload(fig)
 
+	"""
+	for param in plot_params
+	add xtitle
+	"""
+
+
 	plt.clf()
 	fig, axs = plt.subplots(3,2)
 	axs[0,0].scatter(x='volfrac', 		y = 'tp_recall', 	data=losses, color='black', marker='<')
