@@ -506,7 +506,10 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			out = model(x)  # send through model/network
 			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
-			loss = criterion(out, y)
+				loss = criterion(out, y)
+			else:
+				loss = criterion(out, y)
+				out = torch.sigmoid(out)
 			loss = loss.cpu().numpy()
 			# post process to numpy array
 			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
