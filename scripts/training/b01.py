@@ -213,7 +213,6 @@ if __name__ == "__main__":
 	# save = False
 
 
-	#548
 	config = {
 		"lr": 0.00122678,
 		"batch_size": 8,
