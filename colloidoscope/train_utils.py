@@ -478,7 +478,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	run['PR_curve'].upload(fig)
 	plt.clf()
 
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False, label_size=label_size) 
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False, label_size=label_size, transform=None, label_transform=None) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = []
@@ -487,7 +487,13 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		for idx, batch in enumerate(test_loader):
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
+			print(true_positions.shape, true_positions.dtype, true_positions.max())
+			print(true_positions)
 			true_positions, diameters = crop_positions_for_label(true_positions, label_size, diameters=diameters)
+			print(true_positions.shape, true_positions.dtype, true_positions.max())
+			print(true_positions)
+
+
 
 			x, y = batch
 			for_tp = copy.deepcopy(x)
@@ -501,7 +507,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				out = torch.sigmoid(out)
 				loss = criterion(out, y)
 			else:
-				print("testing with BCE")
 				loss = criterion(out, y)
 				out = torch.sigmoid(out)
 			loss = loss.cpu().numpy()
@@ -511,25 +516,24 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 			if heatmap_r == "radius":
 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-				print(metadata['params']['r'], detection_diameter)
 			else:
 				detection_diameter = heatmap_r
 
 			test = np.squeeze(y.cpu().numpy())
 			# pred_positions = find_positions(result, threshold)
-			pred_positions, df = dc.run_trackpy(result, diameter=detection_diameter)
+			pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-
+			print(prec, rec)
+			
 			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
-			tp_positions, df = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
+			tp_positions, _ = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
 			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
 
 			print(f"debugging testing, true {true_positions.shape} diams {diameters.shape} pred {pred_positions.shape} tp {tp_positions.shape}")
+			print(f"debugging testing, true {true_positions.max()} diams {diameters.max()} pred {pred_positions.max()} tp {tp_positions.max()}")
+
 			print(array.shape, test.shape, result.shape)
-			print(array.dtype, test.dtype, result.dtype)
-			print(true_positions.max(), pred_positions.max(), tp_positions.max())
 			print(true_positions.dtype, pred_positions.dtype, tp_positions.dtype)
-			print(true_positions[0], pred_positions[0], tp_positions[0])
 
 			print(prec, rec)
 

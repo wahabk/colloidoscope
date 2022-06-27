@@ -64,7 +64,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
 	# label_size = params['roiSize']
-	label_size = (60,60,60)
+	label_size = [60,60,60]
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
 	train_data = all_data[0:800]
 	val_data = all_data[801:900]
-	test_data =	all_data[901:1100]
+	test_data =	all_data[901:1000]
 	name = 'attention unet'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'

@@ -120,12 +120,12 @@ if __name__ == '__main__':
 
 			volfrac = v
 			types = {
-			'r' 			: {'r' : randrange(4,14), 	'particle_size' : 400, 				'cnr' : 3,							'brightness' : 100, 						'snr' : 3, 						'v' : 0.3},
-			'particle_size' : {'r' : 6, 				'particle_size' : uniform(0.1,1.5), 'cnr' : 3,							'brightness' : 100, 						'snr' : 3, 						'v' : 0.3},
-			'b' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : triangular(0.2, 10, 0.5),	'brightness' : 100, 						'snr' : 3, 						'v' : 0.3},
-			'cnr' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : 3,							'brightness' : random.randrange(30, 200), 	'snr' : 3, 						'v' : 0.3},
-			'snr' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : 3,							'brightness' : 100, 						'snr' : triangular(0.1,10,3), 	'v' : 0.3},			
-			'v' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : 3,							'brightness' : 100, 						'snr' : 3, 						'v' : random.choice([0.25,0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 400, 				'cnr' : 4,							'brightness' : 100, 						'snr' : 4, 						'v' : 0.3},
+				'particle_size' : {'r' : 6, 				'particle_size' : uniform(0.1,1.5), 'cnr' : 4,							'brightness' : 100, 						'snr' : 4, 						'v' : 0.3},
+				'b' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : triangular(0.2, 10, 0.5),	'brightness' : 100, 						'snr' : 4, 						'v' : 0.3},
+				'cnr' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : 4,							'brightness' : random.randrange(30, 200), 	'snr' : 4, 						'v' : 0.3},
+				'snr' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : 4,							'brightness' : 100, 						'snr' : triangular(0.1,10,3), 	'v' : 0.3},			
+				'v' 			: {'r' : 6, 				'particle_size' : 400, 				'cnr' : 4,							'brightness' : 100, 						'snr' : 4, 						'v' : random.choice([0.25,0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
