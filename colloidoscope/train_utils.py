@@ -390,56 +390,54 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
 		run=False, device='cpu', label_size:tuple=(64,64,64), heatmap_r="radius"):
 	
-
-
 	dc = DeepColloid(dataset_path)
 	print('Running test, this may take a while...')
 
 	os.chdir('/home/ak18001/code/colloidoscope')
 	
-	# test on real data
-	real_dict = read_real_examples()
+	# # test on real data
+	# real_dict = read_real_examples()
 
-	for name, d in real_dict.items():
-		print(name, d['array'].shape)
+	# for name, d in real_dict.items():
+	# 	print(name, d['array'].shape)
 
-		if heatmap_r == "radius":
-			detection_diameter = d['diameter']
-		else:
-			detection_diameter = heatmap_r
+	# 	if heatmap_r == "radius":
+	# 		detection_diameter = d['diameter']
+	# 	else:
+	# 		detection_diameter = heatmap_r
 
-		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
+	# 	df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
 
-		if len(pred_positions>0):
-			sidebyside = make_proj(d['array'], label)
-			run[name].upload(File.as_image(sidebyside))
+	# 	if len(pred_positions>0):
+	# 		sidebyside = make_proj(d['array'], label)
+	# 		run[name].upload(File.as_image(sidebyside))
 
-			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
-			x, y = dc.get_gr(trackpy_pos, 100, 100)
-			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
-			x, y = dc.get_gr(pred_positions, 100, 100)
-			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-			plt.legend()
-			fig = plt.gcf()
-			run[name+'gr'].upload(fig)
-			plt.clf()
+	# 		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+	# 		x, y = dc.get_gr(trackpy_pos, 100, 100)
+	# 		plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
+	# 		x, y = dc.get_gr(pred_positions, 100, 100)
+	# 		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
+	# 		plt.legend()
+	# 		fig = plt.gcf()
+	# 		run[name+'gr'].upload(fig)
+	# 		plt.clf()
 
-			if name == 'levke':
-				target_volfrac = 0.58
-				n_particles = len(pred_positions)
-				r = 11/2
-				single_vol = (4/3) * np.pi * r**3
-				measured_volume = n_particles * single_vol
-				measured_volfrac = measured_volume / d['array'].size
-				fraction_missing = 1 - (measured_volfrac / target_volfrac)
+	# 		if name == 'levke':
+	# 			target_volfrac = 0.58
+	# 			n_particles = len(pred_positions)
+	# 			r = 11/2
+	# 			single_vol = (4/3) * np.pi * r**3
+	# 			measured_volume = n_particles * single_vol
+	# 			measured_volfrac = measured_volume / d['array'].size
+	# 			fraction_missing = 1 - (measured_volfrac / target_volfrac)
 
-				run['estimates/measured_volfrac'] = measured_volfrac
-				run['estimates/target_volfrac'] = target_volfrac
-				run['estimates/n_particles'] = n_particles
-				run['estimates/fraction_missing'] = fraction_missing
+	# 			run['estimates/measured_volfrac'] = measured_volfrac
+	# 			run['estimates/target_volfrac'] = target_volfrac
+	# 			run['estimates/n_particles'] = n_particles
+	# 			run['estimates/fraction_missing'] = fraction_missing
 
-		else:
-			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
+	# 	else:
+	# 		print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
 	
 	# test predict on sim
@@ -455,10 +453,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	sidebyside = make_proj(test_array, test_label)
 	run['prediction'].upload(File.as_image(sidebyside))
 	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
-
-	print(true_positions.shape)
-	print(pred_positions.shape)
-	print(trackpy_positions.shape)
 
 	try:
 		x, y = dc.get_gr(true_positions, 100, 100)
@@ -501,13 +495,13 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# print(x.shape, x.max(), x.min())
 			# print(y.shape, y.max(), y.min())
 
-			#TODO make this dependant on criterion?
 
 			out = model(x)  # send through model/network
 			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
 				loss = criterion(out, y)
 			else:
+				print("testing with BCE")
 				loss = criterion(out, y)
 				out = torch.sigmoid(out)
 			loss = loss.cpu().numpy()
@@ -517,16 +511,27 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 			if heatmap_r == "radius":
 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+				print(metadata['params']['r'], detection_diameter)
 			else:
 				detection_diameter = heatmap_r
 
+			test = np.squeeze(y.cpu().numpy())
 			# pred_positions = find_positions(result, threshold)
 			pred_positions, df = dc.run_trackpy(result, diameter=detection_diameter)
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 
-			array = for_tp.cpu().numpy()
+			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
 			tp_positions, df = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
-			tp_prec, tp_rec = dc.get_precision_recall(tp_positions, pred_positions, diameters, 0.5,)
+			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
+
+			print(f"debugging testing, true {true_positions.shape} diams {diameters.shape} pred {pred_positions.shape} tp {tp_positions.shape}")
+			print(array.shape, test.shape, result.shape)
+			print(array.dtype, test.dtype, result.dtype)
+			print(true_positions.max(), pred_positions.max(), tp_positions.max())
+			print(true_positions.dtype, pred_positions.dtype, tp_positions.dtype)
+			print(true_positions[0], pred_positions[0], tp_positions[0])
+
+			print(prec, rec)
 
 			m = {
 				'dataset'		: metadata['dataset'],

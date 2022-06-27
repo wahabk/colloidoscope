@@ -31,7 +31,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	'''
 
 	#TODO calculate nblocks or only pad first block
-	#TODO adjust initialisation for focal loss
 
 	dc = DeepColloid(dataset_path)
 
@@ -68,19 +67,19 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	label_size = (60,60,60)
 
 	transforms_affine = tio.Compose([
-		# tio.RandomFlip(axes=(1,2), flip_probability=0.5),
+		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
 		# tio.RandomAffine(),
 	])
 	transforms_img = tio.Compose([
 		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
-		# tio.RandomBlur(p=0.1),
-		# tio.OneOf({
-		# 	tio.RandomNoise(0.1, 0.01): 0.1,
-		# 	tio.RandomBiasField(0.1): 0.1,
-		# 	tio.RandomGamma((-0.3,0.3)): 0.1,
-		# 	tio.RandomMotion(): 0.3,
-		# }),                                    
-		# tio.RescaleIntensity((0.05,0.95)),
+		tio.RandomBlur(p=0.1),
+		tio.OneOf({
+			tio.RandomNoise(0.1, 0.01): 0.1,
+			tio.RandomBiasField(0.1): 0.1,
+			tio.RandomGamma((-0.3,0.3)): 0.1,
+			tio.RandomMotion(): 0.3,
+		}),                                    
+		tio.RescaleIntensity((0.05,0.95)),
 	])
 
 	# create a training data loader
@@ -118,8 +117,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		spatial_dims=3,
 		in_channels=1,
 		out_channels=params['n_classes'],
-		channels=channels,
-		strides=strides,
+		channels=[32,64,128],
+		strides=[2,2],
 		# act=params['activation'],
 		# norm=params["norm"],
 		dropout=params["dropout"],
@@ -183,7 +182,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		# run['model/weights'].upload(model_name)
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, 
-				criterion=criterion, device=device, num_workers=num_workers, 
+				criterion=criterion, device=device, num_workers=num_workers, batch_size=1,
 				label_size=label_size, heatmap_r='radius')
 	run['test/df'].upload(File.as_html(losses))
 
@@ -208,9 +207,9 @@ if __name__ == "__main__":
 	val_data = all_data[801:900]
 	test_data =	all_data[901:1100]
 	name = 'attention unet'
-	save = 'output/weights/attention_unet_20220524.pt'
+	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
-	# save = False
+	save = False
 
 
 	config = {
@@ -218,7 +217,7 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 30,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
