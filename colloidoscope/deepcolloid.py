@@ -17,8 +17,12 @@ import math
 from scipy.signal import convolve2d
 
 class DeepColloid:
-	def __init__(self, dataset_path='') -> None:
-		self.dataset_path = dataset_path
+	def __init__(self, dataset_path=None) -> None:
+		if dataset_path == None: 
+			self.dataset_initialised = False
+		else:
+			self.dataset_initialised = True
+			self.dataset_path = dataset_path
 
 	def detect(self, *args, **kwargs):
 		return detect(*args, **kwargs)
@@ -40,7 +44,9 @@ class DeepColloid:
 
 		Returns:
 			dict: _description_
-		"""		
+		"""
+		if self.dataset_initialised == False:
+			raise Exception('Dataset not initialised')
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
 		with h5py.File(path, "r") as f:
@@ -64,27 +70,9 @@ class DeepColloid:
 
 		return data
 
-	def read_hdf5_old(self, dataset: str, n: int) -> dict:
-		path = f'{self.dataset_path}/{dataset}.hdf5'
-		# print(f'Reading hdf5 dataset: {path} sample number {n}')
-		with h5py.File(path, "r") as f:
-			canvas = np.array(f[str(n)])
-			positions = np.array(f[str(n)+'_positions'], dtype='float32')
-			# diameters = np.array(f[str(n)+'_diameters'])
-		
-		path = f'{self.dataset_path}/{dataset}_labels.hdf5'
-		with h5py.File(path, "r") as f:
-			label = np.array(f[str(n)])
-
-		json_path = f'{self.dataset_path}/{dataset}.json'
-		with open(json_path, "r+") as f:
-			json_data = json.load(f)
-			metadata = json_data[str(n)]
-
-
-		return canvas, label, positions, metadata
-
 	def read_metadata(self, dataset: str, n: int) -> dict:
+		if self.dataset_initialised == False:
+			raise Exception('Dataset not initialised')
 		json_path = f'{self.dataset_path}/{dataset}.json'
 		with open(json_path, "r+") as f:
 			json_data = json.load(f)
@@ -98,6 +86,8 @@ class DeepColloid:
 		return metadata, positions, diameters
 	
 	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, label:np.ndarray, diameters=None, dtype:str='uint8') -> np.ndarray:
+		if self.dataset_initialised == False:
+			raise Exception('Dataset not initialised')
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 
 		with h5py.File(path, "a") as f:
@@ -125,6 +115,8 @@ class DeepColloid:
 		return
 
 	def get_hdf5_keys(self, dataset) -> list:
+		if self.dataset_initialised == False:
+			raise Exception('Dataset not initialised')
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		with h5py.File(path, "r") as f:
 			keys = list(f.keys())
