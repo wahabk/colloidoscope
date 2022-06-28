@@ -133,17 +133,22 @@ def shake(centers, magnitude):
 		new_centers.append([cz, cy, cx])
 	return np.array(new_centers)
 
-def crop_positions_for_label(centers, canvas_size, diameters, diameter=10):
+def crop_positions_for_label(centers, canvas_size, label_size, diameters):
 	indices = []
-	# divisor = -4
-	# diff = diameter / divisor
-	diff = 0
+
+	pad = 0
 	for idx, c in enumerate(centers):
-		if diff<=c[0]<=(canvas_size[0]-diff) and diff<=c[1]<=(canvas_size[1]-diff) and diff<=c[2]<=(canvas_size[2]-diff):
+		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
 			indices.append(idx)
 
 	centers = centers[indices]
 	diameters = diameters[indices]
+
+	zdiff = (canvas_size[0] - label_size[0])/2
+	xdiff = (canvas_size[1] - label_size[1])/2
+	ydiff = (canvas_size[2] - label_size[2])/2
+
+	centers = centers - [zdiff, xdiff, ydiff]
 
 	return centers, diameters
 
@@ -256,7 +261,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		radii = [(d*r) for d in diameters]
 
 		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, heatmap_r=heatmap_r, num_workers=num_workers)
-		final_centers, final_diameters = crop_positions_for_label(final_centers, label_size, diameters, r*2)
+		final_centers, final_diameters = crop_positions_for_label(final_centers, canvas_size, label_size, diameters)
 
 		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
 		label = np.array(label ,dtype='float64')

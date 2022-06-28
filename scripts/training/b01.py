@@ -183,7 +183,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, 
 				criterion=criterion, device=device, num_workers=num_workers, batch_size=1,
-				label_size=label_size, heatmap_r='radius')
+				canvas_size=params['roiSize'], label_size=label_size, heatmap_r='radius')
 	run['test/df'].upload(File.as_html(losses))
 
 	run.stop()
@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
 	train_data = all_data[0:800]
 	val_data = all_data[801:900]
-	test_data =	all_data[901:1000]
+	test_data =	all_data[901:1100]
 	name = 'attention unet'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'

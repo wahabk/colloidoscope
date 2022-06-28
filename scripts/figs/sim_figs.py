@@ -77,7 +77,7 @@ def simulate(canvas_size:list, centers:np.ndarray, r:int,
 		radii = [(d*r) for d in diameters]
 		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, num_workers=num_workers)
 		plot_with_side_view(label, 'output/figs/simulation/label.png')
-		final_centers, final_diameters = crop_positions_for_label(final_centers, label_size, diameters, r*2)
+		final_centers, final_diameters = crop_positions_for_label(final_centers, canvas_size, label_size, diameters, r*2)
 
 		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
 		label = np.array(label ,dtype='float64')

@@ -388,7 +388,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
 		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
-		run=False, device='cpu', label_size:tuple=(64,64,64), heatmap_r="radius"):
+		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), heatmap_r="radius"):
 	
 	dc = DeepColloid(dataset_path)
 	print('Running test, this may take a while...')
@@ -487,12 +487,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		for idx, batch in enumerate(test_loader):
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
-			print(true_positions.shape, true_positions.dtype, true_positions.max())
-			print(true_positions)
-			true_positions, diameters = crop_positions_for_label(true_positions, label_size, diameters=diameters)
-			print(true_positions.shape, true_positions.dtype, true_positions.max())
-			print(true_positions)
-
+			true_positions, diameters = crop_positions_for_label(true_positions, canvas_size, label_size, diameters=diameters)
 
 
 			x, y = batch
@@ -523,19 +518,10 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# pred_positions = find_positions(result, threshold)
 			pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-			print(prec, rec)
 			
 			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
 			tp_positions, _ = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
 			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
-
-			print(f"debugging testing, true {true_positions.shape} diams {diameters.shape} pred {pred_positions.shape} tp {tp_positions.shape}")
-			print(f"debugging testing, true {true_positions.max()} diams {diameters.max()} pred {pred_positions.max()} tp {tp_positions.max()}")
-
-			print(array.shape, test.shape, result.shape)
-			print(true_positions.dtype, pred_positions.dtype, tp_positions.dtype)
-
-			print(prec, rec)
 
 			m = {
 				'dataset'		: metadata['dataset'],
