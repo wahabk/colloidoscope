@@ -120,26 +120,31 @@ def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 
 	model = model.to(device)
 	
-	array = array.copy()
 	array = np.array(array/array.max(), dtype=np.float32)
 	array = np.expand_dims(array, 0)      # add batch axis
 	# array = np.expand_dims(array, 0)      # add channel axis ?
-	# array = torch.from_numpy(array)
+	array = torch.from_numpy(array)
+
+	print(array.shape)
+	print(weights_path)
 
 	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
 	subject = tio.Subject(scan = tio.ScalarImage(tensor=array)) # use torchio subject to enable using grid sampling
+	print(subject)
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
-	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=4)
+	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=1)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc
 	
 	model.eval()
 	with torch.no_grad():
-		for patch_batch in patch_loader:
+		for i, patch_batch in enumerate(patch_loader):
+			print(i)
 			input_tensor = patch_batch['scan'][tio.DATA]
 			locations = patch_batch[tio.LOCATION]
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
-			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits					
+			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
+					
 			# print(out_sigmoid.shape, input_tensor.shape)
 			aggregator.add_batch(out_sigmoid, locations)
 
