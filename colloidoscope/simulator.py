@@ -215,7 +215,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	zoom_out_radii = [(r/zoom) for r in radii]
 
 	# create PSF
-	if psf_kernel is 'standard':
+	if psf_kernel == 'standard':
 		args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 		obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 		psf_kernel = obsvol.volume()
