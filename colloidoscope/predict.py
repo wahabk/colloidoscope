@@ -6,6 +6,7 @@ import trackpy as tp
 from .models.unet import UNet
 import pandas as pd
 import torchio as tio
+import monai
 
 def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_positions=False):
 	
@@ -99,15 +100,16 @@ def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 
 	# model
 	if model is None:
-		model = UNet(in_channels=1,
-					out_channels=1,
-					n_blocks=2,
-					start_filters=32,
-					activation='relu',
-					normalization='batch',
-					conv_mode='valid',
-					dim=3,
-					skip_connect=None,)
+		model = monai.networks.nets.AttentionUnet(
+			spatial_dims=3,
+			in_channels=1,
+			out_channels=1,
+			channels=[32, 64, 128],
+			strides=[2,2],
+			# act=params['activation'],
+			# norm=params["norm"],
+			padding='valid',
+		)
 
 	model = torch.nn.DataParallel(model, device_ids=None)
 
@@ -137,8 +139,7 @@ def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 			locations = patch_batch[tio.LOCATION]
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
-			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-					
+			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits					
 			# print(out_sigmoid.shape, input_tensor.shape)
 			aggregator.add_batch(out_sigmoid, locations)
 

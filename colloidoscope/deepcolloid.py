@@ -308,7 +308,7 @@ class DeepColloid:
 
 		if center == None:
 			c = int(array.shape[0] / 2)
-			center = [c, c, c]
+			center = [int(array.shape[0] / 2), int(array.shape[1] / 2), int(array.shape[2] / 2)]
 
 		z, y, x = center
 		z, y, x = int(z), int(y), int(x)
