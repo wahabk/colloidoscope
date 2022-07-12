@@ -7,6 +7,7 @@ from .models.unet import UNet
 import pandas as pd
 import torchio as tio
 import monai
+from tqdm import tqdm
 
 def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_positions=False):
 	
@@ -93,9 +94,8 @@ def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 	overlap must be diff between input and output shape (if they are not the same)
 	"""
 	
+	# initialise torch device
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	# weights_path = 'output/weights/unet.pt'
-	# device = torch.device("cpu")	
 	print(f'predicting on {device}')
 
 	# model
@@ -111,34 +111,27 @@ def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(6
 			padding='valid',
 		)
 
-	model = torch.nn.DataParallel(model, device_ids=None)
+	model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
-		# print(model_weights.keys())
 		model.load_state_dict(model_weights) # add weights to model
 
 	model = model.to(device)
-	
-	array = np.array(array/array.max(), dtype=np.float32)
-	array = np.expand_dims(array, 0)      # add batch axis
-	# array = np.expand_dims(array, 0)      # add channel axis ?
+	array = np.array(array/array.max(), dtype=np.float32) # normalise input
+	array = np.expand_dims(array, 0) # add batch axis
 	array = torch.from_numpy(array)
 
-	print(array.shape)
-	print(weights_path)
 
 	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
 	subject = tio.Subject(scan = tio.ScalarImage(tensor=array)) # use torchio subject to enable using grid sampling
-	print(subject)
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=1)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc
 	
 	model.eval()
 	with torch.no_grad():
-		for i, patch_batch in enumerate(patch_loader):
-			print(i)
+		for i, patch_batch in tqdm(enumerate(patch_loader)):
 			input_tensor = patch_batch['scan'][tio.DATA]
 			locations = patch_batch[tio.LOCATION]
 			input_tensor.to(device)
