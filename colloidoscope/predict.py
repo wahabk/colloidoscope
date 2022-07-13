@@ -9,37 +9,6 @@ import torchio as tio
 import monai
 from tqdm import tqdm
 
-def predict(scan, model, device='cpu', weights_path=None, threshold=0.5, return_positions=False):
-	
-	if weights_path is not None:
-		model_weights = torch.load(weights_path, map_location='cpu') # read trained weights
-		# print(model_weights.keys())
-		model.load_state_dict(model_weights) # add weights to model
-
-	array = scan.copy()
-	array = np.array(array/255, dtype=np.float32)
-	array = np.expand_dims(array, 0)      # add channel axis
-	array = np.expand_dims(array, 0)      # add batch axis
-	array = torch.from_numpy(array)
-	array = array.to(device)  # to torch, send to device
-	
-	model.eval()
-	with torch.no_grad():
-		out = model(array)  # send through model/network
-
-	out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-	out_relu = torch.relu(out)
-	
-	# post process to numpy array
-	result = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
-
-	if return_positions:
-		positions = find_positions(result, threshold)
-		return result, positions
-	else:
-		return result
-
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
 	# print(label.shape, label.max(), label.min())
@@ -79,15 +48,6 @@ def find_positions(result, threshold) -> np.ndarray:
 	resultLabel = scipy.ndimage.label(label, structure=str_3D)
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
-
-def put_in_center_like(test_array, test_label):
-	new_label = np.zeros_like(test_array)
-	a = test_array.shape[0]
-	l = test_label.shape[0]
-	diff = int((a-l)/2)
-	print(a, l, diff)
-	new_label[diff:a-diff, diff:a-diff, diff:a-diff] = test_label
-	return new_label
 
 def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
 	"""
@@ -172,3 +132,12 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 	tp_predictions = np.array(f, dtype='float32')
 
 	return tp_predictions
+
+def put_in_center_like(test_array, test_label):
+	new_label = np.zeros_like(test_array)
+	a = test_array.shape[0]
+	l = test_label.shape[0]
+	diff = int((a-l)/2)
+	print(a, l, diff)
+	new_label[diff:a-diff, diff:a-diff, diff:a-diff] = test_label
+	return new_label
