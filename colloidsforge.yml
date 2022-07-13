@@ -153,7 +153,6 @@ dependencies:
     - parso==0.8.3
     - partd==1.2.0
     - pathlib2==2.3.6
-    - perlin-numpy==0.0.0
     - pexpect==4.8.0
     - pickleshare==0.7.5
     - pillow==8.4.0
