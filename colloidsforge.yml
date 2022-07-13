@@ -133,7 +133,6 @@ dependencies:
     - matplotlib==3.5.0
     - matplotlib-inline==0.1.3
     - mccabe==0.6.1
-    - monai==0.9.0rc1+22.g55ebf91
     - monotonic==1.6
     - msgpack==1.0.3
     - napari==0.4.12
