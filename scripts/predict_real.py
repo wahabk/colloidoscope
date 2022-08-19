@@ -13,12 +13,14 @@ if __name__ == "__main__":
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	real_path = Path(dataset_path) / 'Real'
+	weights_path = "output/weights/attention_unet_202206.pt"
+	examples_path = "examples/Data/levke.tiff"
+	array = dc.read_tif(examples_path)
+	print(array.shape)
 
-	for person in real_path.iterdir():
-		print(person)
-
-		# file_path = 
+	df, positions, label = dc.detect(array, diameter=11, weights_path=weights_path)
+ 
+	print(df)
 
 	
 

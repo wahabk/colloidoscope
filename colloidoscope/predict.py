@@ -8,6 +8,9 @@ import pandas as pd
 import torchio as tio
 import monai
 from tqdm import tqdm
+from pathlib2 import Path
+
+from typing import Union
 
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
@@ -49,10 +52,24 @@ def find_positions(result, threshold) -> np.ndarray:
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
 
-def detect(array, diameter=5, model=None, patch_overlap=(16, 16, 16), roiSize=(64,64,64), threshold = 0.5, weights_path = None, debug=False):
-	"""
-	overlap must be diff between input and output shape (if they are not the same)
-	"""
+def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
+			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), debug:bool=False) -> pd.DataFrame:
+	"""Detect 3d spheres from confocal microscopy
+
+	Args:
+		array (np.ndarray): Image for particles to be detected from.
+		diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5.
+		model (torch.nn.Module, optional): Pytorch model. Defaults to None.
+		weights_path (Union[str, Path], optional): Path to model weights file. Defaults to None.
+		patch_overlap (tuple, optional): Overlap for patch based inference, overlap must be diff between input and output shape (if they are not the same). Defaults to (16, 16, 16).
+		roiSize (tuple, optional): Size of ROI for model. Defaults to (64,64,64).
+		debug (bool, optional): Option to return model output and positions in format for testing. Defaults to False.
+
+	Returns:
+		pd.DataFrame: TrackPy positions dataframe
+	"""	
+
+	# TODO write asserts
 	
 	# initialise torch device
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

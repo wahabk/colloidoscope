@@ -25,6 +25,21 @@ class DeepColloid:
 			self.dataset_path = dataset_path
 
 	def detect(self, *args, **kwargs):
+		"""Detect 3d spheres from confocal microscopy
+
+		Args:
+			array (np.ndarray): Image for particles to be detected from.
+			diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5.
+			model (torch.nn.Module, optional): Pytorch model. Defaults to None.
+			weights_path (Union[str, Path], optional): Path to model weights file. Defaults to None.
+			patch_overlap (tuple, optional): Overlap for patch based inference, overlap must be diff between input and output shape (if they are not the same). Defaults to (16, 16, 16).
+			roiSize (tuple, optional): Size of ROI for model. Defaults to (64,64,64).
+			debug (bool, optional): Option to return model output and positions in format for testing. Defaults to False.
+
+		Returns:
+			pd.DataFrame: TrackPy positions dataframe
+		"""	
+		
 		return detect(*args, **kwargs)
 
 	def read_tif(self, path):
