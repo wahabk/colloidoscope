@@ -1,3 +1,18 @@
+"""
+The dataset for this project includes two files, an hdf5 file with scans and labels, and a json file with the metdata. 
+The hdf5 file contains all 1000 64x64x64 scans (x’s), labels, true positions of particles, and their diameters. We usually train the model on creating semantic segmentation from the labels but your y will depend on what approach you take. The final output of the approach should be the true positions. (with or without model post processing)
+To read this data we recommend using DeepColloid.read_hdf5()
+The metadata parameters are as follows:
+    • volfrac: volume fraction or density of spheres in the volume (usually between 0.1 and 0.5)
+    • r: radius in pixels in the image
+    • particle_size: we use this to define how small the particles would look through the microscope 
+      (between 0.1 and 0.5 micrometers), this determines how bad the point spread function is in the simulation
+    • brightness: particle brightness between 80-255
+    • SNR: signal to noise ratio
+    • CNR: contrast to noise ratio
+    • b_sigma and f_sigma, standard deviations of foreground and background noise (please read on the contrast to noise ratio equation)
+"""
+
 from sklearn.inspection import plot_partial_dependence
 from colloidoscope import DeepColloid
 from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
