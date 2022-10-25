@@ -502,6 +502,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				out = torch.sigmoid(out)
 				loss = criterion(out, y)
 			else:
+				# TODO raise Exception("Figure out how to run sigmoid for other LFs than BCEWithLogits?")
 				loss = criterion(out, y)
 				out = torch.sigmoid(out)
 			loss = loss.cpu().numpy()
@@ -541,6 +542,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	losses = pd.DataFrame(losses)
 
+	"""
+	for param in plot_params
+	for t in ['precision', 'recall']
+	add xtitle
+	"""
+
 	plt.clf()
 	fig, axs = plt.subplots(3,2)
 	axs[0,0].scatter(x='volfrac', 		y = 'tp_precision', data=losses, color='black', marker='<')
@@ -560,11 +567,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# 	for j in i:
 	# 		j.get_legend().remove()
 	run['test/params_vs_prec'].upload(fig)
-
-	"""
-	for param in plot_params
-	add xtitle
-	"""
 
 
 	plt.clf()

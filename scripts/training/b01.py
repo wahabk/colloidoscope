@@ -13,8 +13,6 @@ import copy
 import monai
 import math
 from monai.networks.layers.factories import Act, Norm
-from torchinfo import summary
-
 
 print(os.cpu_count())
 print ('Current cuda device ', torch.cuda.current_device())

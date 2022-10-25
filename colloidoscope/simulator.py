@@ -177,6 +177,10 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			snr:float, f_sigma:float=30, b_sigma:float=20, diameters=np.ndarray([]), make_label:bool=True, 
 			label_size:list=(64,64,64), heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
 	'''
+	psf between 0 and 1
+	
+	diameters, list of diameters from hoomdblue, where in default it is all ones, but in polydispersed data it is e.g. between 0.8-1.2
+	
 	particle size in um
 
 	heatmap_r can be 'radius' to equal the particle or can be a constant int
@@ -187,12 +191,9 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 	TODO add sim seg instead of heatmap
 	'''
-	
 	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
-
 	b_mean = abs(cnr * b_sigma + f_sigma)
-
 	brightnesses = [random.gauss(f_mean, f_sigma) for _ in centers]
 	zoom = 0.5
 	pad = 80
@@ -219,21 +220,25 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	radii = [(d*r) for d in diameters]
 	zoom_out_radii = [(r/zoom) for r in radii]
 
+	if isinstance(psf_kernel, np.ndarray):
+		nm_pixel = (particle_size*1000) / r 
+
+		psf_nm_pixel = 20 # standard_huygens_pixel_nm
+		psf_zoom = nm_pixel / psf_nm_pixel
+
+		# psf_zoom = -2*particle_size + 2.4
+		# if psf_zoom < 0.1: psf_zoom=0.1
+
+		psf_kernel = ndimage.zoom(psf_kernel, psf_zoom)
+
 	# create PSF
-	if psf_kernel == 'standard':
+	elif psf_kernel == 'standard':
 		args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 		obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 		psf_kernel = obsvol.volume()
 		psf_kernel = ndimage.zoom(psf_kernel, 0.375)
-		
 
-	else:
-		psf_kernel = psf_kernel 
-		psf_zoom = -2*particle_size + 2.4
-		if psf_zoom < 0.1: psf_zoom=0.1
-
-		psf_kernel = ndimage.zoom(psf_kernel, psf_zoom)
-
+	else: raise ValueError(f"psf_kernel can be either str('Standard') or an np.ndarray but you provided {type(psf_kernel)}")
 
 
 	# draw spheres slice by slice
@@ -258,7 +263,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		final_centers = centers - diff # if the label is smaller than the image then shift the difference
 
 		print('Simulating label...')
-		radii = [(d*r) for d in diameters]
 
 		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, heatmap_r=heatmap_r, num_workers=num_workers)
 		final_centers, final_diameters = crop_positions_for_label(final_centers, canvas_size, label_size, diameters)

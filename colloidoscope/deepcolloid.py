@@ -108,10 +108,12 @@ class DeepColloid:
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
 			dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype='float32', data = positions, compression=1)
+			# TODO change to csv
 			dset = f.create_dataset(name=str(n)+'_labels', shape=label.shape, dtype='float32', data = label, compression=1)
 			dset = f.create_dataset(name=str(n)+'_diameters', shape=diameters.shape, dtype='float32', data = diameters, compression=1)
 
 		if metadata:
+			# TODO change to csv
 			json_path = f'{self.dataset_path}/{dataset}.json'
 			# check if json exists and if not then create it
 			json_file = Path(json_path)

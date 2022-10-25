@@ -40,8 +40,8 @@ def plot_with_side_view(scan, path):
 	plt.clf()
 
 if __name__ == '__main__':
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -66,9 +66,9 @@ if __name__ == '__main__':
 
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
-			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
-			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.2, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(1,10,3)},
+			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(1,10,3)},
+			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(1,10,3)},
 			}
 
 			keys = list(types.keys())
@@ -99,19 +99,21 @@ if __name__ == '__main__':
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
+			
 
 			print(metadata)	
 			print(canvas.shape, canvas.max(), canvas.min())
 			print(label.shape, label.max(), label.min())
 
-			# dc.view(canvas, final_centers, label)
+			# code for debugging
+			dc.view(canvas, final_centers, label)
 			# plot_with_side_view(canvas, f'output/figs/simulation/{index}.png')
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+			# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 			index+=1
 
 	# sim 4 gr
@@ -119,7 +121,7 @@ if __name__ == '__main__':
 	index=0
 
 	canvas_size=(160,160,160)
-	label_size=(160,160,160)
+	label_size=(120,120,120)
 
 	params = dict(
 		r=5,
@@ -129,7 +131,6 @@ if __name__ == '__main__':
 		volfrac=0.55,
 		brightness=100,
 	)
-
 
 	metadata = {
 		'dataset': test_dataset_name,
