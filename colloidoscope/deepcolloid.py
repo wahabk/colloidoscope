@@ -48,7 +48,7 @@ class DeepColloid:
 	def Explore_lif_reader(self, *args, **kwargs):
 		return Reader(*args, **kwargs)
 
-	def read_hdf5(self, dataset: str, n: int) -> dict:
+	def read_hdf5(self, dataset: str, n: int, read_labels=True, read_diameters=True, read_positions=True) -> dict:
 		"""This reads simulated data stored in hdf5
 
 		note the first index is 1 not 0 unlike gsd
@@ -64,24 +64,28 @@ class DeepColloid:
 			raise Exception('Dataset not initialised')
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 		# print(f'Reading hdf5 dataset: {path} sample number {n}')
+		data = {}
 		with h5py.File(path, "r") as f:
-			canvas = np.array(f[str(n)])
-			label = np.array(f[str(n)+'_labels'])
-			positions = np.array(f[str(n)+'_positions'])
-			diameters = np.array(f[str(n)+'_diameters'])
+			data['image'] = np.array(f[str(n)])
+			if read_labels:		data['label'] = np.array(f[str(n)+'_labels'])
+			if read_positions:	data['positions'] = np.array(f[str(n)+'_positions'])
+			if read_diameters:	data['diameters'] = np.array(f[str(n)+'_diameters'])
+
 		
 		json_path = f'{self.dataset_path}/{dataset}.json'
 		with open(json_path, "r+") as f:
 			json_data = json.load(f)
 			metadata = json_data[str(n)]
 
-		data = {
-			'image' : canvas,
-			'positions' : positions,
-			'label' : label,
-			'diameters' : diameters,
-			'metadata' : metadata,
-		}
+		data['metadata'] = metadata
+
+		# data = {
+		# 	'image' : canvas,
+		# 	'positions' : positions,
+		# 	'label' : label,
+		# 	'diameters' : diameters,
+		# 	'metadata' : metadata,
+		# }
 
 		return data
 
@@ -100,17 +104,17 @@ class DeepColloid:
 
 		return metadata, positions, diameters
 	
-	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray,  metadata:dict, positions:np.ndarray, label:np.ndarray, diameters=None, dtype:str='uint8') -> np.ndarray:
+	def write_hdf5(self, dataset:str, n:int, canvas:np.ndarray, metadata:dict=None, positions:np.ndarray=None, label:np.ndarray=None, diameters=None, dtype:str='uint8') -> np.ndarray:
 		if self.dataset_initialised == False:
 			raise Exception('Dataset not initialised')
 		path = f'{self.dataset_path}/{dataset}.hdf5'
 
 		with h5py.File(path, "a") as f:
 			dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
-			dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype='float32', data = positions, compression=1)
 			# TODO change to csv
-			dset = f.create_dataset(name=str(n)+'_labels', shape=label.shape, dtype='float32', data = label, compression=1)
-			dset = f.create_dataset(name=str(n)+'_diameters', shape=diameters.shape, dtype='float32', data = diameters, compression=1)
+			if isinstance(label, np.ndarray): 		dset = f.create_dataset(name=str(n)+'_labels', shape=label.shape, dtype='float32', data = label, compression=1)
+			if isinstance(positions, np.ndarray): 	dset = f.create_dataset(name=str(n)+'_positions', shape=positions.shape, dtype='float32', data = positions, compression=1)
+			if isinstance(diameters, np.ndarray): 	dset = f.create_dataset(name=str(n)+'_diameters', shape=diameters.shape, dtype='float32', data = diameters, compression=1)
 
 		if metadata:
 			# TODO change to csv
@@ -197,7 +201,7 @@ class DeepColloid:
 		# rg_hist[rg_hist==0] = 0.000001
 
 		hist = hist / rg_hist # pdfs
-		hist[np.isnan(hist)] = 0
+		hist[np.isnan(hist)] = 0 # fix division by zero?
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 

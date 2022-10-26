@@ -222,14 +222,13 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 	if isinstance(psf_kernel, np.ndarray):
 		nm_pixel = (particle_size*1000) / r 
-
 		psf_nm_pixel = 20 # standard_huygens_pixel_nm
 		psf_zoom = nm_pixel / psf_nm_pixel
 
 		# psf_zoom = -2*particle_size + 2.4
 		# if psf_zoom < 0.1: psf_zoom=0.1
 
-		psf_kernel = ndimage.zoom(psf_kernel, psf_zoom)
+		this_kernel = ndimage.zoom(psf_kernel, psf_zoom)
 
 	# create PSF
 	elif psf_kernel == 'standard':
@@ -245,7 +244,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	print('Simulating scan...')
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_radii, brightnesses = brightnesses, is_label=False, num_workers=num_workers)
 	canvas = ndimage.gaussian_filter(canvas, gauss_kernel) # blur with gaussian filter
-	canvas = convolve(canvas, psf_kernel, mode='same') # apply psf
+	canvas = convolve(canvas, this_kernel, mode='same') # apply psf
 	canvas = np.array((canvas/canvas.max())*255, dtype='uint8') # reconvert to 8 bit
 	canvas = crop3d(canvas, zoom_out_size) # crop to selected size to remove padding
 	canvas = ndimage.zoom(canvas, zoom)# zoom back in to original size for aliasing
