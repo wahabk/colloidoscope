@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from colloidoscope.train_utils import Trainer, LearningRateFinder, predict, test, ColloidsDatasetSimulated
+from colloidoscope.train_utils import Trainer, LearningRateFinder, test, ColloidsDatasetSimulated
 from colloidoscope.deepcolloid import DeepColloid
 import torchio as tio
 from neptune.new.types import File
@@ -12,6 +12,7 @@ import random
 import copy
 import monai
 import math
+from pathlib2 import Path
 from monai.networks.layers.factories import Act, Norm
 
 print(os.cpu_count())
@@ -23,7 +24,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
+def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10, work_dir=None):
+	os.chdir(work_dir)
 	'''
 	by default for ray tune
 	'''
@@ -181,7 +183,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, 
 				criterion=criterion, device=device, num_workers=num_workers, batch_size=1,
-				canvas_size=params['roiSize'], label_size=label_size, heatmap_r='radius')
+				canvas_size=params['roiSize'], label_size=label_size, heatmap_r='radius', work_dir=work_dir)
 	run['test/df'].upload(File.as_html(losses))
 
 	run.stop()
@@ -195,16 +197,18 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'psf_huygens_1400'
+	dataset_name = 'restart_1400_radii'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
-	train_data = all_data[0:800]
-	val_data = all_data[801:900]
-	test_data =	all_data[901:1100]
-	name = 'attention unet'
+	train_data = all_data[0:1000]
+	val_data = all_data[1001:1150]
+	# train_data = all_data[0:10]
+	# val_data = all_data[101:150]
+	test_data =	list(range(1,299))
+	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
@@ -215,13 +219,15 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 2,
+		"epochs": 10,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
 		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 
+	work_dir = Path().parent.resolve()
+
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, 
-				save=save, tuner=False, device_ids=[0,])
+				save=save, tuner=False, device_ids=[0,], work_dir=work_dir)

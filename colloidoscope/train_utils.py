@@ -33,6 +33,9 @@ from .predict import *
 from torch.nn import BCELoss
 import torch.nn.functional as F
 
+from functools import reduce
+
+
 """
 Datasets
 """
@@ -388,60 +391,62 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
 		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
-		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), heatmap_r="radius"):
+		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), 
+		heatmap_r="radius", work_dir=None):
 	
 	dc = DeepColloid(dataset_path)
 	print('Running test, this may take a while...')
 
-	os.chdir('/home/ak18001/code/colloidoscope')
+	os.chdir(work_dir)
+	dataset_name = dataset_name+"_test"
 	
-	# # test on real data
-	# real_dict = read_real_examples()
+	# test on real data
+	real_dict = read_real_examples()
 
-	# for name, d in real_dict.items():
-	# 	print(name, d['array'].shape)
+	for name, d in real_dict.items():
+		print(name, d['array'].shape)
 
-	# 	if heatmap_r == "radius":
-	# 		detection_diameter = d['diameter']
-	# 	else:
-	# 		detection_diameter = heatmap_r
+		if heatmap_r == "radius":
+			detection_diameter = d['diameter']
+		else:
+			detection_diameter = heatmap_r
 
-	# 	df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
 
-	# 	if len(pred_positions>0):
-	# 		sidebyside = make_proj(d['array'], label)
-	# 		run[name].upload(File.as_image(sidebyside))
+		if len(pred_positions>0):
+			sidebyside = make_proj(d['array'], label)
+			run[name].upload(File.as_image(sidebyside))
 
-	# 		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
-	# 		x, y = dc.get_gr(trackpy_pos, 100, 100)
-	# 		plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
-	# 		x, y = dc.get_gr(pred_positions, 100, 100)
-	# 		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-	# 		plt.legend()
-	# 		fig = plt.gcf()
-	# 		run[name+'gr'].upload(fig)
-	# 		plt.clf()
+			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+			x, y = dc.get_gr(trackpy_pos, 100, 100)
+			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
+			x, y = dc.get_gr(pred_positions, 100, 100)
+			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
+			plt.legend()
+			fig = plt.gcf()
+			run[name+'gr'].upload(fig)
+			plt.clf()
 
-	# 		if name == 'levke':
-	# 			target_volfrac = 0.58
-	# 			n_particles = len(pred_positions)
-	# 			r = 11/2
-	# 			single_vol = (4/3) * np.pi * r**3
-	# 			measured_volume = n_particles * single_vol
-	# 			measured_volfrac = measured_volume / d['array'].size
-	# 			fraction_missing = 1 - (measured_volfrac / target_volfrac)
+			if name == 'levke':
+				target_volfrac = 0.58
+				n_particles = len(pred_positions)
+				r = 11/2
+				single_vol = (4/3) * np.pi * r**3
+				measured_volume = n_particles * single_vol
+				measured_volfrac = measured_volume / d['array'].size
+				fraction_missing = 1 - (measured_volfrac / target_volfrac)
 
-	# 			run['estimates/measured_volfrac'] = measured_volfrac
-	# 			run['estimates/target_volfrac'] = target_volfrac
-	# 			run['estimates/n_particles'] = n_particles
-	# 			run['estimates/fraction_missing'] = fraction_missing
+				run['estimates/measured_volfrac'] = measured_volfrac
+				run['estimates/target_volfrac'] = target_volfrac
+				run['estimates/n_particles'] = n_particles
+				run['estimates/fraction_missing'] = fraction_missing
 
-	# 	else:
-	# 		print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
+		else:
+			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
 	
 	# test predict on sim
-	data_dict = dc.read_hdf5('test', 1)
+	data_dict = dc.read_hdf5(dataset_name, 0)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
 
 	if heatmap_r == "radius":
@@ -478,7 +483,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	run['PR_curve'].upload(fig)
 	plt.clf()
 
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, return_metadata=False, label_size=label_size, transform=None, label_transform=None) 
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None, label_transform=None) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = []
@@ -530,6 +535,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				'idx'	 		: i,
 				'volfrac'		: metadata['volfrac'],
 				'n_particles'	:  metadata['n_particles'],
+				'type'			: metadata['type'],
 				**metadata['params'],
 				'loss'	 		: float(loss),
 				'precision'	 	: float(prec),
@@ -542,67 +548,74 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	losses = pd.DataFrame(losses)
 
-	"""
-	for param in plot_params
-	for t in ['precision', 'recall']
-	add xtitle
-	"""
+	plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
 
 	plt.clf()
-	fig, axs = plt.subplots(3,2)
-	axs[0,0].scatter(x='volfrac', 		y = 'tp_precision', data=losses, color='black', marker='<')
-	axs[0,0].scatter(x='volfrac', 		y = 'precision', 	data=losses, color='red', marker='>')
-	axs[0,1].scatter(x='snr', 			y = 'tp_precision', data=losses, color='black', marker='<')
-	axs[0,1].scatter(x='snr', 			y = 'precision', 	data=losses, color='red', marker='>')
-	axs[1,0].scatter(x='cnr', 			y = 'tp_precision', data=losses, color='black', marker='<')
-	axs[1,0].scatter(x='cnr', 			y = 'precision', 	data=losses, color='red', marker='>')
-	axs[1,1].scatter(x='particle_size', y = 'tp_precision', data=losses, color='black', marker='<')
-	axs[1,1].scatter(x='particle_size', y = 'precision', 	data=losses, color='red', marker='>')
-	axs[2,0].scatter(x='brightness', 	y = 'tp_precision', data=losses, color='black', marker='<')
-	axs[2,0].scatter(x='brightness', 	y = 'precision', 	data=losses, color='red', marker='>')
-	axs[2,1].scatter(x='r', 			y = 'tp_precision', data=losses, color='black', marker='<')
-	axs[2,1].scatter(x='r', 			y = 'precision', 	data=losses, color='red', marker='>')
+	fig, axs, plt_indices = get_subplot_indices(len(plot_params))
+	axs = axs.flatten()
+	for i, p in enumerate(plot_params):
+		this_df = losses[losses['type'].isin([p])]
+		axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
+		axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
+		axs[i].title.set_text(p)
 	fig.tight_layout()
-	# for i in axs:
-	# 	for j in i:
-	# 		j.get_legend().remove()
 	run['test/params_vs_prec'].upload(fig)
 
-
 	plt.clf()
-	fig, axs = plt.subplots(3,2)
-	axs[0,0].scatter(x='volfrac', 		y = 'tp_recall', 	data=losses, color='black', marker='<')
-	axs[0,0].scatter(x='volfrac', 		y = 'recall', 		data=losses, color='red', marker='>')
-	axs[0,1].scatter(x='snr', 			y = 'tp_recall', 	data=losses, color='black', marker='<')
-	axs[0,1].scatter(x='snr', 			y = 'recall', 		data=losses, color='red', marker='>')
-	axs[1,0].scatter(x='cnr', 			y = 'tp_recall', 	data=losses, color='black', marker='<')
-	axs[1,0].scatter(x='cnr', 			y = 'recall', 		data=losses, color='red', marker='>')
-	axs[1,1].scatter(x='particle_size', y = 'tp_recall', 	data=losses, color='black', marker='<')
-	axs[1,1].scatter(x='particle_size', y = 'recall', 		data=losses, color='red', marker='>')
-	axs[2,0].scatter(x='brightness', 	y = 'tp_recall', 	data=losses, color='black', marker='<')
-	axs[2,0].scatter(x='brightness', 	y = 'recall', 		data=losses, color='red', marker='>')
-	axs[2,1].scatter(x='r', 			y = 'tp_recall', 	data=losses, color='black', marker='<')
-	axs[2,1].scatter(x='r', 			y = 'recall', 		data=losses, color='red', marker='>')
+	fig, axs, plt_indices = get_subplot_indices(len(plot_params))
+	axs = axs.flatten()
+	for i, p in enumerate(plot_params):
+		this_df = losses[losses['type'].isin([p])]
+		axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
+		axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
+		axs[i].title.set_text(p)
 	fig.tight_layout()
-	# for i in axs:
-	# 	for j in i:
-	# 		j.get_legend().remove()
 	run['test/params_vs_rec'].upload(fig)
 
 	plt.clf()
 	fig, axs = plt.subplots(3,2)
-	sns.scatterplot(x='volfrac', 		y = 'loss', data=losses, ax=axs[0,0])
-	sns.scatterplot(x='snr', 			y = 'loss', data=losses, ax=axs[0,1])
-	sns.scatterplot(x='cnr', 			y = 'loss', data=losses, ax=axs[1,0])
-	sns.scatterplot(x='particle_size', 	y = 'loss', data=losses, ax=axs[1,1])
-	sns.scatterplot(x='brightness', 	y = 'loss', data=losses, ax=axs[2,0])
-	sns.scatterplot(x='r', 				y = 'loss', data=losses, ax=axs[2,1])
+	axs.flatten()
+	for i, p in enumerate(plot_params):
+		this_df = losses[losses['type'].isin([p])]
+		sns.scatterplot(x=p, y = 'loss', data=losses, ax=axs[i])
 	fig.tight_layout()
 	run['test/params_vs_loss'].upload(fig)
 
 	return losses
 
+def myRound(n):
+	answer = round(n)
+	if not answer%2:
+		return answer
+	return answer + 1
 
+def get_subplot_indices(n_figs:int):
+	n_figs = myRound(n_figs)
+	# get factors
+	factors = list(reduce(list.__add__, 
+					([i, n_figs//i] for i in range(1, int(n_figs**0.5) + 1) if n_figs % i == 0)))
+	factors.sort()
+	# print(factors)
+
+	if (len(factors) % 2) == 0: # if even
+		indx = int(len(factors)/2)
+		first_middle_factor = factors[indx-1]
+		second_middle_factor = factors[indx]
+
+		fig, axs = plt.subplots(first_middle_factor, second_middle_factor)
+
+		plt_indices = [i for i in np.ndindex((first_middle_factor,second_middle_factor))]
+		# print(plt_indices)
+		
+	else:
+		indx = math.floor(len(factors)/2)
+		factor = factors[indx]
+
+		fig, axs = plt.subplots(factor, factor)
+
+		plt_indices =  list(np.ndindex((factor,factor)))
+
+	return fig, axs, plt_indices
 
 """
 LR finder

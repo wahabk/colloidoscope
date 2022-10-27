@@ -53,7 +53,7 @@ if __name__ == '__main__':
 	dataset_name = 'restart_1400_radii'
 	num_workers = 10
 	heatmap_r = 'radius'
-	n_samples_per_volfrac = 200
+	n_samples_per_volfrac = 175
 	n_per_type = 50 # for testing
 
 
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 
 			keys = list(types.keys())
 			this_type = random.choice(keys)
-			params = types[this_type]
+			params = types[t]
 			r = params['r']
 			particle_size = params['particle_size']
 			brightness = params['brightness']
@@ -225,3 +225,6 @@ if __name__ == '__main__':
 
 			dc.write_hdf5(test_dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 			index+=1
+
+	keys = dc.get_hdf5_keys(test_dataset_name)
+	print(keys)
