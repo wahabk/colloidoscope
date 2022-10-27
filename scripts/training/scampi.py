@@ -190,8 +190,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 if __name__ == "__main__":
 
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	# dataset_path = '/data/mb16907/wahab/Colloids'
 	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
@@ -204,10 +204,10 @@ if __name__ == "__main__":
 	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
-	train_data = all_data[0:1000]
-	val_data = all_data[1001:1150]
-	# train_data = all_data[0:10]
-	# val_data = all_data[101:150]
+	# train_data = all_data[0:1000]
+	# val_data = all_data[1001:1150]
+	train_data = all_data[0:10]
+	val_data = all_data[101:150]
 	test_data =	list(range(1,299))
 	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
