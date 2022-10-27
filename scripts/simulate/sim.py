@@ -50,11 +50,11 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'testtest'
-	num_workers = 10
+	dataset_name = 'sim_1000_radii'
+	num_workers = 16
 	heatmap_r = 'radius'
-	n_samples_per_volfrac = 1#75
-	n_per_type = 5#0 # for testing
+	n_samples_per_volfrac = 150
+	n_per_type = 50 # for testing
 
 
 	# psf_kernel = 'standard' #TODO make this change psf
@@ -166,7 +166,7 @@ if __name__ == '__main__':
 	label_size=(64,64,64)
 
 	test_params = ['r','particle_size','brightness','cnr','snr','v',]
-	test_list = [s*n_per_type for s in test_params]
+	test_list = [[s]*n_per_type for s in test_params]
 	
 	index=1 # 0 index for gr
 	for i, t in enumerate(test_list):
