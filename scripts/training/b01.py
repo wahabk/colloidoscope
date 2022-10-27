@@ -63,8 +63,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	#TODO find a way to precalculate this - should i only unpad the first block?
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
-	# label_size = params['roiSize']
-	label_size = [60,60,60]
+	label_size = params['roiSize']
+	# label_size = [60,60,60]
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
@@ -122,7 +122,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		# act=params['activation'],
 		# norm=params["norm"],
 		dropout=params["dropout"],
-		padding='valid',
+		padding='same',
 	)
 
 	"""
@@ -190,7 +190,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 if __name__ == "__main__":
 
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	# dataset_path = '/data/mb16907/wahab/Colloids'
 	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
@@ -216,10 +217,10 @@ if __name__ == "__main__":
 
 	config = {
 		"lr": 0.00122678,
-		"batch_size": 8,
+		"batch_size": 16,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 10,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
