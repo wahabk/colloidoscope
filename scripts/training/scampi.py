@@ -204,10 +204,10 @@ if __name__ == "__main__":
 	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
-	# train_data = all_data[0:1000]
-	# val_data = all_data[1001:1150]
-	train_data = all_data[0:10]
-	val_data = all_data[101:150]
+	train_data = all_data[0:1000]
+	val_data = all_data[1001:1150]
+	# train_data = all_data[0:10]
+	# val_data = all_data[101:150]
 	test_data =	list(range(1,299))
 	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
 	config = {
 		"lr": 0.00122678,
-		"batch_size": 8,
+		"batch_size": 16,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
 		"epochs": 2,

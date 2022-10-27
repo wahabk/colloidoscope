@@ -533,7 +533,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				'dataset'		: metadata['dataset'],
 				'n' 	 		: metadata['n'],
 				'idx'	 		: i,
-				'volfrac'		: metadata['volfrac'],
+				'v'				: metadata['volfrac'],
 				'n_particles'	:  metadata['n_particles'],
 				'type'			: metadata['type'],
 				**metadata['params'],
@@ -547,8 +547,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			losses.append(m)
 
 	losses = pd.DataFrame(losses)
+	print(losses)
 
-	plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
+	plot_params = ['v', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
 
 	plt.clf()
 	fig, axs, plt_indices = get_subplot_indices(len(plot_params))
@@ -577,7 +578,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	axs = axs.flatten()
 	for i, p in enumerate(plot_params):
 		this_df = losses[losses['type'].isin([p])]
-		sns.scatterplot(x=p, y = 'loss', data=losses, ax=axs[i])
+		sns.scatterplot(x=p, y = 'loss', data=this_df, ax=axs[i])
 	fig.tight_layout()
 	run['test/params_vs_loss'].upload(fig)
 
