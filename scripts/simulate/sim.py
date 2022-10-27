@@ -41,7 +41,8 @@ def plot_with_side_view(scan, path):
 	plt.clf()
 
 if __name__ == '__main__':
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
