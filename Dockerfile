@@ -1,5 +1,7 @@
 # FROM pytorch/pytorch
-FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-devel
+# FROM pytorch/pytorch:1.9.1-cuda11.1-cudnn8-devel
+FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
+
 # docker pull pytorch/pytorch:1.10.0-cuda11.3-cudnn8-devel
 ENV PATH="/root/miniconda3/bin:$PATH"
 ARG PATH="/root/miniconda3/bin:$PATH"

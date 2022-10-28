@@ -198,16 +198,16 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'restart_1400_radii'
+	dataset_name = 'sim_1000_radii'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(1,1400))
+	all_data = list(range(1,1000))
 	random.shuffle(all_data)
 
-	# train_data = all_data[0:1000]
-	# val_data = all_data[1001:1150]
-	train_data = all_data[0:10]
-	val_data = all_data[101:150]
+	train_data = all_data[0:750]
+	val_data = all_data[750:1000]
+	# train_data = all_data[0:10]
+	# val_data = all_data[101:150]
 	test_data =	list(range(1,299))
 	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
 	config = {
 		"lr": 0.00122678,
-		"batch_size": 16,
+		"batch_size": 32,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
 		"epochs": 2,

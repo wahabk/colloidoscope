@@ -9,8 +9,7 @@ Colloids mimic atoms and molecules and thus exhibit the same behavior, such as f
 However, since they are micron-sized, they can be imaged with 3d microscopy and their coordinates tracked, 
 to test theories of the glass transition (Fig. 1). Smaller colloids enable a more robust test oftheoretical predictions, 
 because it is possible to access states where new physics is predicted. To this end, we used new super -resolution “nanoscopy”
-to pioneer the imaging of nano-colloids which reveal new insights into the glass transition. However if we can use even smaller particles,
-we expect to learn much more and for this reason, we wish to develop a machine-learning method for 3d tracking of small nano-colloids.
+to pioneer the imaging of nano-colloids which reveal new insights into the glass transition. However if we can use even smaller particles, we expect to learn much more and for this reason, we wish to develop a machine-learning method for 3d tracking of small nano-colloids.
 
 # Contact 
 
@@ -42,11 +41,18 @@ $$
     SNR = \dfrac{f_{\mu}}{f_{\sigma}}
 $$
 
+The figure below shows some of the steps of the simulation
+In addition to the SNR and CNR described this problem has further unique challenges
+- Relatively small training sample size (1000)
+- Relatively large 3D input size (64 cubed)
+- The final prediction will be a larger size than the training samples
+
 # Data Description
 
-Fig: Real data and simulated data
+The training data for this project consists of an hdf5 file
 
 ![Sim](colloidSim.png)
+Fig: Real data and simulated data
 
 The hdf5 file contains all 1000 64x64x64 scans (x’s), labels, true positions of particles, and their diameters. We usually train the model on creating semantic segmentation from the labels but your y will depend on what approach you take. The final output of the approach should be the true positions. (with or without model post processing)
 
@@ -57,15 +63,11 @@ The metadata parameters are as follows:
 - brightness: particle brightness usually between 80-255 (8bit grayscale values).
 - SNR: signal to noise ratio.
 - CNR: contrast to noise ratio.
-- b_sigma and f_sigma, standard deviations of foreground and background noise (please read on the contrast to noise ratio equation above).
+- b_sigma and f_sigWma, standard deviations of foreground and background noise (please read on the contrast to noise ratio equation above).
 
 # Metric
 
-For the metric we use average precision (AP), this is similar to ROC and provides thresholded precision and recall values but is for object detection.
-
-For the metrics firstly we use Average Precision. This gives a curve similar to ROC plots, and contains information on precision (fraction of correct detections), recall (how many of all particles are detected), as well as distance of the detections from the truth given by the threshold. AP is most commonly used for bounding box detection and thresholds detections using intersection over union (IOU), but colloidoscope has a method that measures the distance between the centers averaged by the diameter. 
-
-Almost all available AP implementations are in 2D and  but we provide a script `metric.py` that will measure this for you in 3D for spheres.
+For the metric we use average precision (AP), this is similar to ROC and and contains information on precision (fraction of correct detections), recall (how many of all particles are detected), as well as distance of the detections from the truth given by the threshold. Almost all available AP implementations are in 2D and  but we provide a script `metric.py` that will measure this for you in 3D for spheres. Precision is key and is the most crucial factor for good detections, however, the higher the recall the bigger the sample that can be used for downstream analysis.
 
 # Benchmark
 
