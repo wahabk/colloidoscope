@@ -1,7 +1,7 @@
 
 # Colloids: How low can we go?
 
-![paddyfig1](figSTEDCompareChallenge.png)
+![paddyfig1](figSTEDCompareChallenge-1.png)
 
 The Royall Group is interested in using nano-colloidal systems to address the glass transition
 which is arguably the greatest outstanding challenge in the basic physics of everyday materials. 
