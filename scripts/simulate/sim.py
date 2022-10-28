@@ -53,8 +53,8 @@ if __name__ == '__main__':
 	dataset_name = 'sim_1000_radii'
 	num_workers = 16
 	heatmap_r = 'radius'
-	n_samples_per_volfrac = 150
-	n_per_type = 50 # for testing
+	n_samples_per_volfrac = 200
+	n_per_type = 100 # for testing
 
 
 	# psf_kernel = 'standard' #TODO make this change psf
@@ -165,23 +165,23 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 
-	test_params = ['r','particle_size','brightness','cnr','snr','v',]
+	test_params = ['r','particle_size','brightness','cnr','snr','volfrac',]
 	test_list = [[s]*n_per_type for s in test_params]
 	
 	index=1 # 0 index for gr
 	for i, t in enumerate(test_list):
 		for n, this_type in enumerate(t):
 
-			gsd_index = (n_per_type*i)+n + n_samples_per_volfrac
+			gsd_index = (n_per_type*i)+n + 20
 
 			volfrac = v
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'v' : 0.25},
-				'particle_size' : {'r' : 8, 				'particle_size' : uniform(0.1,1.5), 'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'v' : 0.3},
-				'brightness' 	: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : triangular(0.1, 10, 3),		'brightness' : 200, 						'snr' : 8, 						'v' : 0.35},
-				'cnr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : randrange(30, 200), 			'snr' : 8, 						'v' : 0.4},
-				'snr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : triangular(0.1,10,3), 	'v' : 0.45},			
-				'v' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'v' : random.choice([0.25,0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.25},
+				'particle_size' : {'r' : 8, 				'particle_size' : uniform(0.1,1.5), 'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.3},
+				'cnr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : triangular(0.1, 10, 3),		'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.35},
+				'brightness' 	: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : randrange(30, 200), 			'snr' : 8, 						'volfrac' : 0.4},
+				'snr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : triangular(0.1,10,3), 	'volfrac' : 0.45},			
+				'volfrac' 		: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : random.choice([0.25,0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
@@ -194,7 +194,7 @@ if __name__ == '__main__':
 			brightness = params['brightness']
 			cnr = params['cnr']
 			snr = params['snr']
-			volfrac = params['v']
+			volfrac = params['volfrac']
 
 			params['f_sigma'] = 30
 			params['b_sigma'] = 20

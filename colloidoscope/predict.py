@@ -97,11 +97,15 @@ def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=
 	model = model.to(device)
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
 	array = np.expand_dims(array, 0) # add batch axis
-	array = torch.from_numpy(array)
+	tensor = torch.from_numpy(array)
+	# tensor = tensor.unsqueeze(1)
 
+	# print(tensor.shape, tensor.max(), tensor.min())
+	# print(path)
 
 	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
-	subject = tio.Subject(scan = tio.ScalarImage(tensor=array)) # use torchio subject to enable using grid sampling
+	subject_dict = {'scan' : tio.ScalarImage(tensor=array, type=tio.INTENSITY, path=None),}
+	subject = tio.Subject(subject_dict) # use torchio subject to enable using grid sampling
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=1)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc

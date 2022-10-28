@@ -35,7 +35,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	dc = DeepColloid(dataset_path)
 
 	# setup neptune
-	run = neptune.init(
+	run = neptune.init_run(
 		project="wahabk/colloidoscope",
 		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 	)
@@ -204,10 +204,10 @@ if __name__ == "__main__":
 	all_data = list(range(1,1000))
 	random.shuffle(all_data)
 
-	train_data = all_data[0:750]
-	val_data = all_data[750:1000]
-	# train_data = all_data[0:10]
-	# val_data = all_data[101:150]
+	# train_data = all_data[0:750]
+	# val_data = all_data[750:1000]
+	train_data = all_data[0:10]
+	val_data = all_data[10:15]
 	test_data =	list(range(1,299))
 	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
@@ -220,7 +220,7 @@ if __name__ == "__main__":
 		"batch_size": 32,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 2,
+		"epochs": 1,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
