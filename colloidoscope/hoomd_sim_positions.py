@@ -68,9 +68,11 @@ def hoomd_make_configurations(phi:float, n_frames=100, output_folder='output/Pos
 	import hoomd
 	import hoomd.hpmc
 
-	hoomd.context.initialize("--mode=cpu");
-
 	phi_target = phi
+	print(f"Making configurations and saving to {output_folder}phi{phi_target*1000:.0f}.gsd")
+
+
+	hoomd.context.initialize("--mode=cpu");
 
 	sample_period = 100
 	nx, ny, nz = 20, 20, 20  # n = nx * ny * nz * 4

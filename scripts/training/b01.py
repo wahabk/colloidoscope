@@ -198,7 +198,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'restart_1400_radii'
+	dataset_name = 'sim_1400_radii'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
@@ -208,7 +208,7 @@ if __name__ == "__main__":
 	# val_data = all_data[1001:1150]
 	train_data = all_data[0:10]
 	val_data = all_data[101:150]
-	test_data =	list(range(1,299))
+	test_data =	list(range(1,499))
 	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'

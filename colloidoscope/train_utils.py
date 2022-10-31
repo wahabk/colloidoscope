@@ -211,7 +211,10 @@ class Trainer:
 			out = self.model(input_)  # one forward pass
 			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
-			loss = self.criterion(out, target)  # calculate loss
+				loss = self.criterion(out, target)
+			else:
+				loss = self.criterion(out, target)
+				out = torch.sigmoid(out)
 			loss_value = loss.item()
 			train_losses.append(loss_value)
 			if self.logger: self.logger['train/loss'].log(loss_value)
@@ -245,7 +248,10 @@ class Trainer:
 				out = self.model(input_)
 				if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss) == False:
 					out = torch.sigmoid(out)
-				loss = self.criterion(out, target)  # calculate loss
+					loss = self.criterion(out, target)
+				else:
+					loss = self.criterion(out, target)
+					out = torch.sigmoid(out)
 				loss_value = loss.item()
 				valid_losses.append(loss_value)
 				if self.logger: self.logger['val/loss'].log(loss_value)
@@ -533,8 +539,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				'dataset'		: metadata['dataset'],
 				'n' 	 		: metadata['n'],
 				'idx'	 		: i,
-				'v'				: metadata['volfrac'],
-				'n_particles'	:  metadata['n_particles'],
+				'volfrac'		: metadata['volfrac'],
+				'n_particles'	: metadata['n_particles'],
 				'type'			: metadata['type'],
 				**metadata['params'],
 				'loss'	 		: float(loss),
@@ -720,11 +726,6 @@ class LearningRateFinder:
 """
 Utils
 """
-
-def dep_test(model, train_data, device='cpu'):
-
-	for d in train_data:
-		label, positions = predict(d, model, device=device, return_positions=True)
 
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()

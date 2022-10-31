@@ -117,10 +117,10 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		spatial_dims=3,
 		in_channels=1,
 		out_channels=params['n_classes'],
-		channels=[32,64,128],
-		strides=[2,2],
-		# act=params['activation'],
-		# norm=params["norm"],
+		channels=channels,
+		strides=strides,
+		# kernel_size=3,
+		# up_kernel_size=3,
 		dropout=params["dropout"],
 		padding='valid',
 	)
@@ -198,17 +198,17 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'sim_1000_radii'
+	dataset_name = 'sim_1400_radii'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(1,1000))
+	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
-	# train_data = all_data[0:750]
-	# val_data = all_data[750:1000]
-	train_data = all_data[0:10]
-	val_data = all_data[10:15]
-	test_data =	list(range(1,299))
+	train_data = all_data[0:1200]
+	val_data = all_data[1200:1400]
+	# train_data = all_data[0:10]
+	# val_data = all_data[10:15]
+	test_data =	list(range(1,499))
 	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
@@ -218,9 +218,9 @@ if __name__ == "__main__":
 	config = {
 		"lr": 0.00122678,
 		"batch_size": 32,
-		"n_blocks": 3,
+		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 1,
+		"epochs": 100,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,

@@ -89,7 +89,7 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 		is_seg = False
 		if heatmap_r == 'radius'			: heatmap_radii = radii 
 		elif isinstance(heatmap_r, int)		: heatmap_radii = [heatmap_r for i in radii]
-		elif 'seg' in heatmap_r 			: heatmap_radii = [r-int(heatmap_r[-1]) for r in radii]; is_seg = True
+		elif 'seg' in heatmap_r 			: heatmap_radii = [heatmap_r[-1] for i in radii]; is_seg = True
 		else: raise Exception('invalid heatmap type')
 		args = [(s, z, heatmap_radii, centers, is_seg) for z, s in enumerate(canvas)]
 

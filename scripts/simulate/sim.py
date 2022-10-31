@@ -50,11 +50,11 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'sim_1000_radii'
+	dataset_name = 'sim_1400_radii'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
-	n_per_type = 100 # for testing
+	n_per_type = 95 # for testing
 
 
 	# psf_kernel = 'standard' #TODO make this change psf
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 		'params' : params,
 	}
 
-	path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
+	path = f"{dataset_path}/Positions/phi{params['volfrac']*1000:.0f}.gsd"
 	hoomd_positions, diameters = read_gsd(path, 499)
 
 	# read huygens psf
@@ -172,12 +172,11 @@ if __name__ == '__main__':
 	for i, t in enumerate(test_list):
 		for n, this_type in enumerate(t):
 
-			gsd_index = (n_per_type*i)+n + 20
+			gsd_index = (n_per_type*i)+n
 
-			volfrac = v
 			types = {
 				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.25},
-				'particle_size' : {'r' : 8, 				'particle_size' : uniform(0.1,1.5), 'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.3},
+				'particle_size' : {'r' : 8, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.3},
 				'cnr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : triangular(0.1, 10, 3),		'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.35},
 				'brightness' 	: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : randrange(30, 200), 			'snr' : 8, 						'volfrac' : 0.4},
 				'snr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : triangular(0.1,10,3), 	'volfrac' : 0.45},			
@@ -208,9 +207,9 @@ if __name__ == '__main__':
 			}
 
 			path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
-			print(f'Reading: {path} at {gsd_index+1} ...')
+			print(f'Reading: {path} at {gsd_index} ...')
 
-			hoomd_positions, diameters = read_gsd(path, gsd_index+1)
+			hoomd_positions, diameters = read_gsd(path, gsd_index)
 
 			# read huygens psf
 			psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
