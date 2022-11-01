@@ -149,13 +149,7 @@ def crop_positions_for_label(centers, canvas_size, label_size, diameters):
 		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
 			indices.append(idx)
 
-	for idx, c in enumerate(centers):
-		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
-			indices.append(idx)
-
 	print(centers[0])
-
-
 	centers = centers[indices]
 	diameters = diameters[indices]
 

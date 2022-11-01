@@ -583,8 +583,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	axs = axs.flatten()
 	for i, p in enumerate(plot_params):
 		this_df = losses[losses['type'].isin([p])]
-		axs[i].scatter(x=p, 		y = 'tp_recall', data=losses, color='black', marker='<')
-		axs[i].scatter(x=p, 		y = 'recall', 	data=losses, color='red', marker='>')
+		axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
+		axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
 		axs[i].title.set_text(p)
 	fig.tight_layout()
 	run['test/params_vs_rec'].upload(fig)
