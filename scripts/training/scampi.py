@@ -220,7 +220,7 @@ if __name__ == "__main__":
 		"batch_size": 32,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 100,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,

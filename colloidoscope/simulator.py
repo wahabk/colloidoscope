@@ -134,21 +134,30 @@ def shake(centers, magnitude):
 	return np.array(new_centers)
 
 def crop_positions_for_label(centers, canvas_size, label_size, diameters):
-	indices = []
 
+	zdiff = (canvas_size[0] - label_size[0])/2
+	xdiff = (canvas_size[1] - label_size[1])/2
+	ydiff = (canvas_size[2] - label_size[2])/2
+	print(centers[0])
+	centers = centers - [zdiff, xdiff, ydiff]
+	print(centers[0])
+	print([zdiff, xdiff, ydiff])
+	
+	indices = []
 	pad = 0
 	for idx, c in enumerate(centers):
 		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
 			indices.append(idx)
 
+	for idx, c in enumerate(centers):
+		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
+			indices.append(idx)
+
+	print(centers[0])
+
+
 	centers = centers[indices]
 	diameters = diameters[indices]
-
-	zdiff = (canvas_size[0] - label_size[0])/2
-	xdiff = (canvas_size[1] - label_size[1])/2
-	ydiff = (canvas_size[2] - label_size[2])/2
-
-	centers = centers - [zdiff, xdiff, ydiff]
 
 	return centers, diameters
 

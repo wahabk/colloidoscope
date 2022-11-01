@@ -51,4 +51,4 @@ if __name__ == '__main__':
 		# if phi == 0.1: continue
 		print(phi)
 		hoomd_make_configurations(phi, n_frames=n_frames+1, output_folder=output_folder)
-		positions = read_gsd(f'{output_folder}/phi{phi*1000:.0f}.gsd')
+		# positions = read_gsd(f'{output_folder}/phi{phi*1000:.0f}.gsd')
