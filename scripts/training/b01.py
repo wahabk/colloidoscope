@@ -204,15 +204,17 @@ if __name__ == "__main__":
 	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
-	# train_data = all_data[0:1000]
-	# val_data = all_data[1001:1150]
-	train_data = all_data[0:10]
-	val_data = all_data[101:150]
-	test_data =	list(range(1,499))
+	train_data = all_data[0:1000]
+	val_data = all_data[1000:1200]
+	# train_data = all_data[0:200]
+	# val_data = all_data[200:250]
+	test_data =	list(range(1,498))
 	name = 'new_test_func'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
+
+	print(f"training on {len(train_data)} val {len(val_data)} test {len(test_data)}")
 
 
 	config = {
@@ -220,11 +222,11 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 2,
+		"epochs": 3,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
-		"loss_function": torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+		"loss_function":  torch.nn.BCEWithLogitsLoss()#torch.nn.L1Loss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 
 	work_dir = Path().parent.resolve()

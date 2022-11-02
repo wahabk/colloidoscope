@@ -50,7 +50,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'sim_1400_radii'
+	dataset_name = 'new_1400_radii'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
@@ -104,7 +104,7 @@ if __name__ == '__main__':
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
-			
+			final_diameters = final_diameters*r*2
 
 			print(metadata)
 			print(canvas.shape, canvas.max(), canvas.min())
@@ -158,6 +158,7 @@ if __name__ == '__main__':
 								params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 	metadata['n_particles'] = len(final_centers) # this might depend on label size 
 
+	final_diameters = final_diameters*r*2
 	dc.write_hdf5(test_dataset_name, 0, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 
 
@@ -175,12 +176,12 @@ if __name__ == '__main__':
 			gsd_index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.25},
-				'particle_size' : {'r' : 8, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.3},
-				'cnr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : triangular(0.1, 10, 3),		'brightness' : 200, 						'snr' : 8, 						'volfrac' : 0.35},
-				'brightness' 	: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : randrange(30, 200), 			'snr' : 8, 						'volfrac' : 0.4},
-				'snr' 			: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : triangular(0.1,10,3), 	'volfrac' : 0.45},			
-				'volfrac' 		: {'r' : 8, 				'particle_size' : 0.6, 				'cnr' : 8,							'brightness' : 200, 						'snr' : 8, 						'volfrac' : random.choice([0.25,0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.25},
+				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.3},
+				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : triangular(0.1, 10, 3),		'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.35},
+				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 8, 						'volfrac' : 0.4},
+				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : triangular(0.1,10,3), 	'volfrac' : 0.45},			
+				'volfrac' 		: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : random.choice([0.25,0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
@@ -199,7 +200,7 @@ if __name__ == '__main__':
 			params['b_sigma'] = 20
 
 			metadata = {
-				'dataset': dataset_name,
+				'dataset': test_dataset_name,
 				'n' 	 : gsd_index,
 				'type'	 : this_type,
 				'volfrac': volfrac,
@@ -220,6 +221,7 @@ if __name__ == '__main__':
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
+			final_diameters = final_diameters*r*2
 			print(metadata)
 
 			dc.write_hdf5(test_dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')

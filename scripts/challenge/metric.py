@@ -151,7 +151,7 @@ def crop_positions_for_label(centers, canvas_size, label_size, diameters):
 	xdiff = (canvas_size[1] - label_size[1])/2
 	ydiff = (canvas_size[2] - label_size[2])/2
 	print(centers[0])
-	# centers = centers - [zdiff, xdiff, ydiff]
+	centers = centers - [zdiff, xdiff, ydiff]
 	print(centers[0])
 	print([zdiff, xdiff, ydiff])
 	
@@ -169,8 +169,8 @@ def crop_positions_for_label(centers, canvas_size, label_size, diameters):
 
 if __name__ == '__main__':
 	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -180,19 +180,38 @@ if __name__ == '__main__':
 
 	r = 5
 	d = r*2
-	index = 1
+	index = 2
 	volfrac = 0.1
 
-	path = f"{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd"
-	hoomd_positions, diameters = read_gsd(path, index)
+	# path = f"{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd"
+	# hoomd_positions, diameters = read_gsd(path, index)
 
-	pos, diameters = convert_hoomd_positions(hoomd_positions, canvas_size=canvas_size, diameters=diameters, diameter=d)
+	# pos, diameters = convert_hoomd_positions(hoomd_positions, canvas_size=canvas_size, diameters=diameters, diameter=d)
 
-	new_pos, _ = crop_positions_for_label(pos, canvas_size=canvas_size, label_size=label_size, diameters=diameters)
-	print(pos.shape, new_pos.shape)
+	# new_pos, _ = crop_positions_for_label(pos, canvas_size=canvas_size, label_size=label_size, diameters=diameters)
+	# print(pos.shape, new_pos.shape)
 	# print(pos[0], new_pos[0])
 	# print(diameters.min())
 	# prec, rec = get_precision_recall(pos, pos[:int(len(pos)/4)], diameters=diameters, threshold=0.5)
-	prec, rec = get_precision_recall(pos, new_pos, diameters=diameters, threshold=0.5)
 
+	dataset_name = 'sim_1400_radii'
+
+	d = dc.read_hdf5(dataset_name, index)
+	image = d['image']
+	label = d["label"]
+	# positions = d["positions"]
+	# metadata = d["metadata"]
+	# diameters = d["diameters"]
+
+	metadata, positions, diameters = dc.read_metadata(dataset_name, index)
+
+	print(metadata['n'], index)
+
+	label = dc.crop3d(label, label_size)
+
+	pred, df = dc.run_trackpy(image, diameter = dc.round_up_to_odd(metadata['params']['r']*2), )
+
+	# positions, diameters = crop_positions_for_label(positions, canvas_size, label_size, diameters)
+
+	prec, rec = get_precision_recall(positions, pred, diameters=diameters, threshold=0.5)
 	print(prec, rec)

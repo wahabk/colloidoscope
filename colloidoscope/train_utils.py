@@ -28,7 +28,7 @@ import torchio as tio
 
 from .deepcolloid import DeepColloid
 from .models.unet import UNet
-from .simulator import crop_positions_for_label
+# from .simulator import crop_pos_for_test
 from .predict import *
 from torch.nn import BCELoss
 import torch.nn.functional as F
@@ -395,6 +395,27 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	run.stop()
 
 
+def crop_pos_for_test(centers, canvas_size, label_size, diameters):
+
+	indices = []
+	pad = 0
+	for idx, c in enumerate(centers):
+		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
+			indices.append(idx)
+	centers = centers[indices]
+	diameters = diameters[indices]
+
+	zdiff = (canvas_size[0] - label_size[0])/2
+	xdiff = (canvas_size[1] - label_size[1])/2
+	ydiff = (canvas_size[2] - label_size[2])/2
+	# print(centers[0])
+	centers = centers - [zdiff, xdiff, ydiff]
+	# print(centers[0])
+	# print([zdiff, xdiff, ydiff])
+	# print(centers[0])
+
+	return centers, diameters
+
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
 		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
 		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), 
@@ -406,7 +427,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	os.chdir(work_dir)
 	dataset_name = dataset_name+"_test"
 	
-	# test on real data
+	# # test on real data
 	# real_dict = read_real_examples()
 
 	# for name, d in real_dict.items():
@@ -451,62 +472,62 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# 		print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
 	
-	# # test predict on sim
-	# data_dict = dc.read_hdf5(dataset_name, 0)
-	# test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+	# test predict on sim
+	data_dict = dc.read_hdf5(dataset_name, 0)
+	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
 
-	# if heatmap_r == "radius":
-	# 	detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-	# else:
-	# 	detection_diameter = heatmap_r
+	if heatmap_r == "radius":
+		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+	else:
+		detection_diameter = heatmap_r
 
-	# df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True)
-	# sidebyside = make_proj(test_array, test_label)
-	# run['prediction'].upload(File.as_image(sidebyside))
-	# trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True)
+	sidebyside = make_proj(test_array, test_label)
+	run['prediction'].upload(File.as_image(sidebyside))
+	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
 
-	# try:
-	# 	x, y = dc.get_gr(true_positions, 100, 100)
-	# 	plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
-	# 	x, y = dc.get_gr(pred_positions, 100, 100)
-	# 	plt.plot(x, y, label=f'Unet n ={len(pred_positions)}', color='red')
-	# 	x, y = dc.get_gr(trackpy_positions, 100, 100)
-	# 	plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
-	# 	plt.legend()
-	# 	fig = plt.gcf()
-	# 	run['gr'].upload(fig)
-	# 	plt.clf()
-	# except:
-	# 	print('Skipping gr() as bad pred')
-	# 	run['gr'] = 'failed'
+	try:
+		x, y = dc.get_gr(true_positions, 100, 100)
+		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
+		x, y = dc.get_gr(pred_positions, 100, 100)
+		plt.plot(x, y, label=f'Unet n ={len(pred_positions)}', color='red')
+		x, y = dc.get_gr(trackpy_positions, 100, 100)
+		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
+		plt.legend()
+		fig = plt.gcf()
+		run['gr'].upload(fig)
+		plt.clf()
+	except:
+		print('Skipping gr() as bad pred')
+		run['gr'] = 'failed'
 
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	# run['AP'] = ap
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	run['AP'] = ap
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
 
-	# run['PR_curve'].upload(fig)
-	# plt.clf()
+	run['PR_curve'].upload(fig)
+	plt.clf()
 
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None, label_transform=None) 
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = []
 	model.eval()
 	with torch.no_grad():
 		for idx, batch in enumerate(test_loader):
+
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
-			true_positions, diameters = crop_positions_for_label(true_positions, canvas_size, label_size, diameters=diameters)
-
-
+			diameters=diameters*metadata['params']['r']*2 # TODO FIX IN SIM
+			true_positions, diameters = crop_pos_for_test(true_positions, canvas_size, label_size, diameters=diameters)
+			
 			x, y = batch
-			for_tp = copy.deepcopy(x)
+			for_tp = x.clone()
 			x, y = x.to(device), y.to(device)
 			# print(x.shape, x.max(), x.min())
 			# print(y.shape, y.max(), y.min())
-
 
 			out = model(x)  # send through model/network
 			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
@@ -526,24 +547,20 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			else:
 				detection_diameter = heatmap_r
 
-			test = np.squeeze(y.cpu().numpy())
-			# pred_positions = find_positions(result, threshold)
+			# test = np.squeeze(y.cpu().numpy())
+			pred_positions = find_positions(result, threshold)
 			pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-			
+
 			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
+			# array = for_tp.cpu().numpy()
+			# array = np.squeeze(array)
+			# print(array.shape)
 			tp_positions, _ = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
 			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
 
-			print(f"")
-			print(f"detection diameter {detection_diameter}, {metadata['params']['r']}")
-			print(f"result {result.max()} {result.min()} {result.mean()}")
-			print(f"array {array.max()} {array.min()} {array.mean()}")
-			# print(f"result {result.max()} {result.min()} {result.mean()}")
-			print(f"shapes true p {true_positions.shape}, pred {pred_positions.shape} tp {tp_positions.shape}")
-			# print(f"shapes true p {true_positions[0]}, pred {pred_positions[0]} tp {tp_positions[0]}")
-			# print(f"types true p {true_positions.type}, pred {pred_positions.type} tp {tp_positions.type}")
 			print(f"prec {prec} rec {rec}")
+			print(f"tp prec {tp_prec} rec {tp_rec}")
 
 			m = {
 				'dataset'		: metadata['dataset'],
