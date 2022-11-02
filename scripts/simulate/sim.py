@@ -73,13 +73,13 @@ if __name__ == '__main__':
 		for n, v in enumerate(volfracs):
 			print('\n', n, f'{index}/{len(phis.flatten())}', '\n')
 
-			volfrac = v
+			volfrac = 0.55
 
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(1,10,3)},
-			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(1,10,3)},
-			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(1,10,3)},
+			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
+			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1.5), 'cnr' : triangular(0.1, 10, 0.5),  'brightness' : random.randrange(30, 200), 'snr' : triangular(0.1,10,3)},
 			}
 
 			keys = list(types.keys())
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 				'params' : params,
 			}
 
-			path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
+			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} at {n+1} ...')
 
 			hoomd_positions, diameters = read_gsd(path, n+1)
@@ -104,7 +104,7 @@ if __name__ == '__main__':
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
-			final_diameters = final_diameters*r*2
+			final_diameters = final_diameters*params['r']*2
 
 			print(metadata)
 			print(canvas.shape, canvas.max(), canvas.min())
@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
 	params = dict(
 		r=6,
-		particle_size=0.3,
+		particle_size=0.2,
 		snr=4,
 		cnr=4,
 		volfrac=0.55,
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 		'params' : params,
 	}
 
-	path = f"{dataset_path}/Positions/phi{params['volfrac']*1000:.0f}.gsd"
+	path = f"{dataset_path}/Positions/old/phi{params['volfrac']*1000:.0f}.gsd"
 	hoomd_positions, diameters = read_gsd(path, 499)
 
 	# read huygens psf
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 								params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 	metadata['n_particles'] = len(final_centers) # this might depend on label size 
 
-	final_diameters = final_diameters*r*2
+	final_diameters = final_diameters*params['r']*2
 	dc.write_hdf5(test_dataset_name, 0, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 
 
@@ -166,7 +166,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 
-	test_params = ['r','particle_size','brightness','cnr','snr','volfrac',]
+	test_params = ['volfrac','particle_size','r','brightness','cnr','snr',]
 	test_list = [[s]*n_per_type for s in test_params]
 	
 	index=1 # 0 index for gr
@@ -207,7 +207,7 @@ if __name__ == '__main__':
 				'params' : params,
 			}
 
-			path = f'{dataset_path}/Positions/phi{volfrac*1000:.0f}.gsd'
+			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} at {gsd_index} ...')
 
 			hoomd_positions, diameters = read_gsd(path, gsd_index)

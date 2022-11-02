@@ -228,13 +228,12 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		psf_nm_pixel = 20 # standard_huygens_pixel_nm
 		psf_zoom = psf_nm_pixel / nm_pixel
 
-		# psf_zoom = -2*particle_size + 2.4
-		# if psf_zoom < 0.1: psf_zoom=0.1
-
 		this_kernel = ndimage.zoom(psf_kernel, psf_zoom)
+		print(f"psf_zoom {psf_zoom}")
 
 	# create PSF
 	elif psf_kernel == 'standard':
+		print("simulating standard PSF")
 		args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
 		obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
 		psf_kernel = obsvol.volume()
