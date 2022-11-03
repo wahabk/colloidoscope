@@ -92,6 +92,8 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		X = torch.from_numpy(X)
 		y = torch.from_numpy(y)
 
+		# TODO use tio subject to avoid this
+
 		if self.transform:
 			if self.label_transform:
 				stacked = torch.cat([X, y], dim=0) # shape=(2xHxW)
@@ -427,49 +429,49 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	os.chdir(work_dir)
 	dataset_name = dataset_name+"_test"
 	
-	# # test on real data
-	# real_dict = read_real_examples()
+	# test on real data
+	real_dict = read_real_examples()
 
-	# for name, d in real_dict.items():
-	# 	print(name, d['array'].shape)
+	for name, d in real_dict.items():
+		print(name, d['array'].shape)
 
-	# 	if heatmap_r == "radius":
-	# 		detection_diameter = d['diameter']
-	# 	else:
-	# 		detection_diameter = heatmap_r
+		if heatmap_r == "radius":
+			detection_diameter = d['diameter']
+		else:
+			detection_diameter = heatmap_r
 
-	# 	df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
 
-	# 	if len(pred_positions>0):
-	# 		sidebyside = make_proj(d['array'], label)
-	# 		run[name].upload(File.as_image(sidebyside))
+		if len(pred_positions>0):
+			sidebyside = make_proj(d['array'], label)
+			run[name].upload(File.as_image(sidebyside))
 
-	# 		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
-	# 		x, y = dc.get_gr(trackpy_pos, 100, 100)
-	# 		plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
-	# 		x, y = dc.get_gr(pred_positions, 100, 100)
-	# 		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-	# 		plt.legend()
-	# 		fig = plt.gcf()
-	# 		run[name+'gr'].upload(fig)
-	# 		plt.clf()
+			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+			x, y = dc.get_gr(trackpy_pos, 100, 100)
+			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
+			x, y = dc.get_gr(pred_positions, 100, 100)
+			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
+			plt.legend()
+			fig = plt.gcf()
+			run[name+'gr'].upload(fig)
+			plt.clf()
 
-	# 		if name == 'levke':
-	# 			target_volfrac = 0.58
-	# 			n_particles = len(pred_positions)
-	# 			r = 11/2
-	# 			single_vol = (4/3) * np.pi * r**3
-	# 			measured_volume = n_particles * single_vol
-	# 			measured_volfrac = measured_volume / d['array'].size
-	# 			fraction_missing = 1 - (measured_volfrac / target_volfrac)
+			if name == 'levke':
+				target_volfrac = 0.58
+				n_particles = len(pred_positions)
+				r = 11/2
+				single_vol = (4/3) * np.pi * r**3
+				measured_volume = n_particles * single_vol
+				measured_volfrac = measured_volume / d['array'].size
+				fraction_missing = 1 - (measured_volfrac / target_volfrac)
 
-	# 			run['estimates/measured_volfrac'] = measured_volfrac
-	# 			run['estimates/target_volfrac'] = target_volfrac
-	# 			run['estimates/n_particles'] = n_particles
-	# 			run['estimates/fraction_missing'] = fraction_missing
+				run['estimates/measured_volfrac'] = measured_volfrac
+				run['estimates/target_volfrac'] = target_volfrac
+				run['estimates/n_particles'] = n_particles
+				run['estimates/fraction_missing'] = fraction_missing
 
-	# 	else:
-	# 		print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
+		else:
+			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
 	
 	# test predict on sim
@@ -520,7 +522,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
-			diameters=diameters*metadata['params']['r']*2 # TODO FIX IN SIM
+			# diameters=diameters*metadata['params']['r']*2 # TODO FIX IN SIM
 			true_positions, diameters = crop_pos_for_test(true_positions, canvas_size, label_size, diameters=diameters)
 			
 			x, y = batch
@@ -559,8 +561,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			tp_positions, _ = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
 			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
 
-			print(f"prec {prec} rec {rec}")
-			print(f"tp prec {tp_prec} rec {tp_rec}")
+			# print(f"prec {prec} rec {rec}")
+			# print(f"tp prec {tp_prec} rec {tp_rec}")
 
 			m = {
 				'dataset'		: metadata['dataset'],
@@ -592,6 +594,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
 		axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
 		axs[i].title.set_text(p)
+		axs[i].set_ylim(0,1.1)
 	fig.tight_layout()
 	run['test/params_vs_prec'].upload(fig)
 
@@ -603,6 +606,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
 		axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
 		axs[i].title.set_text(p)
+		axs[i].set_ylim(0,1.1)
 	fig.tight_layout()
 	run['test/params_vs_rec'].upload(fig)
 

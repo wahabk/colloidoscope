@@ -117,10 +117,10 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		spatial_dims=3,
 		in_channels=1,
 		out_channels=params['n_classes'],
-		channels=[32,64,128],
-		strides=[2,2],
-		# act=params['activation'],
-		# norm=params["norm"],
+		channels=channels,
+		strides=strides,
+		# kernel_size=3,
+		# up_kernel_size=3,
 		dropout=params["dropout"],
 		padding='valid',
 	)
@@ -198,7 +198,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'sim_1400_radii'
+	dataset_name = 'new_1400_radii'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
@@ -206,10 +206,11 @@ if __name__ == "__main__":
 
 	train_data = all_data[0:1000]
 	val_data = all_data[1000:1200]
+	test_data =	list(range(1,498))
 	# train_data = all_data[0:200]
 	# val_data = all_data[200:250]
-	test_data =	list(range(1,498))
-	name = 'new_test_func'
+	# test_data =	list(range(1,50))
+	name = 'test overlap'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
@@ -222,11 +223,11 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 3,
+		"epochs": 20,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
-		"loss_function":  torch.nn.BCEWithLogitsLoss()#torch.nn.L1Loss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+		"loss_function":	monai.losses.FocalLoss(gamma=0.5)# BinaryFocalLoss(alpha=1.5, gamma=0.5) # torch.nn.BCEWithLogitsLoss() #torch.nn.L1Loss() #  #,
 	}
 
 	work_dir = Path().parent.resolve()

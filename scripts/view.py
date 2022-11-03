@@ -1,9 +1,9 @@
-from re import A
-from zipfile import ZIP_BZIP2
 from colloidoscope.deepcolloid import DeepColloid
+from colloidoscope.predict import insert_in_center
 import napari
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 
 def make_proj(test_array, test_label):
 
@@ -40,9 +40,22 @@ dataset_name = 'r_width'
 data = dc.read_hdf5(dataset_name, 2)
 image, metadata, positions, label = data['image'], data['metadata'], data['positions'], data['label']
 
-sidebyside = make_proj(image, label)
+roi = (64,64,64)
+blank = np.zeros_like(image)
+image = torch.tensor(image)
+blank = torch.zeros_like(image)
 
-plt.imsave('output/test.png', sidebyside)
+image = dc.crop3d(image, (60,60,60))
+
+blank = insert_in_center(blank, image)
+
+blank = blank.numpy()
+blank = blank.max(axis=0)
+
+
+# sidebyside = make_proj(image, label)
+
+plt.imsave('output/test.png', blank)
 
 # print(image.shape, image.max(), image.min())
 # print(label.shape, label.max(), label.min())

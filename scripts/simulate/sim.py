@@ -159,7 +159,7 @@ if __name__ == '__main__':
 	metadata['n_particles'] = len(final_centers) # this might depend on label size 
 
 	final_diameters = final_diameters*params['r']*2
-	dc.write_hdf5(test_dataset_name, 0, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+	dc.write_hdf5(test_dataset_name, 10000, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 
 
 	# Sim for testing

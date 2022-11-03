@@ -12,6 +12,8 @@ from pathlib2 import Path
 
 from typing import Union
 
+import copy
+
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
 	# print(label.shape, label.max(), label.min())
@@ -51,6 +53,21 @@ def find_positions(result, threshold) -> np.ndarray:
 	resultLabel = scipy.ndimage.label(label, structure=str_3D)
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
+
+def insert_in_center(a:np.ndarray, b:np.ndarray):
+
+	_batch, _channels, roiZ, roiY, roiX = b.shape
+	zl = int(roiZ / 2) # compute lens
+	yl = int(roiY / 2)
+	xl = int(roiX / 2)
+
+	a_center = [int(a.shape[2] / 2), int(a.shape[3] / 2), int(a.shape[4] / 2)]
+	z, y, x = a_center
+	z, y, x = int(z), int(y), int(x)
+
+	a[0, 0, z - zl : z + zl, y - yl : y + yl, x - xl : x + xl] = b
+
+	return a
 
 def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
 			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), debug:bool=False) -> pd.DataFrame:
@@ -108,7 +125,8 @@ def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=
 	subject = tio.Subject(subject_dict) # use torchio subject to enable using grid sampling
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=1)
-	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc
+	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc, crop for normal
+	# TODO make put in center like for torch
 	
 	model.eval()
 	with torch.no_grad():
@@ -118,8 +136,11 @@ def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-					
 			# print(out_sigmoid.shape, input_tensor.shape)
+			
+			# blank = torch.zeros_like(input_tensor) # because tio doesnt accept outputs of different sizes
+			# out_sigmoid = insert_in_center(blank, out_sigmoid)
+
 			aggregator.add_batch(out_sigmoid, locations)
 
 	output_tensor = aggregator.get_output_tensor()
@@ -153,12 +174,3 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 	tp_predictions = np.array(f, dtype='float32')
 
 	return tp_predictions
-
-def put_in_center_like(test_array, test_label):
-	new_label = np.zeros_like(test_array)
-	a = test_array.shape[0]
-	l = test_label.shape[0]
-	diff = int((a-l)/2)
-	print(a, l, diff)
-	new_label[diff:a-diff, diff:a-diff, diff:a-diff] = test_label
-	return new_label
