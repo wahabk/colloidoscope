@@ -50,7 +50,7 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'new_1400_radii'
+	dataset_name = 'new_1400_30nm'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 		for n, v in enumerate(volfracs):
 			print('\n', n, f'{index}/{len(phis.flatten())}', '\n')
 
-			volfrac = 0.55
+			volfrac = v
 
 			# define types of particles in simulation
 			types = {
