@@ -475,7 +475,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	
 	# test predict on sim
-	data_dict = dc.read_hdf5(dataset_name, 0)
+	data_dict = dc.read_hdf5(dataset_name, 10000)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
 
 	if heatmap_r == "radius":

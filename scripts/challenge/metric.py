@@ -177,7 +177,6 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(60,60,60)
 
-
 	r = 5
 	d = r*2
 	index = 2

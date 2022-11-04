@@ -178,9 +178,9 @@ if __name__ == '__main__':
 			types = {
 				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.25},
 				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.3},
-				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : triangular(0.1, 10, 3),		'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.35},
+				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : unform(0.1, 10),			'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.35},
 				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 8, 						'volfrac' : 0.4},
-				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : triangular(0.1,10,3), 	'volfrac' : 0.45},			
+				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : unform(0.1,10), 		'volfrac' : 0.45},			
 				'volfrac' 		: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : random.choice([0.25,0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
