@@ -34,8 +34,8 @@ from skimage.feature import peak_local_max
 
 if __name__ == '__main__':
 	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -45,11 +45,11 @@ if __name__ == '__main__':
 
 	r = 5
 	d = r*2
-	index = 2
+	index = 10000
 	volfrac = 0.1
 
 
-	dataset_name = 'new_1400_30nm'
+	dataset_name = 'new_1400_30nm_test'
 
 	d = dc.read_hdf5(dataset_name, index)
 	image = d['image']
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 	# metadata = d["metadata"]
 	# diameters = d["diameters"]
 
-	metadata, positions, diameters = dc.read_metadata(dataset_name, index)
+	metadata, true_positions, diameters = dc.read_metadata(dataset_name, index)
 
 	# label = dc.crop3d(label, label_size)
 
@@ -66,30 +66,40 @@ if __name__ == '__main__':
 
 	# positions, diameters = crop_positions_for_label(positions, canvas_size, label_size, diameters)
 
-	prec, rec = dc.get_precision_recall(positions, tp_pred, diameters=diameters, threshold=0.5)
-	print(prec, rec)
-
 	# print(label.dtype)
 	# print(label.shape, label.max(), label.min())
 
-	distance = ndi.distance_transform_edt(np.array(label*255, dtype="uint16"))
-	coords = peak_local_max(label)
-	mask = np.zeros(distance.shape, dtype=bool)
-	mask[tuple(coords.T)] = True
-	markers, _ = ndi.label(mask)
-	new_label = watershed(-distance, markers, mask=label)
+	# distance = ndi.distance_transform_edt(np.array(label*255, dtype="uint16"))
+	# coords = peak_local_max(label)
+	# mask = np.zeros(distance.shape, dtype=bool)
+	# mask[tuple(coords.T)] = True
+	# markers, _ = ndi.label(mask)
+	# new_label = watershed(-distance, markers, mask=label)
 
-	print(distance.shape, distance.max(), distance.min())
+	# print(distance.shape, distance.max(), distance.min())
 	# print(coords.shape, coords.max(), coords.min())
-	print(np.shape(coords))
-	print(mask.shape, mask.max(), mask.min())
-	print(new_label.shape, new_label.max(), new_label.min())
+	# print(np.shape(coords))
+	# print(mask.shape, mask.max(), mask.min())
+	# print(new_label.shape, new_label.max(), new_label.min())
 
 	# import pdb; pdb.set_trace()
 
+
+	coords = peak_local_max(image, min_distance=int(dc.round_up_to_odd(metadata['params']['r']*2)))
 	coords = np.array(coords)
-	prec, rec = dc.get_precision_recall(positions, coords, diameters=diameters, threshold=0.5)
-	print(prec, rec)
+	prec, rec = dc.get_precision_recall(true_positions, tp_pred, diameters=diameters, threshold=0.5)
+	print('tp', prec, rec)
+	prec, rec = dc.get_precision_recall(true_positions, coords, diameters=diameters, threshold=0.5)
+	print('local_max', prec, rec)
+
+	x,y = dc.get_gr(true_positions, 50, 50, )
+	plt.plot(x, y, label=f'true n ={len(true_positions)}', color='black')
+	x,y = dc.get_gr(tp_pred, 50, 50, )
+	plt.plot(x, y, label=f'trackpy n ={len(tp_pred)}', color='grey')
+	x,y = dc.get_gr(coords, 50, 50, )
+	plt.plot(x, y, label=f'local_max n ={len(coords)}', color='red')
+	plt.legend()
+	plt.show()
 
 
-	dc.view(image, label=new_label)
+	dc.view(image, label=label, positions=coords)

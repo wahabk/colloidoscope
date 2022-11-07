@@ -421,7 +421,7 @@ def crop_pos_for_test(centers, canvas_size, label_size, diameters):
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
 		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
 		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), 
-		heatmap_r="radius", work_dir=None):
+		heatmap_r="radius", post_processing="tp", work_dir=None):
 	
 	dc = DeepColloid(dataset_path)
 	print('Running test, this may take a while...')
@@ -437,10 +437,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 		if heatmap_r == "radius":
 			detection_diameter = d['diameter']
+		elif post_processing == "max":
+			detection_diameter = d['diameter']-1
 		else:
 			detection_diameter = heatmap_r
 
-		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True)
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
 
 		if len(pred_positions>0):
 			sidebyside = make_proj(d['array'], label)
@@ -480,10 +482,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	if heatmap_r == "radius":
 		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+	elif post_processing == "max":
+		detection_diameter = int((metadata['params']['r']*2)-1)
 	else:
 		detection_diameter = heatmap_r
 
-	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True)
+	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
 	sidebyside = make_proj(test_array, test_label)
 	run['prediction'].upload(File.as_image(sidebyside))
 	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
@@ -546,12 +550,16 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 			if heatmap_r == "radius":
 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+			elif post_processing == "max":
+				detection_diameter = int((metadata['params']['r']*2)-1)
 			else:
 				detection_diameter = heatmap_r
 
-			# test = np.squeeze(y.cpu().numpy())
-			pred_positions = find_positions(result, threshold)
-			pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
+			if post_processing == "tp":
+				pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
+			elif post_processing == "max":
+				pred_positions = peak_local_max(result, diameter=detection_diameter)
+			
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 
 			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)

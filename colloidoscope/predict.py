@@ -14,6 +14,8 @@ from typing import Union
 
 import copy
 
+from skimage.feature import peak_local_max
+
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
 	# print(label.shape, label.max(), label.min())
@@ -69,13 +71,13 @@ def insert_in_center(a:np.ndarray, b:np.ndarray):
 
 	return a
 
-def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
-			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), debug:bool=False) -> pd.DataFrame:
+def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
+			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), post_processing:str="tp", debug:bool=False) -> pd.DataFrame:
 	"""Detect 3d spheres from confocal microscopy
 
 	Args:
 		array (np.ndarray): Image for particles to be detected from.
-		diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5.
+		diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5. If post_processing == str(max) this has to be int it will be min_distance.
 		model (torch.nn.Module, optional): Pytorch model. Defaults to None.
 		weights_path (Union[str, Path], optional): Path to model weights file. Defaults to None.
 		patch_overlap (tuple, optional): Overlap for patch based inference, overlap must be diff between input and output shape (if they are not the same). Defaults to (16, 16, 16).
@@ -87,6 +89,9 @@ def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=
 	"""	
 
 	# TODO write asserts
+
+	if post_processing not in ["tp", "max"]:
+		raise ValueError(f"post_processing can be str(tp), or str(max) but you provided {post_processing}")
 	
 	# initialise torch device
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -114,7 +119,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=
 	model = model.to(device)
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
 	array = np.expand_dims(array, 0) # add batch axis
-	tensor = torch.from_numpy(array)
+	# tensor = torch.from_numpy(array)
 	# tensor = tensor.unsqueeze(1)
 
 	# print(tensor.shape, tensor.max(), tensor.min())
@@ -151,7 +156,10 @@ def detect(array:np.ndarray, diameter:Union[int, list]=5, model:torch.nn.Module=
 	# find positions from label
 	# TODO change to trackpy or watershed?
 
-	positions = run_trackpy(result*255, diameter=diameter)
+	if post_processing == "tp":
+		positions = run_trackpy(result*255, diameter=diameter)
+	elif post_processing == "max":
+		positions = peak_local_max(result, min_distance=diameter/2)
 
 	# positions = find_positions(result, threshold)
 

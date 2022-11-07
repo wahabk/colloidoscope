@@ -195,12 +195,13 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 if __name__ == "__main__":
 
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	# dataset_path = '/data/mb16907/wahab/Colloids'
 	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	dc = DeepColloid(dataset_path)
 
 	dataset_name = 'new_1400_30nm'
@@ -224,7 +225,7 @@ if __name__ == "__main__":
 
 
 	config = {
-		"lr": 0.00122678,
+		"lr": 0.002165988, #0.00122678,
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
@@ -232,24 +233,12 @@ if __name__ == "__main__":
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
+		"loss_function": torch.nn.L1Loss(),
 		# "loss_function":	monai.losses.FocalLoss(gamma=0.5)#torch.nn.BCEWithLogitsLoss()	# BinaryFocalLoss(alpha=1.5, gamma=0.5) # torch.nn.BCEWithLogitsLoss() #torch.nn.L1Loss() #  #,
 	}
 
-	focals = [
-		monai.losses.FocalLoss(gamma=0.1),
-		monai.losses.FocalLoss(gamma=0.2),
-		monai.losses.FocalLoss(gamma=0.3),
-		monai.losses.FocalLoss(gamma=0.4),
-		monai.losses.FocalLoss(gamma=0.5),
-		monai.losses.FocalLoss(gamma=0.6),
-		monai.losses.FocalLoss(gamma=0.7),
-	]
 
 	work_dir = Path().parent.resolve()
-
-	for f in focals:
-
-		config["loss_function"] = f
-		train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
-				train_data=train_data, val_data=val_data, test_data=test_data, 
-				save=save, tuner=False, device_ids=[0,], work_dir=work_dir)
+	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+			train_data=train_data, val_data=val_data, test_data=test_data, 
+			save=save, tuner=False, device_ids=[0,], work_dir=work_dir)
