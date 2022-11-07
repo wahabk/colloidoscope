@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
 	# hoomd_make_configurations(phi, n_frames=1+1, output_folder='/home/ak18001/Data/HDD/Colloids/Positions/test/')
 	
-	n_frames = 1000
+	n_frames = 500
 	phis = np.linspace(0.25,0.55,7)
 	output_folder = dataset_path+'Positions/big/'
 
