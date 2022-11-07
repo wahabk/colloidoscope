@@ -156,10 +156,12 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	# find positions from label
 	# TODO change to trackpy or watershed?
 
+
 	if post_processing == "tp":
 		positions = run_trackpy(result*255, diameter=diameter)
 	elif post_processing == "max":
-		positions = peak_local_max(result, min_distance=diameter/2)
+		if isinstance(diameter, list): diameter = diameter[0]
+		positions = peak_local_max(result, min_distance=int((diameter)-1))
 
 	# positions = find_positions(result, threshold)
 

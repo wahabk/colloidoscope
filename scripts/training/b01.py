@@ -24,7 +24,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10, work_dir=None):
+def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, 
+			tuner=True, device_ids=[0,1], num_workers=10, work_dir=None, post_processing="tp"):
 	os.chdir(work_dir)
 	'''
 	by default for ray tune
@@ -188,20 +189,21 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, 
 				criterion=criterion, device=device, num_workers=num_workers, batch_size=1,
-				canvas_size=params['roiSize'], label_size=label_size, heatmap_r='radius', work_dir=work_dir)
+				canvas_size=params['roiSize'], label_size=label_size, heatmap_r='radius', 
+				work_dir=work_dir, post_processing=post_processing)
 	run['test/df'].upload(File.as_html(losses))
 
 	run.stop()
 
 if __name__ == "__main__":
 
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	# dataset_path = '/data/mb16907/wahab/Colloids'
 	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	dc = DeepColloid(dataset_path)
 
 	dataset_name = 'new_1400_30nm'
@@ -216,10 +218,11 @@ if __name__ == "__main__":
 	# train_data = all_data[0:200]
 	# val_data = all_data[200:250]
 	# test_data =	list(range(1,50))
-	name = 'search LF'
+	name = 'trying max loc'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
+	post_processing = "max"
 
 	print(f"training on {len(train_data)} val {len(val_data)} test {len(test_data)}")
 
@@ -229,7 +232,7 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 20,
+		"epochs": 15,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
@@ -241,4 +244,4 @@ if __name__ == "__main__":
 	work_dir = Path().parent.resolve()
 	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
 			train_data=train_data, val_data=val_data, test_data=test_data, 
-			save=save, tuner=False, device_ids=[0,], work_dir=work_dir)
+			save=save, tuner=False, device_ids=[0,], work_dir=work_dir, post_processing=post_processing)
