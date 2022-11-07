@@ -59,7 +59,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		random_seed = 42,
 	)
 	run['Tags'] = name
-	run['parameters'] = params
+	
 	#TODO find a way to precalculate this - should i only unpad the first block?
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
@@ -152,11 +152,16 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	criterion = params['loss_function']
 	params['loss_function'] = str(copy.deepcopy(params['loss_function']))
 
+	if isinstance(criterion, monai.losses.FocalLoss):
+		params['gamma'] = criterion.gamma
+
 	# optimizer
 	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
 	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
 	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
+
+	run['parameters'] = params
 
 	# trainer
 	trainer = Trainer(model=model,
@@ -210,7 +215,7 @@ if __name__ == "__main__":
 	# train_data = all_data[0:200]
 	# val_data = all_data[200:250]
 	# test_data =	list(range(1,50))
-	name = 'test dataset'
+	name = 'search LF'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
@@ -223,15 +228,28 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 3,
+		"epochs": 20,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,
-		"loss_function":	monai.losses.FocalLoss(gamma=0.5)#torch.nn.BCEWithLogitsLoss()	# BinaryFocalLoss(alpha=1.5, gamma=0.5) # torch.nn.BCEWithLogitsLoss() #torch.nn.L1Loss() #  #,
+		# "loss_function":	monai.losses.FocalLoss(gamma=0.5)#torch.nn.BCEWithLogitsLoss()	# BinaryFocalLoss(alpha=1.5, gamma=0.5) # torch.nn.BCEWithLogitsLoss() #torch.nn.L1Loss() #  #,
 	}
+
+	focals = [
+		monai.losses.FocalLoss(gamma=0.1),
+		monai.losses.FocalLoss(gamma=0.2),
+		monai.losses.FocalLoss(gamma=0.3),
+		monai.losses.FocalLoss(gamma=0.4),
+		monai.losses.FocalLoss(gamma=0.5),
+		monai.losses.FocalLoss(gamma=0.6),
+		monai.losses.FocalLoss(gamma=0.7),
+	]
 
 	work_dir = Path().parent.resolve()
 
-	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+	for f in focals:
+
+		config["loss_function"] = f
+		train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, 
 				save=save, tuner=False, device_ids=[0,], work_dir=work_dir)
