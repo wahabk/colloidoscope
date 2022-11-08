@@ -72,7 +72,7 @@ def insert_in_center(a:np.ndarray, b:np.ndarray):
 	return a
 
 def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
-			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), post_processing:str="tp", debug:bool=False) -> pd.DataFrame:
+			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), post_processing:str="tp", threshold:float=0.5, debug:bool=False) -> pd.DataFrame:
 	"""Detect 3d spheres from confocal microscopy
 
 	Args:
@@ -152,6 +152,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	# post process to numpy array
 	result = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+	result[result<threshold]=0
 
 	# find positions from label
 	# TODO change to trackpy or watershed?
@@ -161,7 +162,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		positions = run_trackpy(result*255, diameter=diameter)
 	elif post_processing == "max":
 		if isinstance(diameter, list): diameter = diameter[0]
-		positions = peak_local_max(result, min_distance=int((diameter)-1))
+		positions = peak_local_max(result*255, min_distance=int((diameter)-3))
 
 	# positions = find_positions(result, threshold)
 

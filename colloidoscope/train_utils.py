@@ -487,7 +487,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	else:
 		detection_diameter = heatmap_r
 	if post_processing == "max":
-		detection_diameter = int((metadata['params']['r']*2)-1)
+		detection_diameter = int((metadata['params']['r']*2)-3)
 
 	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
 	sidebyside = make_proj(test_array, test_label)
@@ -549,17 +549,19 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# post process to numpy array
 			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+			result[result<threshold] = 0
 
 			if heatmap_r == "radius":
 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
 			else:
 				detection_diameter = heatmap_r
 			if post_processing == "max":
-				max_diameter = int((metadata['params']['r']*2)-1)
+				max_diameter = int((metadata['params']['r']*2)-3)
 
 			if post_processing == "tp":
 				pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
 			elif post_processing == "max":
+				
 				pred_positions = peak_local_max(result*255, min_distance=max_diameter)
 			
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
@@ -616,7 +618,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
 		axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
 		axs[i].title.set_text(p)
-		axs[i].set_ylim(0,1.1)
+		axs[i].set_ylim(-0.1,1.1)
 	fig.tight_layout()
 	run['test/params_vs_rec'].upload(fig)
 
@@ -626,6 +628,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	for i, p in enumerate(plot_params):
 		this_df = losses[losses['type'].isin([p])]
 		sns.scatterplot(x=p, y = 'loss', data=this_df, ax=axs[i])
+		axs[i].scatter(x=p, 		y = 'loss', data=this_df, color='blue')
+		axs[i].title.set_text(p)
+		axs[i].set_ylim(-0.1,1.1)
 	fig.tight_layout()
 	run['test/params_vs_loss'].upload(fig)
 
