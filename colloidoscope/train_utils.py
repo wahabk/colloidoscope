@@ -35,7 +35,7 @@ import torch.nn.functional as F
 
 from functools import reduce
 
-from skimage.feature import peak_local_max
+from skimage.feature import peak_local_max, blob_log
 
 
 """
@@ -141,6 +141,7 @@ class Trainer:
 				 notebook: bool = False,
 				 logger=None,
 				 tuner=False,
+				 transformer=False,
 				 ):
 
 		self.model = model
@@ -155,6 +156,7 @@ class Trainer:
 		self.notebook = notebook
 		self.logger = logger
 		self.tuner = tuner
+		self.transformer = transformer
 
 		self.training_loss = []
 		self.validation_loss = []
@@ -213,6 +215,13 @@ class Trainer:
 			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 			self.optimizer.zero_grad()  # zerograd the parameters
 			out = self.model(input_)  # one forward pass
+			print(out.shape)
+			if self.transformer: 
+				try:
+					out = out[0]
+				except:
+					print(out.shape)
+					
 			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
 				loss = self.criterion(out, target)
@@ -439,8 +448,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 		if heatmap_r == "radius":
 			detection_diameter = d['diameter']
-		elif post_processing == "max":
-			detection_diameter = d['diameter']-1
 		else:
 			detection_diameter = heatmap_r
 
@@ -448,7 +455,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 		if len(pred_positions>0):
 			sidebyside = make_proj(d['array'], label)
-			run[name].upload(File.as_image(sidebyside))
+			if run: run[name].upload(File.as_image(sidebyside))
 
 			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
@@ -457,7 +464,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
 			plt.legend()
 			fig = plt.gcf()
-			run[name+'gr'].upload(fig)
+			if run: run[name+'gr'].upload(fig)
 			plt.clf()
 
 			if name == 'levke':
@@ -468,11 +475,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				measured_volume = n_particles * single_vol
 				measured_volfrac = measured_volume / d['array'].size
 				fraction_missing = 1 - (measured_volfrac / target_volfrac)
-
-				run['estimates/measured_volfrac'] = measured_volfrac
-				run['estimates/target_volfrac'] = target_volfrac
-				run['estimates/n_particles'] = n_particles
-				run['estimates/fraction_missing'] = fraction_missing
+				if run: 
+					run['estimates/measured_volfrac'] = measured_volfrac
+					run['estimates/target_volfrac'] = target_volfrac
+					run['estimates/n_particles'] = n_particles
+					run['estimates/fraction_missing'] = fraction_missing
 
 		else:
 			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
@@ -487,11 +494,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	else:
 		detection_diameter = heatmap_r
 	if post_processing == "max":
-		detection_diameter = int((metadata['params']['r']*2)-3)
+		detection_diameter = int((metadata['params']['r']*2))
 
 	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
 	sidebyside = make_proj(test_array, test_label)
-	run['prediction'].upload(File.as_image(sidebyside))
+	if run: run['prediction'].upload(File.as_image(sidebyside))
 	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
 
 	try:
@@ -503,19 +510,19 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
 		plt.legend()
 		fig = plt.gcf()
-		run['gr'].upload(fig)
+		if run: run['gr'].upload(fig)
 		plt.clf()
 	except:
 		print('Skipping gr() as bad pred')
-		run['gr'] = 'failed'
+		if run: run['gr'] = 'failed'
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	run['AP'] = ap
+	if run: run['AP'] = ap
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
 
-	run['PR_curve'].upload(fig)
+	if run: run['PR_curve'].upload(fig)
 	plt.clf()
 
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None) 
@@ -555,14 +562,14 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
 			else:
 				detection_diameter = heatmap_r
-			if post_processing == "max":
-				max_diameter = int((metadata['params']['r']*2)-3)
-
 			if post_processing == "tp":
 				pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
 			elif post_processing == "max":
-				
+				max_diameter = int((metadata['params']['r']*2))
 				pred_positions = peak_local_max(result*255, min_distance=max_diameter)
+			if post_processing == "log":
+				sigma = int((metadata['params']['r'])/math.sqrt(3))
+				pred_positions = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 			
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 
@@ -608,7 +615,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].title.set_text(p)
 		axs[i].set_ylim(0,1.1)
 	fig.tight_layout()
-	run['test/params_vs_prec'].upload(fig)
+	if run: run['test/params_vs_prec'].upload(fig)
 
 	plt.clf()
 	fig, axs = plt.subplots(3,2)
@@ -620,7 +627,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].title.set_text(p)
 		axs[i].set_ylim(-0.1,1.1)
 	fig.tight_layout()
-	run['test/params_vs_rec'].upload(fig)
+	if run: run['test/params_vs_rec'].upload(fig)
 
 	plt.clf()
 	fig, axs = plt.subplots(3,2)
@@ -632,7 +639,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].title.set_text(p)
 		axs[i].set_ylim(-0.1,1.1)
 	fig.tight_layout()
-	run['test/params_vs_loss'].upload(fig)
+	if run: run['test/params_vs_loss'].upload(fig)
 
 	return losses
 
