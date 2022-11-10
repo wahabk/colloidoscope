@@ -68,7 +68,7 @@ def draw_label_slice(args):
 					if is_seg:
 						new_slice[i,j] = 255
 					else:
-						new_slice[i,j] = gaussian(dist*3, 0, heatmap_r, peak=255)
+						new_slice[i,j] = gaussian(dist*math.sqrt(3), 0, heatmap_r, peak=255)
 
 	return new_slice
 
@@ -177,7 +177,7 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 
 def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			particle_size:float, f_mean:float, cnr:float,
-			snr:float, f_sigma:float=30, b_sigma:float=20, diameters=np.ndarray([]), make_label:bool=True, 
+			snr:float, f_sigma:float=15, b_sigma:float=20, diameters=np.ndarray([]), make_label:bool=True, 
 			label_size:list=(64,64,64), heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
 	'''
 	psf between 0 and 1

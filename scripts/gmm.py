@@ -23,9 +23,9 @@ from tqdm import tqdm
 from scipy import ndimage as ndi
 
 from skimage.segmentation import watershed
-from skimage.feature import peak_local_max
+from skimage.feature import peak_local_max, blob_dog, blob_log
 
-
+from math import sqrt
 
 
 
@@ -47,6 +47,7 @@ if __name__ == '__main__':
 	d = r*2
 	index = 10000
 	volfrac = 0.1
+	threshold = 0.5
 
 
 	dataset_name = 'new_1400_30nm_test'
@@ -57,12 +58,14 @@ if __name__ == '__main__':
 	# positions = d["positions"]
 	# metadata = d["metadata"]
 	# diameters = d["diameters"]
+	# label[label<threshold] = 0
 
 	metadata, true_positions, diameters = dc.read_metadata(dataset_name, index)
+	print(metadata)
 
 	# label = dc.crop3d(label, label_size)
 
-	tp_pred, df = dc.run_trackpy(image, diameter = dc.round_up_to_odd(metadata['params']['r']*2), )
+	tp_pred, df = dc.run_trackpy(label, diameter = dc.round_up_to_odd(metadata['params']['r']*2), )
 
 	# positions, diameters = crop_positions_for_label(positions, canvas_size, label_size, diameters)
 
@@ -84,9 +87,13 @@ if __name__ == '__main__':
 
 	# import pdb; pdb.set_trace()
 
-
-	coords = peak_local_max(image, min_distance=int(dc.round_up_to_odd(metadata['params']['r']*2)))
-	coords = np.array(coords)
+	# coords = peak_local_max(label, min_distance=diameter/2)
+	# coords = np.array(coords)
+	# coords = blob_log(label, min_sigma=diameter, max_sigma=diameter, overlap=0)
+	sigma = int((metadata['params']['r'])/sqrt(3))
+	coords = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1] # get rid of sigmas
+	# print(len(coords))
+	# print(coords)
 	prec, rec = dc.get_precision_recall(true_positions, tp_pred, diameters=diameters, threshold=0.5)
 	print('tp', prec, rec)
 	prec, rec = dc.get_precision_recall(true_positions, coords, diameters=diameters, threshold=0.5)
@@ -102,4 +109,4 @@ if __name__ == '__main__':
 	plt.show()
 
 
-	dc.view(image, label=label, positions=coords)
+	dc.view(image, label=label, positions=true_positions)

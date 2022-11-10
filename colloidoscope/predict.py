@@ -12,9 +12,9 @@ from pathlib2 import Path
 
 from typing import Union
 
-import copy
+import math
 
-from skimage.feature import peak_local_max
+from skimage.feature import peak_local_max, blob_dog, blob_log
 
 def find_positions(result, threshold) -> np.ndarray:
 	label = result.copy()
@@ -70,6 +70,15 @@ def insert_in_center(a:np.ndarray, b:np.ndarray):
 	a[0, 0, z - zl : z + zl, y - yl : y + yl, x - xl : x + xl] = b
 
 	return a
+
+
+def run_trackpy(array, diameter=5, *args, **kwargs):
+	df = None
+	df = tp.locate(array, diameter=diameter, *args, **kwargs)
+	f = list(zip(df['z'], df['y'], df['x']))
+	tp_predictions = np.array(f, dtype='float32')
+
+	return tp_predictions
 
 def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
 			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), post_processing:str="tp", threshold:float=0.5, debug:bool=False) -> pd.DataFrame:
@@ -162,14 +171,17 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		positions = run_trackpy(result*255, diameter=diameter)
 	elif post_processing == "max":
 		if isinstance(diameter, list): diameter = diameter[0]
-		positions = peak_local_max(result*255, min_distance=int((diameter)))
+		positions = peak_local_max(result*255, min_distance=int((diameter/2)))
 	elif post_processing == "log":
-		pass
-	elif post_processing == "dog":
-		pass
-	elif post_processing == "max":
-		pass
-	# positions = find_positions(result, threshold)
+		if isinstance(diameter, list): 
+			sigma = int((diameter[0]/2)/math.sqrt(3))
+			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, threshold=threshold, overlap=0)
+		else:
+			sigma = int((diameter/2)/math.sqrt(3))
+			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, threshold=threshold, overlap=0)
+	elif post_processing == "classic":
+		positions = find_positions(result, threshold)
+	
 
 	d = {
 		'x' : positions[:,1],
@@ -182,11 +194,3 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		return df, positions, result
 	else:
 		return df
-
-def run_trackpy(array, diameter=5, *args, **kwargs):
-	df = None
-	df = tp.locate(array, diameter=diameter, *args, **kwargs)
-	f = list(zip(df['z'], df['y'], df['x']))
-	tp_predictions = np.array(f, dtype='float32')
-
-	return tp_predictions
