@@ -162,8 +162,13 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		positions = run_trackpy(result*255, diameter=diameter)
 	elif post_processing == "max":
 		if isinstance(diameter, list): diameter = diameter[0]
-		positions = peak_local_max(result*255, min_distance=int((diameter)-3))
-
+		positions = peak_local_max(result*255, min_distance=int((diameter)))
+	elif post_processing == "log":
+		pass
+	elif post_processing == "dog":
+		pass
+	elif post_processing == "max":
+		pass
 	# positions = find_positions(result, threshold)
 
 	d = {
