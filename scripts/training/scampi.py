@@ -58,7 +58,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		n_classes = 1,
 		random_seed = 42,
 	)
-	run['Tags'] = name
+	run['Tags'] = str(name)
 	run['parameters'] = params
 	#TODO find a way to precalculate this - should i only unpad the first block?
 	# if config['n_blocks'] == 2: label_size = (48,48,48)

@@ -1,18 +1,5 @@
 import numpy as np
-import pandas as pd
-import scipy
-from matplotlib import pyplot as plt
-from tqdm import tqdm, trange
-import math
-import os
-from skimage import io
-import seaborn as sns
-import copy
-
 import torch
-import neptune.new as neptune
-from neptune.new.types import File
-from ray import tune
 import torchio as tio
 
 from colloidoscope import DeepColloid
@@ -27,8 +14,8 @@ if __name__ == "__main__":
 	# dataset_path = '/data/mb16907/wahab/Colloids'
 	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
-	dc = DeepColloid(dataset_path)
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dc = DeepColloid(dataset_path)
 
 	roiSize = (1,64,64,64)
 
