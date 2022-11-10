@@ -41,20 +41,20 @@ def plot_with_side_view(scan, path):
 	plt.clf()
 
 if __name__ == '__main__':
-	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
 	canvas_size=(100,100,100)
 	label_size=(100,100,100)
 	
-	dataset_name = 'new_1400_30nm'
+	dataset_name = 'new_1400_40nm'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
-	n_per_type = 95 # for testing
+	n_per_type = 100 # for testing
 
 
 	# psf_kernel = 'standard' #TODO make this change psf
@@ -85,7 +85,7 @@ if __name__ == '__main__':
 			keys = list(types.keys())
 			this_type = random.choice(keys)
 			params = types[this_type]
-			params['f_sigma'] = 30
+			params['f_sigma'] = 15
 			params['b_sigma'] = 20
 
 			metadata = {
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 		'params' : params,
 	}
 
-	path = f"{dataset_path}/Positions/old/phi{params['volfrac']*1000:.0f}.gsd"
+	path = f"{dataset_path}/Positions/big/phi{params['volfrac']*1000:.0f}.gsd"
 	hoomd_positions, diameters = read_gsd(path, 499)
 
 	# read huygens psf
@@ -163,8 +163,8 @@ if __name__ == '__main__':
 
 
 	# Sim for testing
-	canvas_size=(64,64,64)
-	label_size=(64,64,64)
+	canvas_size=(100,100,100)
+	label_size=(100,100,100)
 
 	test_params = ['volfrac','particle_size','r','brightness','cnr','snr',]
 	test_list = [[s]*n_per_type for s in test_params]
@@ -178,8 +178,9 @@ if __name__ == '__main__':
 	index=1 # 0 index for gr
 	for i, t in enumerate(test_list):
 		for n, this_type in enumerate(t):
+			gsd_index = n
 
-			gsd_index = (n_per_type*i)+n
+			index = (n_per_type*i)+n
 
 			types = {
 				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.25},
@@ -207,13 +208,13 @@ if __name__ == '__main__':
 
 			metadata = {
 				'dataset': test_dataset_name,
-				'n' 	 : gsd_index,
+				'n' 	 : index,
 				'type'	 : this_type,
 				'volfrac': volfrac,
 				'params' : params,
 			}
 
-			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
+			path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} at {gsd_index} ...')
 
 			hoomd_positions, diameters = read_gsd(path, gsd_index)
