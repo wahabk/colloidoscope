@@ -38,6 +38,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# setup neptune
 	run = neptune.init(
 		project="wahabk/colloidoscope",
+		# api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 	)
 	params = dict(
@@ -64,8 +65,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	#TODO find a way to precalculate this - should i only unpad the first block?
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
-	# label_size = params['roiSize']
-	label_size = [60,60,60]
+	label_size = params['roiSize']
+	# label_size = [60,60,60]
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
@@ -79,7 +80,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 			tio.RandomBiasField(0.1): 0.1,
 			tio.RandomGamma((-0.3,0.3)): 0.1,
 			tio.RandomMotion(): 0.3,
-		}),                                    
+		}),
 		tio.RescaleIntensity((0.05,0.95)),
 	])
 
@@ -123,8 +124,36 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		# kernel_size=3,
 		# up_kernel_size=3,
 		dropout=params["dropout"],
-		padding='valid',
+		# padding='valid',
 	)
+
+	# model = monai.networks.nets.UNETR(
+	# 	in_channels = 1,
+	# 	out_channels = 1,
+	# 	img_size=params['roiSize'],
+	# 	feature_size=32,
+	# 	hidden_size=768,
+	# 	mlp_dim=3072,
+	# 	num_heads=12,
+	# 	pos_embed='conv', 
+	# 	norm_name='instance', 
+	# 	conv_block=True, 
+	# 	res_block=True, 
+	# 	dropout_rate=0.0, 
+	# 	spatial_dims=3, 
+	# 	qkv_bias=False)
+
+	# model = monai.networks.nets.ViT(
+	# 	in_channels=1,
+	# 	img_size=params['roiSize'],
+	# 	patch_size=params['roiSize'],
+	# 	hidden_size=768,
+	# 	mlp_dim=3072,
+	# 	num_layers=12,
+	# 	num_heads=12,
+	# 	pos_embed='conv',
+	# 	dropout_rate=0.0,
+	# 	spatial_dims=3,)
 
 	"""
 	if padding mode is valid use roisize+/-4
@@ -175,6 +204,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 					epochs=params['epochs'],
 					logger=run,
 					tuner=tuner,
+					transformer=False,
 					)
 
 	# start training
@@ -185,7 +215,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	if save:
 		model_name = save
 		torch.save(model.state_dict(), model_name)
-		# run['model/weights'].upload(model_name)
+		run['model/weights'].upload(model_name)
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, 
 				criterion=criterion, device=device, num_workers=num_workers, batch_size=1,
@@ -215,14 +245,14 @@ if __name__ == "__main__":
 	train_data = all_data[0:1000]
 	val_data = all_data[1000:1200]
 	test_data =	list(range(1,498))
-	# train_data = all_data[0:200]
-	# val_data = all_data[200:250]
+	# train_data = all_data[0:20]
+	# val_data = all_data[20:25]
 	# test_data =	list(range(1,50))
 	name = 'trying max loc'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "max"
+	post_processing = "tp"
 
 	print(f"training on {len(train_data)} val {len(val_data)} test {len(test_data)}")
 
@@ -232,7 +262,7 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 5,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,

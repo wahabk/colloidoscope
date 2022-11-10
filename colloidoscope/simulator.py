@@ -20,7 +20,7 @@ import random
 import math
 from scipy.signal import convolve
 from tqdm import tqdm
-import psf
+# import psf
 from perlin_numpy import generate_perlin_noise_3d
 from pathlib2 import Path
 
@@ -230,14 +230,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 		this_kernel = ndimage.zoom(psf_kernel, psf_zoom)
 		print(f"psf_zoom {psf_zoom}")
-
-	# create PSF
-	elif psf_kernel == 'standard':
-		print("simulating standard PSF")
-		args = dict(shape=(64, 64), dims=(particle_size, particle_size), ex_wavelen=488, em_wavelen=520, num_aperture=1.2, refr_index=1.4, pinhole_radius=0.9, pinhole_shape='round', magnification = 100)
-		obsvol = psf.PSF(psf.ISOTROPIC | psf.CONFOCAL, **args)
-		psf_kernel = obsvol.volume()
-		psf_kernel = ndimage.zoom(psf_kernel, 0.375)
 
 	else: raise ValueError(f"psf_kernel can be either str('Standard') or an np.ndarray but you provided {type(psf_kernel)}")
 

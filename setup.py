@@ -29,7 +29,7 @@ setup(
                 'trackpy',
                 'neptune-client',
                 'ray[tune]',
-                'psf',
+                # 'psf',
                 # 'perlin-numpy @ git+https://github.com/pvigier/perlin-numpy',
                 # 'monai @ git+https://github.com/wahabk/MONAI'
         ],
