@@ -215,7 +215,7 @@ class Trainer:
 			input_, target = x.to(self.device), y.to(self.device)  # send to device (GPU or CPU)
 			self.optimizer.zero_grad()  # zerograd the parameters
 			out = self.model(input_)  # one forward pass
-			print(out.shape)
+			# print(out.shape)
 			if self.transformer: 
 				try:
 					out = out[0]
@@ -556,7 +556,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# post process to numpy array
 			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
-			result[result<threshold] = 0
+			# 
 
 			if heatmap_r == "radius":
 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
@@ -569,6 +569,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				pred_positions = peak_local_max(result*255, min_distance=max_diameter)
 			if post_processing == "log":
 				sigma = int((metadata['params']['r'])/math.sqrt(3))
+				result[result<threshold] = 0
 				pred_positions = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 			
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
