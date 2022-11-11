@@ -121,7 +121,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		out_channels=params['n_classes'],
 		channels=channels,
 		strides=strides,
-		kernel_size=3,
+		kernel_size=7,
 		# up_kernel_size=3,
 		dropout=params["dropout"],
 		padding='valid',
@@ -242,17 +242,17 @@ if __name__ == "__main__":
 	all_data = list(range(1,1400))
 	random.shuffle(all_data)
 
-	# train_data = all_data[0:1000]
-	# val_data = all_data[1000:1200]
-	# test_data =	list(range(1,498))
-	train_data = all_data[0:20]
-	val_data = all_data[20:25]
-	test_data =	list(range(1,50))
-	name = 'trying au'
+	train_data = all_data[0:1000]
+	val_data = all_data[1000:1200]
+	test_data =	list(range(1,498))
+	# train_data = all_data[0:20]
+	# val_data = all_data[20:25]
+	# test_data =	list(range(1,50))
+	name = 'trying kernel 7'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "tp"
+	post_processing = "log"
 
 	print(f"training on {len(train_data)} val {len(val_data)} test {len(test_data)}")
 
@@ -262,7 +262,7 @@ if __name__ == "__main__":
 		"batch_size": 8,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 1,
+		"epochs": 2,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,

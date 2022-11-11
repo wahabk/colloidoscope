@@ -99,7 +99,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 
 	# TODO write asserts
 
-	if post_processing not in ["tp", "max"]:
+	if post_processing not in ["tp", "max", "log", "classic"]:
 		raise ValueError(f"post_processing can be str(tp), or str(max) but you provided {post_processing}")
 	
 	# initialise torch device
@@ -161,7 +161,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	# post process to numpy array
 	result = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
-	result[result<threshold]=0
+	# 
 
 	# find positions from label
 	# TODO change to trackpy or watershed?
@@ -173,12 +173,13 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		if isinstance(diameter, list): diameter = diameter[0]
 		positions = peak_local_max(result*255, min_distance=int((diameter/2)))
 	elif post_processing == "log":
+		result[result<threshold]=0
 		if isinstance(diameter, list): 
 			sigma = int((diameter[0]/2)/math.sqrt(3))
-			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, threshold=threshold, overlap=0)
+			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0.1)[:,:-1]
 		else:
 			sigma = int((diameter/2)/math.sqrt(3))
-			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, threshold=threshold, overlap=0)
+			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0.1)[:,:-1]
 	elif post_processing == "classic":
 		positions = find_positions(result, threshold)
 	
