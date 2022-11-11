@@ -111,14 +111,14 @@ if __name__ == '__main__':
 			print(label.shape, label.max(), label.min())
 
 			# code for debugging
-			dc.view(canvas, final_centers, label)
+			# dc.view(canvas, final_centers, label)
 			# plot_with_side_view(canvas, f'output/figs/simulation/{index}.png')
 			# projection = np.max(canvas, axis=0)
 			# projection_label = np.max(label, axis=0)*255
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			# dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 			index+=1
 
 	# sim 4 gr
