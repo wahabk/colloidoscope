@@ -133,27 +133,24 @@ def shake(centers, magnitude):
 		new_centers.append([cz, cy, cx])
 	return np.array(new_centers)
 
-def crop_positions_for_label(centers, canvas_size, label_size, diameters):
+def crop_positions_for_label(centers, canvas_size, label_size, diameters, pad=0):
 
 	zdiff = (canvas_size[0] - label_size[0])/2
 	xdiff = (canvas_size[1] - label_size[1])/2
 	ydiff = (canvas_size[2] - label_size[2])/2
-	print(centers[0])
 	centers = centers - [zdiff, xdiff, ydiff]
-	print(centers[0])
-	print([zdiff, xdiff, ydiff])
+
 	
 	indices = []
-	pad = 0
+	# pad = 0
 	for idx, c in enumerate(centers):
 		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
 			indices.append(idx)
 
-	print(centers[0])
-	centers = centers[indices]
-	diameters = diameters[indices]
+	final_centers = centers[indices]
+	final_diameters = diameters[indices]
 
-	return centers, diameters
+	return final_centers, final_diameters
 
 
 def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='uint8'):
@@ -178,7 +175,7 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			particle_size:float, f_mean:float, cnr:float,
 			snr:float, f_sigma:float=15, b_sigma:float=20, diameters=np.ndarray([]), make_label:bool=True, 
-			label_size:list=(64,64,64), heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
+			heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
 	'''
 	psf between 0 and 1
 	
@@ -192,7 +189,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 	psf_kernel = 'standard'
 
-	TODO add sim seg instead of heatmap
 	'''
 	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
@@ -247,22 +243,23 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	
 	canvas = np.array(canvas, dtype='uint8')
 	
+	centers=[]
+	for c in zoom_out_centers:
+		x,y,z = c
+		new_c = [(x-pad/2)*zoom ,(y-pad/2)*zoom ,(z-pad/2)*zoom ]
+		centers.append(new_c)
+	centers = np.array(centers)
+
 	if make_label:
 		# draw label heatmap from centers
-		label = np.zeros(label_size, dtype='float64')
-
-		# TODO this is the limit for label having to be square not rect
-		diff = (canvas.shape[0] - label.shape[0])/2
-		final_centers = centers - diff # if the label is smaller than the image then shift the difference
+		label = np.zeros(canvas_size, dtype='float64')
 
 		print('Simulating label...')
 
-		label = draw_spheres_sliced(label, final_centers, radii, is_label=True, heatmap_r=heatmap_r, num_workers=num_workers)
-		final_centers, final_diameters = crop_positions_for_label(final_centers, canvas_size, label_size, diameters)
+		label = draw_spheres_sliced(label, centers, radii, is_label=True, heatmap_r=heatmap_r, num_workers=num_workers)
 
-		# print(label.shape, label.max(), label.min(), r, centers.shape, num_workers, )
-		label = np.array(label ,dtype='float64')
-		return canvas, label, final_centers, final_diameters
+		label = np.array(label, dtype='float64')
+		return canvas, label, centers, diameters
 	else:
 		return canvas
 

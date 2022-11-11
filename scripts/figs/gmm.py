@@ -1,5 +1,6 @@
 from sklearn.inspection import plot_partial_dependence
 from colloidoscope import DeepColloid
+from colloidoscope.predict import find_positions
 from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
 # from colloidoscope.simulator import crop_positions_for_label
 import numpy as np
@@ -90,14 +91,21 @@ if __name__ == '__main__':
 	# coords = peak_local_max(label, min_distance=diameter/2)
 	# coords = np.array(coords)
 	# coords = blob_log(label, min_sigma=diameter, max_sigma=diameter, overlap=0)
+	label[label<0.5] = 0
 	sigma = int((metadata['params']['r'])/sqrt(3))
 	coords = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1] # get rid of sigmas
+	# coords = find_positions(label, threshold=0)
 	# print(len(coords))
 	# print(coords)
 	prec, rec = dc.get_precision_recall(true_positions, tp_pred, diameters=diameters, threshold=0.5)
 	print('tp', prec, rec)
 	prec, rec = dc.get_precision_recall(true_positions, coords, diameters=diameters, threshold=0.5)
 	print('local_max', prec, rec)
+
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, coords, diameters)
+
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
+	plt.show()
 
 	x,y = dc.get_gr(true_positions, 50, 50, )
 	plt.plot(x, y, label=f'true n ={len(true_positions)}', color='black')
@@ -109,4 +117,4 @@ if __name__ == '__main__':
 	plt.show()
 
 
-	dc.view(image, label=label, positions=true_positions)
+	dc.view(image, label=label, positions=coords)

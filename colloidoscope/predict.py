@@ -36,8 +36,8 @@ def find_positions(result, threshold) -> np.ndarray:
 
 
 	# label = scipy.ndimage.zoom(label, 0.5, mode='nearest')
-	label[label > threshold] = 255
-	label[label < threshold] = 0
+	# label[label > threshold] = 255
+	# label[label < threshold] = 0
 	print(label.shape, label.max(), label.min())
 
 	str_3D=np.array([[[0, 0, 0],

@@ -1,0 +1,94 @@
+from sklearn.inspection import plot_partial_dependence
+from colloidoscope import DeepColloid
+from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
+from colloidoscope.simulator import crop_positions_for_label
+import numpy as np
+import matplotlib.pyplot as plt
+import napari
+from random import randrange, uniform, triangular
+import numpy as np
+import random
+import psf
+from scipy import ndimage
+import math
+from scipy.signal import convolve2d
+from pathlib2 import Path
+
+
+
+if __name__ == '__main__':
+	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
+	dc = DeepColloid(dataset_path)
+
+
+
+
+
+
+	canvas_size=(100,100,100)
+	label_size=(100,100,100)
+	num_workers = 16
+
+	params = dict(
+		r=10,
+		particle_size=1,
+		snr=10,
+		cnr=10,
+		volfrac=0.1,
+		brightness=255,
+	)
+
+	heatmap_r = 'radius'
+
+	# read huygens psf
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
+	psf_kernel = dc.read_tif(str(psf_path))
+	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
+	psf_kernel = psf_kernel/psf_kernel.max()
+
+	n = 0
+	path = f"{dataset_path}/Positions/old/phi{params['volfrac']*1000:.0f}.gsd"
+	print(f'Reading: {path} at {n+1} ...')
+
+	hoomd_positions, diameters = read_gsd(path, n+1)
+
+	heatmap_rs = ["radius", 2, 4, "seg-2", "seg-4"]
+
+
+	canvas, label, true_positions, diameters = dc.simulate(
+				canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
+				params['snr'], diameters=diameters, make_label=True, heatmap_r="radius", 
+				num_workers=num_workers, psf_kernel=psf_kernel)
+
+	print(diameters[0])
+	diameters = diameters * (params['r']*2)
+	print(diameters[0])
+	# does tp/log work best on seg label?
+	# 
+
+	tp_pred, df = dc.run_trackpy(canvas, diameter = dc.round_up_to_odd(params['r']*2), )
+
+
+	prec, rec = dc.get_precision_recall(true_positions, tp_pred, diameters=diameters, threshold=0.5)
+	print('tp', prec, rec)
+	# prec, rec = dc.get_precision_recall(true_positions, coords, diameters=diameters, threshold=0.5)
+	# print('local_max', prec, rec)
+
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, tp_pred, diameters)
+
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
+	plt.show()
+
+	x,y = dc.get_gr(true_positions, 50, 50, )
+	plt.plot(x, y, label=f'true n ={len(true_positions)}', color='black')
+	x,y = dc.get_gr(tp_pred, 50, 50, )
+	plt.plot(x, y, label=f'trackpy n ={len(tp_pred)}', color='grey')
+	# x,y = dc.get_gr(coords, 50, 50, )
+	# plt.plot(x, y, label=f'local_max n ={len(coords)}', color='red')
+	plt.legend()
+	plt.show()
+
+	dc.view(canvas, label=label, positions=true_positions)
