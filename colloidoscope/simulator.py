@@ -39,6 +39,7 @@ def draw_slice(args):
 	for i in range(s.shape[0]):
 		for j in range(s.shape[1]):
 			for k, center in enumerate(centers):
+				if len(centers) < 27: print(i, j, z)
 				cz, cy, cx = center
 				r = radii[k]
 				brightness = brightnesses[k]
@@ -193,7 +194,9 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
 	b_mean = abs(cnr * b_sigma + f_sigma)
-	brightnesses = [random.gauss(f_mean, f_sigma) for _ in centers]
+	brightnesses = np.array([random.gauss(f_mean, f_sigma) for _ in centers], dtype="float32")
+	brightnesses[brightnesses>255]=255
+	brightnesses=np.array(brightnesses, dtype="uint8")
 	zoom = 0.5
 	pad = 80
 	gauss_kernel = (2, 2, 2)
@@ -217,7 +220,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	zoom_out_centers = np.array(zoom_out_centers)
 
 	radii = [(d*r) for d in diameters]
-	zoom_out_radii = [(r/zoom) for r in radii]
+	zoom_out_radii = [(i/zoom) for i in radii]
 
 	if isinstance(psf_kernel, np.ndarray):
 		nm_pixel = (particle_size*1000) / r 
@@ -228,7 +231,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		print(f"psf_zoom {psf_zoom}")
 
 	else: raise ValueError(f"psf_kernel can be either str('Standard') or an np.ndarray but you provided {type(psf_kernel)}")
-
 
 	# draw spheres slice by slice
 	print('Simulating scan...')
@@ -246,7 +248,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	centers=[]
 	for c in zoom_out_centers:
 		x,y,z = c
-		new_c = [(x-pad/2)*zoom ,(y-pad/2)*zoom ,(z-pad/2)*zoom ]
+		new_c = [(x-(pad/2))*zoom ,(y-(pad/2))*zoom ,(z-(pad/2))*zoom ]
 		centers.append(new_c)
 	centers = np.array(centers)
 
@@ -257,6 +259,8 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		print('Simulating label...')
 
 		label = draw_spheres_sliced(label, centers, radii, is_label=True, heatmap_r=heatmap_r, num_workers=num_workers)
+
+		centers, diameters = crop_positions_for_label(centers, canvas_size=canvas_size, label_size=canvas_size, diameters=diameters, pad=0)
 
 		label = np.array(label, dtype='float64')
 		return canvas, label, centers, diameters

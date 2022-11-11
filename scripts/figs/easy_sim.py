@@ -23,14 +23,9 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-
-
-
-
-
 	canvas_size=(100,100,100)
 	label_size=(100,100,100)
-	num_workers = 16
+	num_workers = 10
 
 	params = dict(
 		r=10,
@@ -62,14 +57,15 @@ if __name__ == '__main__':
 				canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 				params['snr'], diameters=diameters, make_label=True, heatmap_r="radius", 
 				num_workers=num_workers, psf_kernel=psf_kernel)
+	print(true_positions.shape)
+	print(canvas.shape, label.shape)
 
-	print(diameters[0])
 	diameters = diameters * (params['r']*2)
-	print(diameters[0])
 	# does tp/log work best on seg label?
 	# 
 
-	tp_pred, df = dc.run_trackpy(canvas, diameter = dc.round_up_to_odd(params['r']*2), )
+	tp_pred, df = dc.run_trackpy(canvas, diameter = dc.round_up_to_odd(params['r']*2))
+	print(tp_pred.shape)
 
 
 	prec, rec = dc.get_precision_recall(true_positions, tp_pred, diameters=diameters, threshold=0.5)
@@ -91,4 +87,4 @@ if __name__ == '__main__':
 	plt.legend()
 	plt.show()
 
-	dc.view(canvas, label=label, positions=true_positions)
+	dc.view(canvas, label=label, positions=tp_pred, true_positions=true_positions)

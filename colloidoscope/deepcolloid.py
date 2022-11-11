@@ -145,19 +145,26 @@ class DeepColloid:
 		# nums = [int(n) for n in list(keys)]
 		return nums
 
-	def view(self, array:np.ndarray, positions:np.ndarray=None, label:np.ndarray=None) -> None:
+	def view(self, array:np.ndarray, positions:np.ndarray=None, true_positions:np.ndarray=None, label:np.ndarray=None) -> None:
 
 		viewer = napari.view_image(array, name='Scan')
 		
 		if label is not None:
 			diff = [(a-b)/2 for a, b in zip(array.shape, label.shape)]
-			viewer.add_image(label*255, opacity=0.25, colormap='red', name='label', translate=diff)	
+			viewer.add_image(label*255, opacity=0.25, colormap='red', name='label')#, translate=diff)	
 		
 		if positions is not None:
 			if label is None: diff=[0 for i in array.shape]
 			# array = np.array([np.stack((img,)*3, axis=-1) for img in array])
 			# array = self.label_scan(array, positions)
-			viewer.add_points(positions, n_dimensional=True, size=5, translate=diff)
+			viewer.add_points(positions, n_dimensional=True, size=5, symbol="x",  edge_color=[1,0,0], face_color=[1,0,0])#, translate=diff)
+
+		if true_positions is not None:
+			if label is None: diff=[0 for i in array.shape]
+			# array = np.array([np.stack((img,)*3, axis=-1) for img in array])
+			# array = self.label_scan(array, true_positions)
+			viewer.add_points(true_positions, n_dimensional=True, size=5, symbol="o", edge_color=[0,1,0], face_color=[0,1,0])#, translate=diff)
+
 
 		napari.run()
 
