@@ -1,7 +1,7 @@
 from sklearn.inspection import plot_partial_dependence
 from colloidoscope import DeepColloid
 from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
-from colloidoscope.simulator import crop_positions_for_label
+from colloidoscope.simulator import crop_positions_for_label, exclude_borders
 import numpy as np
 import matplotlib.pyplot as plt
 import napari
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 		particle_size=1,
 		snr=10,
 		cnr=10,
-		volfrac=0.1,
+		volfrac=0.3,
 		brightness=255,
 	)
 
@@ -60,18 +60,25 @@ if __name__ == '__main__':
 	print(true_positions.shape)
 	print(canvas.shape, label.shape)
 
+
 	diameters = diameters * (params['r']*2)
 	# does tp/log work best on seg label?
 	# 
 
-	tp_pred, df = dc.run_trackpy(canvas, diameter = dc.round_up_to_odd(params['r']*2))
+	tp_pred, df = dc.run_trackpy(label, diameter = dc.round_up_to_odd(params['r']*2))
+	print(dc.round_up_to_odd(params['r']*2))
 	print(tp_pred.shape)
-
+	# print(tp_pred, true_positions)
+	true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=params['r'], diameters=diameters)
+	tp_pred = exclude_borders(tp_pred, canvas_size, pad=params['r'])
+	print(true_positions.shape)
+	print(tp_pred.shape)
 
 	prec, rec = dc.get_precision_recall(true_positions, tp_pred, diameters=diameters, threshold=0.5)
 	print('tp', prec, rec)
 	# prec, rec = dc.get_precision_recall(true_positions, coords, diameters=diameters, threshold=0.5)
 	# print('local_max', prec, rec)
+
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, tp_pred, diameters)
 
@@ -87,4 +94,6 @@ if __name__ == '__main__':
 	plt.legend()
 	plt.show()
 
-	dc.view(canvas, label=label, positions=tp_pred, true_positions=true_positions)
+	dc.view(canvas, label=label, positions=tp_pred, )#true_positions=true_positions)
+
+	dc.view(canvas, label=label, true_positions=true_positions, )#true_positions=true_positions)

@@ -77,9 +77,9 @@ if __name__ == '__main__':
 
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(0.1, 2),  'brightness' : random.randrange(30, 200), 'snr' : uniform(0.1,2)},
-			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(0.1, 2),  'brightness' : random.randrange(30, 200), 'snr' : uniform(0.1,2)},
-			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(0.1, 2),  'brightness' : random.randrange(30, 200), 'snr' : uniform(0.1,2)},
+			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
+			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
+			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
 			}
 
 			keys = list(types.keys())
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 				'params' : params,
 			}
 
-			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
+			path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} at {n+1} ...')
 
 			hoomd_positions, diameters = read_gsd(path, n+1)
@@ -125,16 +125,16 @@ if __name__ == '__main__':
 	test_dataset_name = dataset_name+'_test'
 	index=0
 
-	canvas_size=(192,192,192)
-	label_size=(192,192,192)
+	canvas_size=(200,200,200)
+	label_size=(200,200,200)
 
 	params = dict(
-		r=6,
+		r=10,
 		particle_size=0.2,
-		snr=4,
-		cnr=4,
+		snr=3,
+		cnr=3,
 		volfrac=0.55,
-		brightness=100,
+		brightness=200,
 	)
 
 	metadata = {
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 		'params' : params,
 	}
 
-	path = f"{dataset_path}/Positions/big/phi{params['volfrac']*1000:.0f}.gsd"
+	path = f"{dataset_path}/Positions/old/phi{params['volfrac']*1000:.0f}.gsd"
 	hoomd_positions, diameters = read_gsd(path, 499)
 
 	# read huygens psf
@@ -183,12 +183,12 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.25},
-				'particle_size' : {'r' : 6, 				'particle_size' : uniform(0.1,0.5), 'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.3},
-				'cnr' 			: {'r' : 6, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 3),			'brightness' : 255, 						'snr' : 8, 						'volfrac' : 0.35},
-				'brightness' 	: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 8, 						'volfrac' : 0.4},
-				'snr' 			: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : uniform(0.1,3), 		'volfrac' : 0.45},			
-				'volfrac' 		: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 8, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 20, 						'volfrac' : 0.2},
+				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : uniform(0.1,10), 			'volfrac' : 0.2},			
+				'volfrac' 		: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
@@ -214,7 +214,7 @@ if __name__ == '__main__':
 				'params' : params,
 			}
 
-			path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
+			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} at {gsd_index} ...')
 
 			hoomd_positions, diameters = read_gsd(path, gsd_index)

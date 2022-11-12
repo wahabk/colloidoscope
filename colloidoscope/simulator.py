@@ -154,6 +154,23 @@ def crop_positions_for_label(centers, canvas_size, label_size, diameters, pad=0)
 	return final_centers, final_diameters
 
 
+def exclude_borders(centers, canvas_size, pad, diameters=None, ):
+	
+	indices = []
+	# pad = 0
+	for idx, c in enumerate(centers):
+		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
+			indices.append(idx)
+
+	final_centers = centers[indices]
+
+	if diameters is not None:
+		final_diameters = diameters[indices]
+		return final_centers, final_diameters
+	else:
+		return final_centers
+
+
 def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='uint8'):
 	array = generate_perlin_noise_3d(canvas_shape, (octaves, octaves, octaves), tileable=tileable)
 
@@ -166,6 +183,8 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 	b = brightness_mean - (a * array.mean())
 	array = a * array + b
 
+	array[array>255] = 255
+
 	array = ndimage.gaussian_filter(array, (3,3,3))
 
 	array = np.array(array, dtype=dtype)
@@ -175,7 +194,7 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 
 def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			particle_size:float, f_mean:float, cnr:float,
-			snr:float, f_sigma:float=15, b_sigma:float=20, diameters=np.ndarray([]), make_label:bool=True, 
+			snr:float, f_sigma:float=30, b_sigma:float=10, diameters=np.ndarray([]), make_label:bool=True, 
 			heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
 	'''
 	psf between 0 and 1
@@ -193,14 +212,14 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	'''
 	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
-	b_mean = abs(cnr * b_sigma + f_sigma)
+	noise = (f_mean / (snr * 255))
+	b_mean = abs(f_mean - (cnr*f_sigma))
 	brightnesses = np.array([random.gauss(f_mean, f_sigma) for _ in centers], dtype="float32")
 	brightnesses[brightnesses>255]=255
 	brightnesses=np.array(brightnesses, dtype="uint8")
 	zoom = 0.5
 	pad = 80
 	gauss_kernel = (2, 2, 2)
-	noise = (f_mean / (snr * 255))/10
 
 	# zoom out to large image and positions
 	# later we zoom back in to add aliasing
@@ -209,7 +228,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	# this is to allow the blur to work on the edges
 	zoom_out_size_padded = [c+pad for c in zoom_out_size]
 	canvas = make_background(zoom_out_size_padded, 4, b_mean, b_sigma, dtype='uint8') 
-	canvas = np.zeros(zoom_out_size_padded, dtype='uint8')
 	
 	# convert centers to zoom out size
 	zoom_out_centers=[]
@@ -245,12 +263,12 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	
 	canvas = np.array(canvas, dtype='uint8')
 	
-	centers=[]
-	for c in zoom_out_centers:
-		x,y,z = c
-		new_c = [(x-(pad/2))*zoom ,(y-(pad/2))*zoom ,(z-(pad/2))*zoom ]
-		centers.append(new_c)
-	centers = np.array(centers)
+	# centers=[]
+	# for c in zoom_out_centers:
+	# 	x,y,z = c
+	# 	new_c = [(x-(pad/2))*zoom ,(y-(pad/2))*zoom ,(z-(pad/2))*zoom ]
+	# 	centers.append(new_c)
+	# centers = np.array(centers)
 
 	if make_label:
 		# draw label heatmap from centers
@@ -260,7 +278,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 		label = draw_spheres_sliced(label, centers, radii, is_label=True, heatmap_r=heatmap_r, num_workers=num_workers)
 
-		centers, diameters = crop_positions_for_label(centers, canvas_size=canvas_size, label_size=canvas_size, diameters=diameters, pad=0)
+		# centers, diameters = crop_positions_for_label(centers, canvas_size=canvas_size, label_size=canvas_size, diameters=diameters, pad=0)
 
 		label = np.array(label, dtype='float64')
 		return canvas, label, centers, diameters
