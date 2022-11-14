@@ -12,7 +12,6 @@ from .hoomd_sim_positions import convert_hoomd_positions
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
 from skimage.util import random_noise
-from numba import njit
 from scipy import ndimage
 import numpy as np
 import random
@@ -24,12 +23,6 @@ from tqdm import tqdm
 from perlin_numpy import generate_perlin_noise_3d
 from pathlib2 import Path
 
-@njit()
-def gaussian(x, mu, sig, peak=1.):
-	# peak = 1./(np.sqrt(2.*np.pi*sig)) # regularisation term to make area under gauss = 1
-	return peak * np.exp(-((x-mu)**2.)/((2. * sig)**2.))
-
-@njit()
 def draw_slice(args):
 	# extract args
 	s, z, radii, centers, brightnesses = args
@@ -50,8 +43,12 @@ def draw_slice(args):
 					new_slice[i,j] = brightness
 	return new_slice
 
-@njit()
 def draw_label_slice(args):
+	from numba import njit
+	@njit()
+	def gaussian(x, mu, sig, peak=1.):
+		# peak = 1./(np.sqrt(2.*np.pi*sig)) # regularisation term to make area under gauss = 1
+		return peak * np.exp(-((x-mu)**2.)/((2. * sig)**2.))
 	# extract args
 	s, z, heatmap_radii, centers, is_seg = args
 	#initiate new slice to be drawn
@@ -74,12 +71,14 @@ def draw_label_slice(args):
 	return new_slice
 
 def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=False, heatmap_r='radius', num_workers=2):
+	from numba import njit
 	new_canvas = []
 
 	if is_label == False:
 		args = [(s, z, radii, centers, brightnesses) for z, s in enumerate(canvas)]
 
 		print(canvas.shape, centers.shape, np.shape(radii))
+		draw_slice = njit(draw_slice)
 		with tqdm(total=len(args)) as pbar:
 			with ProcessPoolExecutor(max_workers=num_workers) as pool:
 				for i in pool.map(draw_slice, args):
@@ -95,6 +94,7 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 		args = [(s, z, heatmap_radii, centers, is_seg) for z, s in enumerate(canvas)]
 
 		print(canvas.shape, centers.shape, np.shape(radii))
+		draw_label_slice = njit(draw_label_slice)
 		with tqdm(total=len(args)) as pbar:
 			with ProcessPoolExecutor(max_workers=num_workers) as pool:
 				for i in pool.map(draw_label_slice, args):
@@ -214,7 +214,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	b_mean = f_mean - (cnr*noise_std*255)
 	if b_mean < 0: b_mean=0
 
-	print(f_sigma, noise_std, b_mean)
 	brightnesses = np.array([random.gauss(f_mean, f_sigma) for _ in centers], dtype="float32")
 	brightnesses[brightnesses>255]=255
 	brightnesses=np.array(brightnesses, dtype="uint8")
@@ -229,7 +228,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	# this is to allow the blur to work on the edges
 	zoom_out_size_padded = [c+pad for c in zoom_out_size]
 	canvas = make_background(zoom_out_size_padded, 2, 1, b_sigma/255, dtype='uint8')*b_mean
-	print("after background", canvas.max(), canvas.std()) 
 	
 	# convert centers to zoom out size
 	zoom_out_centers=[]
@@ -248,7 +246,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		psf_zoom = psf_nm_pixel / nm_pixel
 
 		this_kernel = ndimage.zoom(psf_kernel, psf_zoom)
-		print(f"psf_zoom {psf_zoom}")
 
 	else: raise ValueError(f"psf_kernel can be either str('Standard') or an np.ndarray but you provided {type(psf_kernel)}")
 

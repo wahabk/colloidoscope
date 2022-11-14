@@ -50,7 +50,7 @@ if __name__ == '__main__':
 	canvas_size=(100,100,100)
 	label_size=(100,100,100)
 	
-	dataset_name = 'fixed_1400'
+	dataset_name = 'please_1400'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
@@ -77,16 +77,16 @@ if __name__ == '__main__':
 
 			# define types of particles in simulation
 			types = {
-			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
-			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
-			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
+			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
+			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
+			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
 			}
 
 			keys = list(types.keys())
 			this_type = random.choice(keys)
 			params = types[this_type]
-			params['f_sigma'] = 30
-			params['b_sigma'] = 20
+			params['f_sigma'] = 10
+			params['b_sigma'] = 15
 
 			metadata = {
 				'dataset': dataset_name,
@@ -130,9 +130,9 @@ if __name__ == '__main__':
 
 	params = dict(
 		r=10,
-		particle_size=0.2,
-		snr=3,
-		cnr=3,
+		particle_size=0.25,
+		snr=4,
+		cnr=4,
 		volfrac=0.55,
 		brightness=200,
 	)
@@ -183,12 +183,12 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'particle_size' : {'r' : 6, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'cnr' 			: {'r' : 6, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'brightness' 	: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 20, 						'volfrac' : 0.2},
-				'snr' 			: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : uniform(0.1,10), 			'volfrac' : 0.2},			
-				'volfrac' 		: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 20,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'particle_size' : {'r' : 20, 				'particle_size' : uniform(0.1,1), 	'cnr' : 20,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'cnr' 			: {'r' : 20, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'brightness' 	: {'r' : 20, 				'particle_size' : 1, 				'cnr' : 20,							'brightness' : randrange(30, 255), 			'snr' : 20, 						'volfrac' : 0.2},
+				'snr' 			: {'r' : 20, 				'particle_size' : 1, 				'cnr' : 20,							'brightness' : 255, 						'snr' : uniform(0.1,10), 			'volfrac' : 0.2},			
+				'volfrac' 		: {'r' : 20, 				'particle_size' : 1, 				'cnr' : 20,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
@@ -203,8 +203,8 @@ if __name__ == '__main__':
 			snr = params['snr']
 			volfrac = params['volfrac']
 
-			params['f_sigma'] = 15
-			params['b_sigma'] = 20
+			params['f_sigma'] = 10
+			params['b_sigma'] = 5
 
 			metadata = {
 				'dataset': test_dataset_name,
