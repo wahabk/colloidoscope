@@ -614,7 +614,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
 		axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
 		axs[i].title.set_text(p)
-		axs[i].set_ylim(0,1.1)
+		axs[i].set_ylim(-0.1,1.1)
 	fig.tight_layout()
 	if run: run['test/params_vs_prec'].upload(fig)
 
