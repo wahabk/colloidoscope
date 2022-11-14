@@ -37,6 +37,7 @@ from functools import reduce
 
 from skimage.feature import peak_local_max, blob_log
 
+from colloidoscope.simulator import exclude_borders
 
 """
 Datasets
@@ -570,8 +571,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			if post_processing == "log":
 				sigma = int((metadata['params']['r'])/math.sqrt(3))
 				result[result<threshold] = 0
-				pred_positions = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
+				pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 			
+			true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=metadata['params']['r'], diameters=diameters)
+			pred_positions = exclude_borders(pred_positions, canvas_size, pad=metadata['params']['r'])
+
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 
 			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
