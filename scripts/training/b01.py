@@ -70,7 +70,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
-		# tio.RandomAffine(),
+		# tio.RandomAffine(), # TODO add random affine for crop and bc
 	])
 	transforms_img = tio.Compose([
 		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
