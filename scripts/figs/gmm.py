@@ -46,12 +46,12 @@ if __name__ == '__main__':
 
 	r = 5
 	d = r*2
-	index = 10000
+	index = 1
 	volfrac = 0.1
 	threshold = 0.5
 
 
-	dataset_name = 'new_1400_30nm_test'
+	dataset_name = 'fixed_1400'
 
 	d = dc.read_hdf5(dataset_name, index)
 	image = d['image']
@@ -93,8 +93,8 @@ if __name__ == '__main__':
 	# coords = blob_log(label, min_sigma=diameter, max_sigma=diameter, overlap=0)
 	label[label<0.5] = 0
 	sigma = int((metadata['params']['r'])/sqrt(3))
-	coords = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1] # get rid of sigmas
-	# coords = find_positions(label, threshold=0)
+	# coords = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1] # get rid of sigmas
+	coords = find_positions(label, threshold=0)
 	# print(len(coords))
 	# print(coords)
 	prec, rec = dc.get_precision_recall(true_positions, tp_pred, diameters=diameters, threshold=0.5)

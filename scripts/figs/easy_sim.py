@@ -14,7 +14,24 @@ import math
 from scipy.signal import convolve2d
 from pathlib2 import Path
 
+def estimate_noise(I):
 
+  H, W = I.shape
+
+  M = [[1, -2, 1],
+       [-2, 4, -2],
+       [1, -2, 1]]
+
+  sigma = np.sum(np.sum(np.absolute(convolve2d(I, M))))
+  sigma = sigma * math.sqrt(0.5 * math.pi) / (6 * (W-2) * (H-2))
+
+  return sigma
+
+def signaltonoise(a, axis=None, ddof=0):
+    a = np.asanyarray(a)
+    m = a.mean(axis)
+    sd = a.std(axis=axis, ddof=ddof)
+    return np.where(sd == 0, 0, m/sd)
 
 if __name__ == '__main__':
 	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
@@ -29,11 +46,11 @@ if __name__ == '__main__':
 
 	params = dict(
 		r=10,
-		particle_size=1,
-		snr=10,
+		particle_size=0.5,
+		snr=2,
 		cnr=10,
-		volfrac=0.3,
-		brightness=255,
+		volfrac=0.2,
+		brightness=100,
 	)
 
 	heatmap_r = 'radius'
@@ -80,20 +97,23 @@ if __name__ == '__main__':
 	# print('local_max', prec, rec)
 
 
-	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, tp_pred, diameters)
+	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, tp_pred, diameters)
 
-	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
-	plt.show()
+	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='tp on label', tag='o-', color='red')
+	# plt.show()
 
-	x,y = dc.get_gr(true_positions, 50, 50, )
-	plt.plot(x, y, label=f'true n ={len(true_positions)}', color='black')
-	x,y = dc.get_gr(tp_pred, 50, 50, )
-	plt.plot(x, y, label=f'trackpy n ={len(tp_pred)}', color='grey')
-	# x,y = dc.get_gr(coords, 50, 50, )
-	# plt.plot(x, y, label=f'local_max n ={len(coords)}', color='red')
-	plt.legend()
-	plt.show()
+	# x,y = dc.get_gr(true_positions, 50, 50, )
+	# plt.plot(x, y, label=f'true n ={len(true_positions)}', color='black')
+	# x,y = dc.get_gr(tp_pred, 50, 50, )
+	# plt.plot(x, y, label=f'trackpy n ={len(tp_pred)}', color='grey')
+	# # x,y = dc.get_gr(coords, 50, 50, )
+	# # plt.plot(x, y, label=f'local_max n ={len(coords)}', color='red')
+	# plt.legend()
+	# plt.show()
+
+	print(estimate_noise(canvas[0]))
+	print("snr 1", params['brightness']/estimate_noise(canvas[0]))
 
 	dc.view(canvas, label=label, positions=tp_pred, )#true_positions=true_positions)
 
-	dc.view(canvas, label=label, true_positions=true_positions, )#true_positions=true_positions)
+	# dc.view(canvas, label=label, true_positions=true_positions, )#true_positions=true_positions)

@@ -29,8 +29,8 @@ setup(
                 'trackpy',
                 'neptune-client',
                 'ray[tune]',
-                'perlin-numpy @ git+https://github.com/pvigier/perlin-numpy',
-                'monai @ git+https://github.com/wahabk/MONAI'
+                # 'perlin-numpy @ git+https://github.com/pvigier/perlin-numpy',
+                # 'monai @ git+https://github.com/wahabk/MONAI'
         ],
         keywords=['python', 'colloidoscope'],
 )

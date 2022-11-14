@@ -183,8 +183,6 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 	b = brightness_mean - (a * array.mean())
 	array = a * array + b
 
-	array[array>255] = 255
-
 	array = ndimage.gaussian_filter(array, (3,3,3))
 
 	array = np.array(array, dtype=dtype)
@@ -194,7 +192,7 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 
 def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			particle_size:float, f_mean:float, cnr:float,
-			snr:float, f_sigma:float=30, b_sigma:float=10, diameters=np.ndarray([]), make_label:bool=True, 
+			snr:float, f_sigma:float=10, b_sigma:float=5, diameters=np.ndarray([]), make_label:bool=True, 
 			heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
 	'''
 	psf between 0 and 1
@@ -212,8 +210,11 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	'''
 	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
-	noise = (f_mean / (snr * 255))
-	b_mean = abs(f_mean - (cnr*f_sigma))
+	noise_std = (f_mean / (snr * f_mean))
+	b_mean = f_mean - (cnr*noise_std*255)
+	if b_mean < 0: b_mean=0
+
+	print(f_sigma, noise_std, b_mean)
 	brightnesses = np.array([random.gauss(f_mean, f_sigma) for _ in centers], dtype="float32")
 	brightnesses[brightnesses>255]=255
 	brightnesses=np.array(brightnesses, dtype="uint8")
@@ -227,7 +228,8 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	# make bigger padded canvas
 	# this is to allow the blur to work on the edges
 	zoom_out_size_padded = [c+pad for c in zoom_out_size]
-	canvas = make_background(zoom_out_size_padded, 4, b_mean, b_sigma, dtype='uint8') 
+	canvas = make_background(zoom_out_size_padded, 2, 1, b_sigma/255, dtype='uint8')*b_mean
+	print("after background", canvas.max(), canvas.std()) 
 	
 	# convert centers to zoom out size
 	zoom_out_centers=[]
@@ -259,8 +261,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	canvas = crop3d(canvas, zoom_out_size) # crop to selected size to remove padding
 	canvas = ndimage.zoom(canvas, zoom)# zoom back in to original size for aliasing
 	
-	canvas = [random_noise(img, mode='gaussian', var=noise)*255 for img in canvas] # Add noise
-	
+	canvas = [random_noise(img, mode='gaussian', var=noise_std**2)*255 for img in canvas] # Add noise
 	canvas = np.array(canvas, dtype='uint8')
 	
 	# centers=[]

@@ -85,7 +85,7 @@ if __name__ == '__main__':
 			keys = list(types.keys())
 			this_type = random.choice(keys)
 			params = types[this_type]
-			params['f_sigma'] = 15
+			params['f_sigma'] = 30
 			params['b_sigma'] = 20
 
 			metadata = {
