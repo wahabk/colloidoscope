@@ -50,7 +50,7 @@ if __name__ == '__main__':
 	canvas_size=(100,100,100)
 	label_size=(100,100,100)
 	
-	dataset_name = 'new_1400_40nm'
+	dataset_name = 'fixed_1400'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 			hoomd_positions, diameters = read_gsd(path, n+1)
 
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
-										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
+										params['snr'], diameters=diameters, make_label=True, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
 			final_diameters = final_diameters*params['r']*2
 
@@ -155,7 +155,7 @@ if __name__ == '__main__':
 	psf_kernel = psf_kernel/psf_kernel.max()
 
 	canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
-								params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
+								params['snr'], diameters=diameters, make_label=True, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 	metadata['n_particles'] = len(final_centers) # this might depend on label size 
 
 	final_diameters = final_diameters*params['r']*2
@@ -220,7 +220,7 @@ if __name__ == '__main__':
 			hoomd_positions, diameters = read_gsd(path, gsd_index)
 
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
-										params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
+										params['snr'], diameters=diameters, make_label=True, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
 			metadata['n_particles'] = len(final_centers) # this might depend on label size 
 			final_diameters = final_diameters*r*2
 			print(metadata)
