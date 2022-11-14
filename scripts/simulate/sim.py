@@ -184,11 +184,11 @@ if __name__ == '__main__':
 
 			types = {
 				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 20, 						'volfrac' : 0.2},
-				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : uniform(0.1,10), 			'volfrac' : 0.2},			
-				'volfrac' 		: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'particle_size' : {'r' : 6, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'cnr' 			: {'r' : 6, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'brightness' 	: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 20, 						'volfrac' : 0.2},
+				'snr' 			: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : uniform(0.1,10), 			'volfrac' : 0.2},			
+				'volfrac' 		: {'r' : 6, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
