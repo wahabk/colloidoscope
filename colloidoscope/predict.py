@@ -3,12 +3,13 @@ import torch
 import numpy as np
 
 import trackpy as tp
-from .models.unet import UNet
 import pandas as pd
 import torchio as tio
 import monai
 from tqdm import tqdm
 from pathlib2 import Path
+
+from monai.data import GridPatchDataset, DataLoader, PatchIter
 
 from typing import Union
 
@@ -81,7 +82,8 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 	return tp_predictions
 
 def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
-			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), post_processing:str="tp", threshold:float=0.5, debug:bool=False) -> pd.DataFrame:
+			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), post_processing:str="tp", threshold:float=0.5, 
+			debug:bool=False, device=None, batch_size=4) -> pd.DataFrame:
 	"""Detect 3d spheres from confocal microscopy
 
 	Args:
@@ -103,7 +105,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		raise ValueError(f"post_processing can be str(tp), or str(max) but you provided {post_processing}")
 	
 	# initialise torch device
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	if device is None: device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	print(f'predicting on {device}')
 
 	# model
@@ -119,13 +121,18 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			padding='valid',
 		)
 
-	model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
+	if device == "cuda": model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
+	elif device == "cpu": 
+		model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
 		model.load_state_dict(model_weights) # add weights to model
+	
+	if device == "cuda": model = model.to(device)
+	elif device == "cpu": model = model.module.to(device)
 
-	model = model.to(device)
+	
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
 	array = np.expand_dims(array, 0) # add batch axis
 	# tensor = torch.from_numpy(array)
@@ -138,15 +145,23 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	subject_dict = {'scan' : tio.ScalarImage(tensor=array, type=tio.INTENSITY, path=None),}
 	subject = tio.Subject(subject_dict) # use torchio subject to enable using grid sampling
 	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
-	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=1)
+	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc, crop for normal
-	# TODO make put in center like for torch
 	
+	# patch_iter = PatchIter(patch_size=roiSize, start_pos=(0, 0, 0))
+	# ds = GridPatchDataset(data=[array],
+    #                           patch_iter=patch_iter,
+    #                           transform=None)
+	# patch_loader = torch.utils.data.DataLoader(ds, batch_size=batch_size)
+	# output_tensor = np.zeros_like(array)
+
 	model.eval()
 	with torch.no_grad():
 		for i, patch_batch in tqdm(enumerate(patch_loader)):
 			input_tensor = patch_batch['scan'][tio.DATA]
 			locations = patch_batch[tio.LOCATION]
+			# input_tensor, locations = patch_batch[0], patch_batch[1]
+			print(input_tensor.shape, locations.shape, locations)
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
@@ -154,17 +169,21 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			
 			# blank = torch.zeros_like(input_tensor) # because tio doesnt accept outputs of different sizes
 			# out_sigmoid = insert_in_center(blank, out_sigmoid)
+			# out_sigmoid = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			# for pred, loc in zip(out_sigmoid, locations):
+			# 	output_tensor[	loc[0,0]:loc[0,1], 
+			# 					loc[1,0]:loc[1,1], 
+			# 					loc[2,0]:loc[2,1], 
+			# 					loc[3,0]:loc[3,1]] = pred
 
 			aggregator.add_batch(out_sigmoid, locations)
 
-	output_tensor = aggregator.get_output_tensor()
 	# post process to numpy array
-	result = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-	result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
-	# 
+	output_tensor = aggregator.get_output_tensor()
+	output_tensor = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+	result = np.squeeze(output_tensor)  # remove batch dim and channel dim -> [H, W]
 
 	# find positions from label
-	# TODO change to trackpy or watershed?
 
 
 	if post_processing == "tp":
