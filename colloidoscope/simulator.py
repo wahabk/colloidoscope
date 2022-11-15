@@ -23,6 +23,8 @@ from tqdm import tqdm
 from perlin_numpy import generate_perlin_noise_3d
 from pathlib2 import Path
 
+import copy
+
 def draw_slice(args):
 	# extract args
 	s, z, radii, centers, brightnesses = args
@@ -32,7 +34,6 @@ def draw_slice(args):
 	for i in range(s.shape[0]):
 		for j in range(s.shape[1]):
 			for k, center in enumerate(centers):
-				if len(centers) < 27: print(i, j, z)
 				cz, cy, cx = center
 				r = radii[k]
 				brightness = brightnesses[k]
@@ -44,11 +45,7 @@ def draw_slice(args):
 	return new_slice
 
 def draw_label_slice(args):
-	from numba import njit
-	@njit()
-	def gaussian(x, mu, sig, peak=1.):
-		# peak = 1./(np.sqrt(2.*np.pi*sig)) # regularisation term to make area under gauss = 1
-		return peak * np.exp(-((x-mu)**2.)/((2. * sig)**2.))
+
 	# extract args
 	s, z, heatmap_radii, centers, is_seg = args
 	#initiate new slice to be drawn
@@ -66,7 +63,7 @@ def draw_label_slice(args):
 					if is_seg:
 						new_slice[i,j] = 255
 					else:
-						new_slice[i,j] = gaussian(dist*math.sqrt(3), 0, heatmap_r, peak=255)
+						new_slice[i,j] = 255 * np.exp(-(((dist*math.sqrt(3))-0)**2.)/((2. * heatmap_r)**2.))
 
 	return new_slice
 
@@ -78,10 +75,10 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 		args = [(s, z, radii, centers, brightnesses) for z, s in enumerate(canvas)]
 
 		print(canvas.shape, centers.shape, np.shape(radii))
-		draw_slice = njit(draw_slice)
+		jitted_draw_slice = njit(draw_slice)
 		with tqdm(total=len(args)) as pbar:
 			with ProcessPoolExecutor(max_workers=num_workers) as pool:
-				for i in pool.map(draw_slice, args):
+				for i in pool.map(jitted_draw_slice, args):
 					new_canvas.append(i)
 					pbar.update(1)
 
@@ -94,10 +91,10 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 		args = [(s, z, heatmap_radii, centers, is_seg) for z, s in enumerate(canvas)]
 
 		print(canvas.shape, centers.shape, np.shape(radii))
-		draw_label_slice = njit(draw_label_slice)
+		jitted_draw_label_slice = njit(draw_label_slice)
 		with tqdm(total=len(args)) as pbar:
 			with ProcessPoolExecutor(max_workers=num_workers) as pool:
-				for i in pool.map(draw_label_slice, args):
+				for i in pool.map(jitted_draw_label_slice, args):
 					new_canvas.append(i)
 					pbar.update(1)
 
@@ -230,15 +227,16 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	canvas = make_background(zoom_out_size_padded, 2, 1, b_sigma/255, dtype='uint8')*b_mean
 	
 	# convert centers to zoom out size
-	zoom_out_centers=[]
-	for c in centers:
-		x,y,z = c
-		new_c = [x/zoom + pad/2 ,y/zoom + pad/2 ,z/zoom + pad/2 ]
-		zoom_out_centers.append(new_c)
-	zoom_out_centers = np.array(zoom_out_centers)
+	zoom_out_centers=np.array(copy.deepcopy(centers))
+	zoom_out_centers = zoom_out_centers / zoom
+	zoom_out_centers = zoom_out_centers + (pad/2)
 
-	radii = [(d*r) for d in diameters]
-	zoom_out_radii = [(i/zoom) for i in radii]
+
+	diameters = np.array(diameters)
+	# radii = [(d*r) for d in diameters]
+	# zoom_out_radii = [(i/zoom) for i in radii]
+	radii = diameters*r
+	zoom_out_radii = radii/zoom
 
 	if isinstance(psf_kernel, np.ndarray):
 		nm_pixel = (particle_size*1000) / r 
