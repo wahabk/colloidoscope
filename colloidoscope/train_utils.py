@@ -532,7 +532,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	losses = []
 	model.eval()
 	with torch.no_grad():
-		for idx, batch in enumerate(test_loader):
+		for idx, batch in tqdm(enumerate(test_loader)):
 
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)

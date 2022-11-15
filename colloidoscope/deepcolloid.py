@@ -212,7 +212,8 @@ class DeepColloid:
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 
-	def _calc_iou_dist(self, distances, diameters, threshold):
+	@staticmethod
+	def _calc_iou_dist(distances, diameters, threshold):
 		"""
 		Measure distance between two spheres normalised by diameters
 		"""
@@ -233,7 +234,9 @@ class DeepColloid:
 					ious.append(iou)
 		return gt_idx_thresh, pred_idx_thresh, ious
 
-	def _get_results(self, gt, pred, diameters, threshold,):
+	
+	
+	def _get_results(self, gt, pred, diameters, threshold,) -> tuple:
 		from numba import njit
 
 		tp, fp, fn = 0, 0, 0
@@ -291,7 +294,7 @@ class DeepColloid:
 		return tp, fp, fn
 
 	def get_precision_recall(self, ground_truths, predictions, diameters, threshold):
-
+		
 		# take block of different images and find result
 		tp, fp, fn = self._get_results(ground_truths, predictions, diameters, threshold)
 

@@ -252,7 +252,7 @@ if __name__ == "__main__":
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "tp"
+	post_processing = "max"
 
 	print(f"training on {len(train_data)} val {len(val_data)} test {len(test_data)}")
 
