@@ -1,4 +1,5 @@
 import numpy as np
+import colloidoscope
 
 import torch
 import numpy as np
@@ -54,7 +55,7 @@ def get_patches_locations( image_size:list, patch_size:list, patch_overlap:list,
 		locations = np.hstack((indices_ini, indices_fin))
 		return np.array(sorted(locations.tolist()))
 
-class Grid_sampler(torch.utils.data.Dataset):
+class MyGridSampler(torch.utils.data.Dataset):
 	def __init__(self, image:torch.tensor, patch_size:list, overlap:list=[0,0,0], label_size:Union[list, None]=None,) -> None:
 		"""
 		based on tio
@@ -81,6 +82,7 @@ class Grid_sampler(torch.utils.data.Dataset):
 		# Assume 3D
 		location = copy.deepcopy(torch.tensor(self.locations[index]))
 		index_ini = location[:3]
+		print("getting", index, index_ini, )
 		cropped = self.crop(self.patch_tensor, index_ini, self.patch_size)
 		label_location = torch.tensor(self.label_locations[index])
 		d = {"ims":cropped,"loc":label_location}
@@ -95,7 +97,7 @@ class Grid_sampler(torch.utils.data.Dataset):
 			pass
 		else: 
 			diffs = patch_size - label_size
-			tensor_size = np.array(image.shape) + ([0]+list(diffs*2))
+			# tensor_size = np.array(image.shape) + ([0]+list(diffs*2))
 			patch_tensor = F.pad(self.image, (diffs[0],diffs[0],diffs[1],diffs[1],diffs[2],diffs[2]))
 			label_smaller = True
 
@@ -141,7 +143,7 @@ class Grid_sampler(torch.utils.data.Dataset):
 
 
 class MyAggregator():
-	def __init__(self, sampler:Grid_sampler, overlap_mode='avg') -> None:
+	def __init__(self, sampler:MyGridSampler, overlap_mode="avg") -> None:
 		self.sampler = sampler
 		self.overlap_mode = overlap_mode
 
@@ -153,7 +155,7 @@ class MyAggregator():
 	def append_batch(self, batch_tensor, loc) -> None:
 
 		batch = batch_tensor.cpu()
-		locs = self.locations.cpu().numpy()
+		locs = loc.cpu().numpy()
 
 		if self.overlap_mode == "avg":
 			for patch, location in zip(batch, locs):
@@ -173,7 +175,7 @@ class MyAggregator():
 		else: raise NotImplementedError("")
 
 
-	def get_output(self,) -> np.ndarray:
+	def get_output(self,) -> torch.tensor:
 		if self.sampler.label_smaller: return self._out_tensor / self.avgmask_tensor
 		else: raise NotImplementedError("")
 
@@ -195,27 +197,41 @@ class MyAggregator():
 # print(len(locs))
 # # print(locs)
 
-image_size = [1,200,200,200]
-patch_size = [100,100,100]
-label_size = [96,96,96]
+dc = colloidoscope.DeepColloid()
+
+image_size = [1,128,128,128]
+patch_size = [64,64,64]
+label_size = [60,60,60]
 overlap_size = [0,0,0]
-batch_size = 4
+batch_size = 1
+array = dc.read_tif('examples/Data/emily.tiff')
+array = dc.crop3d(array, roiSize=image_size[1:])
+array = np.expand_dims(array, 0)
+t = torch.from_numpy(array)
+print(t.shape)
 
-t = torch.zeros(image_size)
-
-grid_sampler = Grid_sampler(t, patch_size=patch_size, overlap=overlap_size, label_size=label_size)
+grid_sampler = MyGridSampler(t, patch_size=patch_size, overlap=overlap_size, label_size=label_size)
 patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
-aggregator = MyAggregator(grid_sampler, overlap_mode='crop') # average for bc, crop for normal
+aggregator = MyAggregator(grid_sampler, overlap_mode='avg') # average for bc, crop for normal
 
 for batch_dict in patch_loader:
-	# patches, locs = batch
-	print(batch_dict["ims"].shape)
+	# print(batch_dict["ims"].shape)
 	print(batch_dict["loc"])
-	# for i in batch:
-	# 	print(i.shape)
-	# 	for j in i:
-	# 		print(j.shape)
 
-	print("YAAAAAS")
+	img = batch_dict["ims"]
+	locs = batch_dict["loc"]
 
-	# aggregator.append_batch(patches, locs)
+	img = img[	:,
+				:,
+				2:62,
+				2:62,
+				2:62]
+	# print(img.shape)
+
+	aggregator.append_batch(img, locs)
+
+tensor = aggregator.get_output()
+array = tensor.cpu().numpy()
+array = np.squeeze(array)
+
+dc.view(array)
