@@ -148,15 +148,15 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	# print(path)
 
 	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
-	# subject_dict = {'scan' : tio.ScalarImage(tensor=tensor, type=tio.INTENSITY, path=None),}
-	# subject = tio.Subject(subject_dict) # use torchio subject to enable using grid sampling
-	# grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=(16,16,16), padding_mode='mean')
-	# patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
-	# aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc, crop for normal
-	
-	grid_sampler = MyGridSampler(tensor, patch_size=roiSize, overlap=patch_overlap, label_size=label_size)
+	subject_dict = {'scan' : tio.ScalarImage(tensor=tensor, type=tio.INTENSITY, path=None),}
+	subject = tio.Subject(subject_dict) # use torchio subject to enable using grid sampling
+	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=(16,16,16), padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
-	aggregator = MyAggregator(grid_sampler, overlap_mode='avg') # average for bc, crop for normal
+	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc, crop for normal
+	
+	# grid_sampler = MyGridSampler(tensor, patch_size=roiSize, overlap=patch_overlap, label_size=label_size)
+	# patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
+	# aggregator = MyAggregator(grid_sampler, overlap_mode='avg') # average for bc, crop for normal
 
 	# patch_iter = PatchIter(patch_size=roiSize, start_pos=(0, 0, 0))
 	# ds = GridPatchDataset(data=[array],
@@ -168,10 +168,10 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	model.eval()
 	with torch.no_grad():
 		for i, patch_batch in tqdm(enumerate(patch_loader)):
-			# input_tensor = patch_batch['scan'][tio.DATA]
-			# locations = patch_batch[tio.LOCATION]
-			input_tensor = patch_batch['image']
-			locations = patch_batch['location']
+			input_tensor = patch_batch['scan'][tio.DATA]
+			locations = patch_batch[tio.LOCATION]
+			# input_tensor = patch_batch['image']
+			# locations = patch_batch['location']
 			# input_tensor, locations = patch_batch[0], patch_batch[1]
 			# print(input_tensor.shape, locations.shape, locations)
 			input_tensor.to(device)
@@ -188,8 +188,8 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			# 					loc[2,0]:loc[2,1], 
 			# 					loc[3,0]:loc[3,1]] = pred
 
-			# aggregator.add_batch(out_sigmoid, locations)
-			aggregator.append_batch(out_sigmoid, locations)
+			aggregator.add_batch(out_sigmoid, locations)
+			# aggregator.append_batch(out_sigmoid, locations)
 
 	# post process to numpy array
 	output_tensor = aggregator.get_output_tensor()
