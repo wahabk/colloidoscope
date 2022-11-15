@@ -262,10 +262,10 @@ if __name__ == "__main__":
 		"batch_size": 2,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 2,
+		"epochs": 1,
 		"start_filters": 32,
 		"activation": "SWISH",
-		"dropout": 0.2,
+		"dropout": 0,
 		"loss_function": torch.nn.L1Loss(),
 		# "loss_function":	monai.losses.FocalLoss(gamma=0.5)#torch.nn.BCEWithLogitsLoss()	# BinaryFocalLoss(alpha=1.5, gamma=0.5) # torch.nn.BCEWithLogitsLoss() #torch.nn.L1Loss() #  #,
 	}
