@@ -410,7 +410,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
-		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
+		num_workers=4, batch_size=4, criterion=torch.nn.BCEWithLogitsLoss(), 
 		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), 
 		heatmap_r="radius", post_processing="tp", work_dir=None):
 	
@@ -477,6 +477,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		detection_diameter = int((metadata['params']['r']*2))
 
 	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
+	# test_array = test_array/test_array.max()*255
+	# test_label = test_label/test_label.max()*255
 	sidebyside = make_proj(test_array, test_label)
 	if run: run['prediction'].upload(File.as_image(sidebyside))
 	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
@@ -511,17 +513,13 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	losses = []
 	model.eval()
 	with torch.no_grad():
-		for idx, batch in tqdm(enumerate(test_loader)):
-
-			i = test_set[idx]
-			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
-			# diameters=diameters*metadata['params']['r']*2 # TODO FIX IN SIM
+		for batch_idx, batch in enumerate(test_loader):
+			print(batch_idx, "/", len(test_set)/batch_size)
 			
 			x, y = batch
-			for_tp = x.clone()
+			inputs = x.clone()
 			x, y = x.to(device), y.to(device)
-			# print(x.shape, x.max(), x.min())
-			# print(y.shape, y.max(), y.min())
+
 			out = model(x)  # send through model/network
 			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
@@ -532,58 +530,59 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				out = torch.sigmoid(out)
 			loss = loss.cpu().numpy()
 			# post process to numpy array
-			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+			results = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			inputs = inputs.cpu().numpy()
 
-			if heatmap_r == "radius":
-				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-			else:
-				detection_diameter = heatmap_r
-			if post_processing == "tp":
-				pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
-			elif post_processing == "max":
-				max_diameter = int((metadata['params']['r']*2))
-				pred_positions = peak_local_max(result*255, min_distance=max_diameter)
-			if post_processing == "log":
-				sigma = int((metadata['params']['r'])/math.sqrt(3))
-				result[result<threshold] = 0
-				pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
+			for test_idx, [result, for_tp] in tqdm(enumerate(zip(results, inputs))):
+				i = test_idx + ((batch_idx)*(batch_size))
+				metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
+				result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
-			true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=metadata['params']['r'], diameters=diameters)
-			pred_positions = exclude_borders(pred_positions, canvas_size, pad=metadata['params']['r'])
-			
-			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
-			# array = for_tp.cpu().numpy()
-			# array = np.squeeze(array)
-			# print(array.shape)
-			diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
-			print(array.shape, array.dtype, diam)
-			print("why  is tp slow :(")
-			tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
-			print("done")
-			tp_positions = exclude_borders(tp_positions, canvas_size, pad=metadata['params']['r'])
+				if heatmap_r == "radius":
+					detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+				else:
+					detection_diameter = heatmap_r
+				if post_processing == "tp":
+					pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
+				elif post_processing == "max":
+					max_diameter = int((metadata['params']['r']*2))
+					pred_positions = peak_local_max(result*255, min_distance=max_diameter)
+				if post_processing == "log":
+					sigma = int((metadata['params']['r'])/math.sqrt(3))
+					result[result<threshold] = 0
+					pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 
-			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
-			# print(f"prec {prec} rec {rec}")
-			# print(f"tp prec {tp_prec} rec {tp_rec}")
+				true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=metadata['params']['r'], diameters=diameters)
+				pred_positions = exclude_borders(pred_positions, canvas_size, pad=metadata['params']['r'])
+				
+				prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
+				array = dc.crop3d(np.squeeze(for_tp), roiSize=label_size)
+				# array = for_tp.cpu().numpy()
+				# array = np.squeeze(array)
+				diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
+				tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
+				tp_positions = exclude_borders(tp_positions, canvas_size, pad=metadata['params']['r'])
 
-			m = {
-				'dataset'		: metadata['dataset'],
-				'n' 	 		: metadata['n'],
-				'idx'	 		: i,
-				'volfrac'		: metadata['volfrac'],
-				'n_particles'	: metadata['n_particles'],
-				'type'			: metadata['type'],
-				**metadata['params'],
-				'loss'	 		: float(loss),
-				'precision'	 	: float(prec),
-				'recall'	 	: float(rec),
-				'tp_precision'	: float(tp_prec),
-				'tp_recall'	 	: float(tp_rec),
-			}
+				tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
+				# print(f"prec {prec} rec {rec}")
+				# print(f"tp prec {tp_prec} rec {tp_rec}")
 
-			losses.append(m)
+				m = {
+					'dataset'		: metadata['dataset'],
+					'n' 	 		: metadata['n'],
+					'idx'	 		: i,
+					'volfrac'		: metadata['volfrac'],
+					'n_particles'	: metadata['n_particles'],
+					'type'			: metadata['type'],
+					**metadata['params'],
+					'loss'	 		: float(loss),
+					'precision'	 	: float(prec),
+					'recall'	 	: float(rec),
+					'tp_precision'	: float(tp_prec),
+					'tp_recall'	 	: float(tp_rec),
+				}
+
+				losses.append(m)
 
 	losses = pd.DataFrame(losses)
 	print(losses)
@@ -794,21 +793,21 @@ def read_real_examples():
 	# d['abraham'] = {}
 	# d['abraham']['diameter'] = [13,11,11]
 	# d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
-	# d['emily'] = {}
-	# d['emily']['diameter'] = [15,9,9]
-	# d['emily']['array'] = io.imread('examples/Data/emily.tiff')
+	d['emily'] = {}
+	d['emily']['diameter'] = [15,9,9]
+	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
 	d['katherine'] = {}
 	d['katherine']['diameter'] = [7,7,7]
 	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
-	# d['levke'] = {}
-	# d['levke']['diameter'] = [15,11,11]
-	# d['levke']['array'] = io.imread('examples/Data/levke.tiff')
-	# d['james'] = {}
-	# d['james']['diameter'] = [17,15,15]
-	# d['james']['array'] = io.imread('examples/Data/james.tiff')
-	# d['jamesdecon'] = {}
-	# d['jamesdecon']['diameter'] = [17,15,15]
-	# d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d['levke'] = {}
+	d['levke']['diameter'] = [15,11,11]
+	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
+	d['james'] = {}
+	d['james']['diameter'] = [17,15,15]
+	d['james']['array'] = io.imread('examples/Data/james.tiff')
+	d['jamesdecon'] = {}
+	d['jamesdecon']['diameter'] = [17,15,15]
+	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
 
 	return d
 

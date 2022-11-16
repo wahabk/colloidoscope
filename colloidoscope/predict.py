@@ -196,8 +196,8 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	output_tensor = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(output_tensor)  # remove batch dim and channel dim -> [H, W]
 
-	result = ndimage.gaussian_filter(result, (1,1,1), mode="reflect")
-	result = result/result.max()
+	# result = ndimage.gaussian_filter(result, (1,1,1), mode="reflect")
+	# result = result/result.max()
 
 	# find positions from label
 
