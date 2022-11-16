@@ -249,7 +249,7 @@ if __name__ == "__main__":
 	# test_data = test_data[:200]
 	train_data = all_data[0:100]
 	val_data = all_data[100:150]
-	test_data = test_data[:20]
+	test_data = test_data[:50]
 	name = 'please sharkbait'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'

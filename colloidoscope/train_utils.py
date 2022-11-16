@@ -558,7 +558,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# array = np.squeeze(array)
 			# print(array.shape)
 			diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
+			print(array.shape, array.dtype, diam)
+			print("why  is tp slow :(")
 			tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
+			print("done")
+			tp_positions = exclude_borders(tp_positions, canvas_size, pad=metadata['params']['r'])
+
 			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
 			# print(f"prec {prec} rec {rec}")
 			# print(f"tp prec {tp_prec} rec {tp_rec}")
@@ -789,21 +794,21 @@ def read_real_examples():
 	# d['abraham'] = {}
 	# d['abraham']['diameter'] = [13,11,11]
 	# d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
-	d['emily'] = {}
-	d['emily']['diameter'] = [15,9,9]
-	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
+	# d['emily'] = {}
+	# d['emily']['diameter'] = [15,9,9]
+	# d['emily']['array'] = io.imread('examples/Data/emily.tiff')
 	d['katherine'] = {}
 	d['katherine']['diameter'] = [7,7,7]
 	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
-	d['levke'] = {}
-	d['levke']['diameter'] = [15,11,11]
-	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
-	d['james'] = {}
-	d['james']['diameter'] = [17,15,15]
-	d['james']['array'] = io.imread('examples/Data/james.tiff')
-	d['jamesdecon'] = {}
-	d['jamesdecon']['diameter'] = [17,15,15]
-	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	# d['levke'] = {}
+	# d['levke']['diameter'] = [15,11,11]
+	# d['levke']['array'] = io.imread('examples/Data/levke.tiff')
+	# d['james'] = {}
+	# d['james']['diameter'] = [17,15,15]
+	# d['james']['array'] = io.imread('examples/Data/james.tiff')
+	# d['jamesdecon'] = {}
+	# d['jamesdecon']['diameter'] = [17,15,15]
+	# d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
 
 	return d
 
