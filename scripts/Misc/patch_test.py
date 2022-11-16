@@ -72,8 +72,10 @@ class MyGridSampler(torch.utils.data.Dataset):
 		
 		self.locations = self._get_patches_locations(self.patch_tensor.shape[1:], self.patch_size, patch_overlap=self.overlap)
 
-		if self.label_smaller: self.label_locations = self._get_patches_locations(self.image.shape[1:], self.label_size, self.overlap)
-		else: self.label_locations = self.locations
+		if self.label_smaller: 
+			self.label_locations = self._get_patches_locations(self.image.shape[1:], self.label_size, self.overlap)
+			# temp = self.locations
+		# else: self.label_locations = self.locations
 
 	def __len__(self) -> int:
 		return len(self.locations)
@@ -82,9 +84,9 @@ class MyGridSampler(torch.utils.data.Dataset):
 		# Assume 3D
 		location = copy.deepcopy(torch.tensor(self.locations[index]))
 		index_ini = location[:3]
-		print("getting", index, index_ini, )
 		cropped = self.crop(self.patch_tensor, index_ini, self.patch_size)
 		label_location = torch.tensor(self.label_locations[index])
+		
 		d = {"ims":cropped,"loc":label_location}
 		return d
 
@@ -199,11 +201,11 @@ class MyAggregator():
 
 dc = colloidoscope.DeepColloid()
 
-image_size = [1,128,128,128]
+image_size = [1,136,136,136]
 patch_size = [64,64,64]
 label_size = [60,60,60]
 overlap_size = [0,0,0]
-batch_size = 1
+batch_size = 4
 array = dc.read_tif('examples/Data/emily.tiff')
 array = dc.crop3d(array, roiSize=image_size[1:])
 array = np.expand_dims(array, 0)
@@ -215,23 +217,28 @@ patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
 aggregator = MyAggregator(grid_sampler, overlap_mode='avg') # average for bc, crop for normal
 
 for batch_dict in patch_loader:
-	# print(batch_dict["ims"].shape)
+	print(batch_dict["ims"].shape)
 	print(batch_dict["loc"])
+
 
 	img = batch_dict["ims"]
 	locs = batch_dict["loc"]
 
+	locs[:,:3] = locs[:,:3]+torch.tensor([4,4,4])
+	locs[:,3:] = locs[:,3:]-torch.tensor([4,4,4])
+	# print(locs)
+
 	img = img[	:,
 				:,
-				2:62,
-				2:62,
-				2:62]
+				4:64,
+				4:64,
+				4:64]
 	# print(img.shape)
 
-	aggregator.append_batch(img, locs)
+# 	aggregator.append_batch(img, locs)
 
-tensor = aggregator.get_output()
-array = tensor.cpu().numpy()
-array = np.squeeze(array)
+# tensor = aggregator.get_output()
+# array = tensor.cpu().numpy()
+# array = np.squeeze(array)
 
-dc.view(array)
+# dc.view(array)

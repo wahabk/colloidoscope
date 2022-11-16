@@ -15,6 +15,12 @@ from typing import Union
 
 import math
 
+import copy
+
+import torch.nn.functional as  F
+from scipy import ndimage
+
+
 from skimage.feature import peak_local_max, blob_dog, blob_log
 
 def find_positions(result, threshold) -> np.ndarray:
@@ -82,7 +88,7 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 	return tp_predictions
 
 def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
-			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), post_processing:str="tp", threshold:float=0.5, 
+			patch_overlap:tuple=(0, 0, 0), roiSize:tuple=(64,64,64), label_size:tuple=(60,60,60), post_processing:str="tp", threshold:float=0.5, 
 			debug:bool=False, device=None, batch_size=4) -> pd.DataFrame:
 	"""Detect 3d spheres from confocal microscopy
 
@@ -135,19 +141,23 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
 	array = np.expand_dims(array, 0) # add batch axis
-	# tensor = torch.from_numpy(array)
+	tensor = torch.from_numpy(array)
 	# tensor = tensor.unsqueeze(1)
 
 	# print(tensor.shape, tensor.max(), tensor.min())
 	# print(path)
 
 	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
-	subject_dict = {'scan' : tio.ScalarImage(tensor=array, type=tio.INTENSITY, path=None),}
+	subject_dict = {'scan' : tio.ScalarImage(tensor=tensor, type=tio.INTENSITY, path=None),}
 	subject = tio.Subject(subject_dict) # use torchio subject to enable using grid sampling
-	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=patch_overlap, padding_mode='mean')
+	grid_sampler = tio.inference.GridSampler(subject, patch_size=roiSize, patch_overlap=(16,16,16), padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc, crop for normal
 	
+	# grid_sampler = MyGridSampler(tensor, patch_size=roiSize, overlap=patch_overlap, label_size=label_size)
+	# patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
+	# aggregator = MyAggregator(grid_sampler, overlap_mode='avg') # average for bc, crop for normal
+
 	# patch_iter = PatchIter(patch_size=roiSize, start_pos=(0, 0, 0))
 	# ds = GridPatchDataset(data=[array],
     #                           patch_iter=patch_iter,
@@ -160,8 +170,10 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		for i, patch_batch in tqdm(enumerate(patch_loader)):
 			input_tensor = patch_batch['scan'][tio.DATA]
 			locations = patch_batch[tio.LOCATION]
+			# input_tensor = patch_batch['image']
+			# locations = patch_batch['location']
 			# input_tensor, locations = patch_batch[0], patch_batch[1]
-			print(input_tensor.shape, locations.shape, locations)
+			# print(input_tensor.shape, locations.shape, locations)
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
@@ -177,14 +189,16 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			# 					loc[3,0]:loc[3,1]] = pred
 
 			aggregator.add_batch(out_sigmoid, locations)
+			# aggregator.append_batch(out_sigmoid, locations)
 
 	# post process to numpy array
 	output_tensor = aggregator.get_output_tensor()
 	output_tensor = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(output_tensor)  # remove batch dim and channel dim -> [H, W]
 
-	# find positions from label
+	# result = ndimage.gaussian_filter(result, (1,1,1), mode="reflect")
 
+	# find positions from label
 
 	if post_processing == "tp":
 		positions = run_trackpy(result*255, diameter=diameter)
@@ -201,7 +215,6 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0.1)[:,:-1]
 	elif post_processing == "classic":
 		positions = find_positions(result, threshold)
-	
 
 	d = {
 		'x' : positions[:,1],
@@ -214,3 +227,129 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		return df, positions, result
 	else:
 		return df
+
+
+class MyGridSampler(torch.utils.data.Dataset):
+	def __init__(self, image:torch.tensor, patch_size:list, overlap:list=[0,0,0], label_size:Union[list, None]=None,) -> None:
+		"""
+		based on tio
+		"""
+		self.image = image
+		self.patch_size = patch_size
+		self.overlap = overlap
+		self.label_size = label_size
+
+		self.patch_tensor, self.label_smaller,  diffs = self._make_patch_tensor(image, 
+																		np.array(patch_size), 
+																		np.array(overlap), 
+																		np.array(label_size))
+		
+		self.locations = self._get_patches_locations(self.patch_tensor.shape[1:], self.patch_size, patch_overlap=diffs)
+
+		if self.label_smaller: self.label_locations = self._get_patches_locations(self.image.shape[1:], self.label_size, diffs)
+		else: self.label_locations = self.locations
+
+	def __len__(self) -> int:
+		return len(self.locations)
+
+	def __getitem__(self, index):
+		# Assume 3D
+		location = copy.deepcopy(torch.tensor(self.locations[index]))
+		index_ini = location[:3]
+		cropped = self.crop(self.patch_tensor, index_ini, self.patch_size)
+		label_location = torch.tensor(self.label_locations[index])
+		d = {"image":cropped,"location":label_location}
+		print(self.patch_tensor.shape, cropped.shape, location,  label_location)
+		return d
+
+	def _make_patch_tensor(self, image:torch.tensor, patch_size:np.ndarray, overlap:np.ndarray, label_size:np.ndarray,):
+
+		if label_size is None:
+			patch_tensor = image
+			label_smaller = False
+			raise NotImplementedError("")
+			pass
+		else: 
+			diffs = patch_size - label_size
+			diffs=diffs//2
+			# tensor_size = np.array(image.shape) + ([0]+list(diffs*2))
+			patch_tensor = F.pad(self.image, (diffs[0],diffs[0],diffs[1],diffs[1],diffs[2],diffs[2]), mode='reflect')
+			label_smaller = True
+
+		return patch_tensor, label_smaller, diffs
+
+	def crop(self, image, index_ini, patch_size):
+			return image[	:,
+				index_ini[0]:index_ini[0]+patch_size[0], 
+				index_ini[1]:index_ini[1]+patch_size[1], 
+				index_ini[2]:index_ini[2]+patch_size[2]]
+
+
+	def _get_patches_locations(self, image_size:list, patch_size:list, patch_overlap:list,) -> np.ndarray:
+		# Example with image_size 10, patch_size 5, overlap 2:
+		# [0 1 2 3 4 5 6 7 8 9]
+		# [0 0 0 0 0]
+		#       [1 1 1 1 1]
+		#           [2 2 2 2 2]
+		# Locations:
+		# [[0, 5],
+		#  [3, 8],
+		#  [5, 10]]
+		indices = []
+		zipped = zip(image_size, patch_size, patch_overlap)
+		for im_size_dim, patch_size_dim, patch_overlap_dim in zipped:
+			end = im_size_dim + 1 - patch_size_dim
+			step = patch_size_dim - patch_overlap_dim
+			indices_dim = list(range(0, end, step))
+			if indices_dim[-1] != im_size_dim - patch_size_dim:
+				indices_dim.append(im_size_dim - patch_size_dim)
+			indices.append(indices_dim)
+		indices_ini = np.array(np.meshgrid(*indices)).reshape(3, -1).T
+		indices_ini = np.unique(indices_ini, axis=0)
+		indices_fin = indices_ini + np.array(patch_size)
+		locations = np.hstack((indices_ini, indices_fin))
+		return np.array(sorted(locations.tolist()))
+
+
+
+
+
+
+
+
+class MyAggregator():
+	def __init__(self, sampler:MyGridSampler, overlap_mode="avg") -> None:
+		self.sampler = sampler
+		self.overlap_mode = overlap_mode
+
+		self._out_tensor = torch.zeros(self.sampler.image.shape) # remember to add batch dim
+		if overlap_mode=='avg': 
+			self.avgmask_tensor = torch.zeros_like(self._out_tensor)
+
+
+	def append_batch(self, batch_tensor, locations) -> None:
+
+		batch = batch_tensor.cpu()
+		locations = locations.cpu().numpy()
+
+		if self.overlap_mode == "avg":
+			for patch, location in zip(batch, locations):
+				i_ini, j_ini, k_ini, i_fin, j_fin, k_fin = location
+				self._out_tensor[
+					:,
+					i_ini:i_fin,
+					j_ini:j_fin,
+					k_ini:k_fin,
+				] += patch
+				self.avgmask_tensor[
+					:,
+					i_ini:i_fin,
+					j_ini:j_fin,
+					k_ini:k_fin,
+				] += 1
+		else: raise NotImplementedError("")
+
+
+	def get_output_tensor(self,) -> torch.tensor:
+		if self.sampler.label_smaller: return self._out_tensor / self.avgmask_tensor
+		else: raise NotImplementedError("")
