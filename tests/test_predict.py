@@ -14,7 +14,7 @@ df, positions, label = dc.detect(array, diameter=7,
                                 post_processing="tp", batch_size=1)
 # array = np.array(array, dtype="uint8")
 # df =  dc.run_trackpy(array, diameter=13, preprocess=False, max_iterations=1)
-# print(df)
+print(df)
 
 x,y = dc.get_gr(positions, 50,50)
 plt.plot(x,y,)

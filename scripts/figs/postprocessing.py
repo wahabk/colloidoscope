@@ -14,6 +14,7 @@ import math
 from scipy.signal import convolve2d
 from pathlib2 import Path
 from numba import njit
+import torch
 
 from scipy.spatial.distance import pdist, cdist
 
@@ -34,8 +35,8 @@ from math import sqrt
 
 if __name__ == '__main__':
 	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -45,12 +46,12 @@ if __name__ == '__main__':
 
 	r = 5
 	d = r*2
-	index = 1
+	index = 217
 	volfrac = 0.1
 	threshold = 0.5
 
 
-	dataset_name = 'fixed_1400'
+	dataset_name = 'please_1400_test'
 
 	d = dc.read_hdf5(dataset_name, index)
 	image = d['image']
@@ -60,12 +61,19 @@ if __name__ == '__main__':
 	# diameters = d["diameters"]
 	# label[label<threshold] = 0
 
+	image = torch.tensor(image/image.max())
+	label = torch.tensor(label/label.max())
+
+	image = image.cpu().numpy()
+	label = label.cpu().numpy()
+
 	metadata, true_positions, diameters = dc.read_metadata(dataset_name, index)
 	print(metadata)
 
 	# label = dc.crop3d(label, label_size)
 
-	tp_pred, df = dc.run_trackpy(label, diameter = dc.round_up_to_odd(metadata['params']['r']*2), )
+	print(image.max(), image.min(), image.dtype, dc.round_up_to_odd(metadata['params']['r']*2))
+	tp_pred, df = dc.run_trackpy(image, diameter = dc.round_up_to_odd(metadata['params']['r']*2), )
 
 	# positions, diameters = crop_positions_for_label(positions, canvas_size, label_size, diameters)
 
@@ -116,4 +124,4 @@ if __name__ == '__main__':
 	plt.show()
 
 
-	# dc.view(image, label=label, positions=coords)
+	dc.view(image, label=label, positions=coords)
