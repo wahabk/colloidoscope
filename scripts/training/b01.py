@@ -240,19 +240,21 @@ if __name__ == "__main__":
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
-	random.shuffle(all_data)
-
-	train_data = all_data[0:1000]
-	val_data = all_data[1000:1200]
 	test_data =	list(range(1,599))
-	# train_data = all_data[0:20]
-	# val_data = all_data[20:25]
-	# test_data =	list(range(1,50))
+	random.shuffle(all_data)
+	random.shuffle(test_data)
+
+	# train_data = all_data[0:1200]
+	# val_data = all_data[1200:1400]
+	# test_data = test_data[:200]
+	train_data = all_data[0:100]
+	val_data = all_data[100:150]
+	test_data = test_data[:20]
 	name = 'please sharkbait'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "max"
+	post_processing = "tp"
 
 	print(f"training on {len(train_data)} val {len(val_data)} test {len(test_data)}")
 

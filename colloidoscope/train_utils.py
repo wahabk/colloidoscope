@@ -420,90 +420,90 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	os.chdir(work_dir)
 	dataset_name = dataset_name+"_test"
 	
-	# # test on real data
-	# real_dict = read_real_examples()
+	# test on real data
+	real_dict = read_real_examples()
 
-	# for name, d in real_dict.items():
-	# 	print(name, d['array'].shape)
+	for name, d in real_dict.items():
+		print(name, d['array'].shape)
 
-	# 	if heatmap_r == "radius":
-	# 		detection_diameter = d['diameter']
-	# 	else:
-	# 		detection_diameter = heatmap_r
+		if heatmap_r == "radius":
+			detection_diameter = d['diameter']
+		else:
+			detection_diameter = heatmap_r
 
-	# 	df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
 
-	# 	if len(pred_positions>0):
-	# 		sidebyside = make_proj(d['array'], label)
-	# 		if run: run[name].upload(File.as_image(sidebyside))
+		if len(pred_positions>0):
+			sidebyside = make_proj(d['array'], label)
+			if run: run[name].upload(File.as_image(sidebyside))
 
-	# 		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
-	# 		x, y = dc.get_gr(trackpy_pos, 100, 100)
-	# 		plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
-	# 		x, y = dc.get_gr(pred_positions, 100, 100)
-	# 		plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-	# 		plt.legend()
-	# 		fig = plt.gcf()
-	# 		if run: run[name+'gr'].upload(fig)
-	# 		plt.clf()
+			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+			x, y = dc.get_gr(trackpy_pos, 100, 100)
+			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
+			x, y = dc.get_gr(pred_positions, 100, 100)
+			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
+			plt.legend()
+			fig = plt.gcf()
+			if run: run[name+'gr'].upload(fig)
+			plt.clf()
 
-	# 		if name == 'levke':
-	# 			target_volfrac = 0.58
-	# 			n_particles = len(pred_positions)
-	# 			r = 11/2
-	# 			single_vol = (4/3) * np.pi * r**3
-	# 			measured_volume = n_particles * single_vol
-	# 			measured_volfrac = measured_volume / d['array'].size
-	# 			fraction_missing = 1 - (measured_volfrac / target_volfrac)
-	# 			if run: 
-	# 				run['estimates/measured_volfrac'] = measured_volfrac
-	# 				run['estimates/target_volfrac'] = target_volfrac
-	# 				run['estimates/n_particles'] = n_particles
-	# 				run['estimates/fraction_missing'] = fraction_missing
+			if name == 'levke':
+				target_volfrac = 0.58
+				n_particles = len(pred_positions)
+				r = 11/2
+				single_vol = (4/3) * np.pi * r**3
+				measured_volume = n_particles * single_vol
+				measured_volfrac = measured_volume / d['array'].size
+				fraction_missing = 1 - (measured_volfrac / target_volfrac)
+				if run: 
+					run['estimates/measured_volfrac'] = measured_volfrac
+					run['estimates/target_volfrac'] = target_volfrac
+					run['estimates/n_particles'] = n_particles
+					run['estimates/fraction_missing'] = fraction_missing
 
-	# 	else:
-	# 		print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
+		else:
+			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
 	
-	# # test predict on sim
-	# data_dict = dc.read_hdf5(dataset_name, 10000)
-	# test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+	# test predict on sim
+	data_dict = dc.read_hdf5(dataset_name, 10000)
+	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
 
-	# if heatmap_r == "radius":
-	# 	detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-	# else:
-	# 	detection_diameter = heatmap_r
-	# if post_processing == "max":
-	# 	detection_diameter = int((metadata['params']['r']*2))
+	if heatmap_r == "radius":
+		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+	else:
+		detection_diameter = heatmap_r
+	if post_processing == "max":
+		detection_diameter = int((metadata['params']['r']*2))
 
-	# df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
-	# sidebyside = make_proj(test_array, test_label)
-	# if run: run['prediction'].upload(File.as_image(sidebyside))
-	# trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
+	sidebyside = make_proj(test_array, test_label)
+	if run: run['prediction'].upload(File.as_image(sidebyside))
+	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
 
-	# try:
-	# 	x, y = dc.get_gr(true_positions, 100, 100)
-	# 	plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
-	# 	x, y = dc.get_gr(pred_positions, 100, 100)
-	# 	plt.plot(x, y, label=f'Unet n ={len(pred_positions)}', color='red')
-	# 	x, y = dc.get_gr(trackpy_positions, 100, 100)
-	# 	plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
-	# 	plt.legend()
-	# 	fig = plt.gcf()
-	# 	if run: run['gr'].upload(fig)
-	# 	plt.clf()
-	# except:
-	# 	print('Skipping gr() as bad pred')
-	# 	if run: run['gr'] = 'failed'
+	try:
+		x, y = dc.get_gr(true_positions, 100, 100)
+		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
+		x, y = dc.get_gr(pred_positions, 100, 100)
+		plt.plot(x, y, label=f'Unet n ={len(pred_positions)}', color='red')
+		x, y = dc.get_gr(trackpy_positions, 100, 100)
+		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
+		plt.legend()
+		fig = plt.gcf()
+		if run: run['gr'].upload(fig)
+		plt.clf()
+	except:
+		print('Skipping gr() as bad pred')
+		if run: run['gr'] = 'failed'
 
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	# if run: run['AP'] = ap
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	if run: run['AP'] = ap
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
 
-	# if run: run['PR_curve'].upload(fig)
-	# plt.clf()
+	if run: run['PR_curve'].upload(fig)
+	plt.clf()
 
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
@@ -518,6 +518,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# diameters=diameters*metadata['params']['r']*2 # TODO FIX IN SIM
 			
 			x, y = batch
+			for_tp = x.clone()
 			x, y = x.to(device), y.to(device)
 			# print(x.shape, x.max(), x.min())
 			# print(y.shape, y.max(), y.min())
@@ -552,7 +553,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			pred_positions = exclude_borders(pred_positions, canvas_size, pad=metadata['params']['r'])
 			
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-			array = dc.crop3d(np.squeeze(x.cpu().numpy()), roiSize=label_size)
+			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
 			# array = for_tp.cpu().numpy()
 			# array = np.squeeze(array)
 			# print(array.shape)
