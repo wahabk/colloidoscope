@@ -50,76 +50,76 @@ if __name__ == '__main__':
 	canvas_size=(100,100,100)
 	label_size=(100,100,100)
 	
-	dataset_name = 'fixed_1400'
+	dataset_name = 'please_1400'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
 	n_per_type = 100 # for testing
 
 
-	# psf_kernel = 'standard' #TODO make this change psf
-	# read huygens psf
-	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
-	psf_kernel = dc.read_tif(str(psf_path))
-	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
-	psf_kernel = psf_kernel/psf_kernel.max()
+	# # psf_kernel = 'standard' #TODO make this change psf
+	# # read huygens psf
+	# psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
+	# psf_kernel = dc.read_tif(str(psf_path))
+	# psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
+	# psf_kernel = psf_kernel/psf_kernel.max()
 
-	# each volfrac has 500, make 200 for training and validation and rest for testing
-	phis = np.array([[round(x, 2)]*n_samples_per_volfrac for x in np.linspace(0.25,0.55,7)])
-	print(phis.shape)
+	# # each volfrac has 500, make 200 for training and validation and rest for testing
+	# phis = np.array([[round(x, 2)]*n_samples_per_volfrac for x in np.linspace(0.25,0.55,7)])
+	# print(phis.shape)
 
-	index = 1
-	for i, volfracs in enumerate(phis):
-		for n, v in enumerate(volfracs):
-			print('\n', n, f'{index}/{len(phis.flatten())}', '\n')
+	# index = 1
+	# for i, volfracs in enumerate(phis):
+	# 	for n, v in enumerate(volfracs):
+	# 		print('\n', n, f'{index}/{len(phis.flatten())}', '\n')
 
-			volfrac = v
+	# 		volfrac = v
 
-			# define types of particles in simulation
-			types = {
-			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
-			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
-			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(1, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(1,10)},
-			}
+	# 		# define types of particles in simulation
+	# 		types = {
+	# 		'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
+	# 		'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
+	# 		'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.1,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
+	# 		}
 
-			keys = list(types.keys())
-			this_type = random.choice(keys)
-			params = types[this_type]
-			params['f_sigma'] = 15
-			params['b_sigma'] = 20
+	# 		keys = list(types.keys())
+	# 		this_type = random.choice(keys)
+	# 		params = types[this_type]
+	# 		params['f_sigma'] = 10
+	# 		params['b_sigma'] = 15
 
-			metadata = {
-				'dataset': dataset_name,
-				'n' 	 : index,
-				'type'	 : this_type,
-				'volfrac': volfrac,
-				'params' : params,
-			}
+	# 		metadata = {
+	# 			'dataset': dataset_name,
+	# 			'n' 	 : index,
+	# 			'type'	 : this_type,
+	# 			'volfrac': volfrac,
+	# 			'params' : params,
+	# 		}
 
-			path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
-			print(f'Reading: {path} at {n+1} ...')
+	# 		path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
+	# 		print(f'Reading: {path} at {n+1} ...')
 
-			hoomd_positions, diameters = read_gsd(path, n+1)
+	# 		hoomd_positions, diameters = read_gsd(path, n+1)
 
-			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
-										params['snr'], diameters=diameters, make_label=True, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
-			metadata['n_particles'] = len(final_centers) # this might depend on label size 
-			final_diameters = final_diameters*params['r']*2
+	# 		canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
+	# 									params['snr'], diameters=diameters, make_label=True, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
+	# 		metadata['n_particles'] = len(final_centers) # this might depend on label size 
+	# 		final_diameters = final_diameters*params['r']*2
 
-			print(metadata)
-			print(canvas.shape, canvas.max(), canvas.min())
-			print(label.shape, label.max(), label.min())
+	# 		print(metadata)
+	# 		print(canvas.shape, canvas.max(), canvas.min())
+	# 		print(label.shape, label.max(), label.min())
 
-			# code for debugging
-			# dc.view(canvas, final_centers, label)
-			# plot_with_side_view(canvas, f'output/figs/simulation/{index}.png')
-			# projection = np.max(canvas, axis=0)
-			# projection_label = np.max(label, axis=0)*255
-			# sidebyside = np.concatenate((projection, projection_label), axis=1)
-			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
+	# 		# code for debugging
+	# 		# dc.view(canvas, final_centers, label)
+	# 		# plot_with_side_view(canvas, f'output/figs/simulation/{index}.png')
+	# 		# projection = np.max(canvas, axis=0)
+	# 		# projection_label = np.max(label, axis=0)*255
+	# 		# sidebyside = np.concatenate((projection, projection_label), axis=1)
+	# 		# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
-			index+=1
+	# 		dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+	# 		index+=1
 
 	# sim 4 gr
 	test_dataset_name = dataset_name+'_test'
@@ -130,9 +130,9 @@ if __name__ == '__main__':
 
 	params = dict(
 		r=10,
-		particle_size=0.2,
-		snr=3,
-		cnr=3,
+		particle_size=0.25,
+		snr=4,
+		cnr=4,
 		volfrac=0.55,
 		brightness=200,
 	)
@@ -183,12 +183,12 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
-				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : randrange(30, 255), 			'snr' : 20, 						'volfrac' : 0.2},
-				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : uniform(0.1,10), 			'volfrac' : 0.2},			
-				'volfrac' 		: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 8,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 20,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'particle_size' : {'r' : 20, 				'particle_size' : uniform(0.1,1), 	'cnr' : 20,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'cnr' 			: {'r' : 20, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 20, 						'volfrac' : 0.2},
+				'brightness' 	: {'r' : 20, 				'particle_size' : 1, 				'cnr' : 20,							'brightness' : randrange(30, 255), 			'snr' : 20, 						'volfrac' : 0.2},
+				'snr' 			: {'r' : 20, 				'particle_size' : 1, 				'cnr' : 20,							'brightness' : 255, 						'snr' : uniform(0.1,10), 			'volfrac' : 0.2},			
+				'volfrac' 		: {'r' : 20, 				'particle_size' : 1, 				'cnr' : 20,							'brightness' : 255, 						'snr' : 20, 						'volfrac' : random.choice([0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
@@ -203,8 +203,8 @@ if __name__ == '__main__':
 			snr = params['snr']
 			volfrac = params['volfrac']
 
-			params['f_sigma'] = 15
-			params['b_sigma'] = 20
+			params['f_sigma'] = 10
+			params['b_sigma'] = 5
 
 			metadata = {
 				'dataset': test_dataset_name,

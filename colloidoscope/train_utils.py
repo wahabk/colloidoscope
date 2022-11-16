@@ -37,6 +37,7 @@ from functools import reduce
 
 from skimage.feature import peak_local_max, blob_log
 
+from colloidoscope.simulator import exclude_borders
 
 """
 Datasets
@@ -408,27 +409,6 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	run.stop()
 
 
-def crop_pos_for_test(centers, canvas_size, label_size, diameters):
-
-	indices = []
-	pad = 0
-	for idx, c in enumerate(centers):
-		if pad<=c[0]<=(label_size[0]-pad) and pad<=c[1]<=(label_size[1]-pad) and pad<=c[2]<=(label_size[2]-pad):
-			indices.append(idx)
-	centers = centers[indices]
-	diameters = diameters[indices]
-
-	zdiff = (canvas_size[0] - label_size[0])/2
-	xdiff = (canvas_size[1] - label_size[1])/2
-	ydiff = (canvas_size[2] - label_size[2])/2
-	# print(centers[0])
-	centers = centers - [zdiff, xdiff, ydiff]
-	# print(centers[0])
-	# print([zdiff, xdiff, ydiff])
-	# print(centers[0])
-
-	return centers, diameters
-
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
 		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
 		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), 
@@ -531,19 +511,17 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	losses = []
 	model.eval()
 	with torch.no_grad():
-		for idx, batch in enumerate(test_loader):
+		for idx, batch in tqdm(enumerate(test_loader)):
 
 			i = test_set[idx]
 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
 			# diameters=diameters*metadata['params']['r']*2 # TODO FIX IN SIM
-			true_positions, diameters = crop_pos_for_test(true_positions, canvas_size, label_size, diameters=diameters)
 			
 			x, y = batch
 			for_tp = x.clone()
 			x, y = x.to(device), y.to(device)
 			# print(x.shape, x.max(), x.min())
 			# print(y.shape, y.max(), y.min())
-
 			out = model(x)  # send through model/network
 			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
@@ -556,7 +534,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			# post process to numpy array
 			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
-			# 
 
 			if heatmap_r == "radius":
 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
@@ -570,17 +547,24 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			if post_processing == "log":
 				sigma = int((metadata['params']['r'])/math.sqrt(3))
 				result[result<threshold] = 0
-				pred_positions = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
+				pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
+
+			true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=metadata['params']['r'], diameters=diameters)
+			pred_positions = exclude_borders(pred_positions, canvas_size, pad=metadata['params']['r'])
 			
 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-
 			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
 			# array = for_tp.cpu().numpy()
 			# array = np.squeeze(array)
 			# print(array.shape)
-			tp_positions, _ = dc.run_trackpy(array, diameter=dc.round_up_to_odd(metadata['params']['r']*2))
-			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
+			diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
+			print(array.shape, array.dtype, diam)
+			print("why  is tp slow :(")
+			tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
+			print("done")
+			tp_positions = exclude_borders(tp_positions, canvas_size, pad=metadata['params']['r'])
 
+			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
 			# print(f"prec {prec} rec {rec}")
 			# print(f"tp prec {tp_prec} rec {tp_rec}")
 
@@ -614,7 +598,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
 		axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
 		axs[i].title.set_text(p)
-		axs[i].set_ylim(0,1.1)
+		axs[i].set_ylim(-0.1,1.1)
 	fig.tight_layout()
 	if run: run['test/params_vs_prec'].upload(fig)
 
@@ -810,21 +794,21 @@ def read_real_examples():
 	# d['abraham'] = {}
 	# d['abraham']['diameter'] = [13,11,11]
 	# d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
-	d['emily'] = {}
-	d['emily']['diameter'] = [15,9,9]
-	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
+	# d['emily'] = {}
+	# d['emily']['diameter'] = [15,9,9]
+	# d['emily']['array'] = io.imread('examples/Data/emily.tiff')
 	d['katherine'] = {}
 	d['katherine']['diameter'] = [7,7,7]
 	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
-	d['levke'] = {}
-	d['levke']['diameter'] = [15,11,11]
-	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
-	d['james'] = {}
-	d['james']['diameter'] = [17,15,15]
-	d['james']['array'] = io.imread('examples/Data/james.tiff')
-	d['jamesdecon'] = {}
-	d['jamesdecon']['diameter'] = [17,15,15]
-	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	# d['levke'] = {}
+	# d['levke']['diameter'] = [15,11,11]
+	# d['levke']['array'] = io.imread('examples/Data/levke.tiff')
+	# d['james'] = {}
+	# d['james']['diameter'] = [17,15,15]
+	# d['james']['array'] = io.imread('examples/Data/james.tiff')
+	# d['jamesdecon'] = {}
+	# d['jamesdecon']['diameter'] = [17,15,15]
+	# d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
 
 	return d
 
@@ -874,4 +858,3 @@ def make_proj(test_array, test_label):
 	sidebyside /= sidebyside.max()
 
 	return sidebyside
-

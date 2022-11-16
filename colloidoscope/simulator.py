@@ -12,7 +12,6 @@ from .hoomd_sim_positions import convert_hoomd_positions
 from concurrent.futures import ProcessPoolExecutor
 # from mpi4py.futures import MPIPoolExecutor
 from skimage.util import random_noise
-from numba import njit
 from scipy import ndimage
 import numpy as np
 import random
@@ -24,12 +23,8 @@ from tqdm import tqdm
 from perlin_numpy import generate_perlin_noise_3d
 from pathlib2 import Path
 
-@njit()
-def gaussian(x, mu, sig, peak=1.):
-	# peak = 1./(np.sqrt(2.*np.pi*sig)) # regularisation term to make area under gauss = 1
-	return peak * np.exp(-((x-mu)**2.)/((2. * sig)**2.))
+import copy
 
-@njit()
 def draw_slice(args):
 	# extract args
 	s, z, radii, centers, brightnesses = args
@@ -39,7 +34,6 @@ def draw_slice(args):
 	for i in range(s.shape[0]):
 		for j in range(s.shape[1]):
 			for k, center in enumerate(centers):
-				if len(centers) < 27: print(i, j, z)
 				cz, cy, cx = center
 				r = radii[k]
 				brightness = brightnesses[k]
@@ -50,8 +44,8 @@ def draw_slice(args):
 					new_slice[i,j] = brightness
 	return new_slice
 
-@njit()
 def draw_label_slice(args):
+
 	# extract args
 	s, z, heatmap_radii, centers, is_seg = args
 	#initiate new slice to be drawn
@@ -69,20 +63,22 @@ def draw_label_slice(args):
 					if is_seg:
 						new_slice[i,j] = 255
 					else:
-						new_slice[i,j] = gaussian(dist*math.sqrt(3), 0, heatmap_r, peak=255)
+						new_slice[i,j] = 255 * np.exp(-(((dist*math.sqrt(3))-0)**2.)/((2. * heatmap_r)**2.))
 
 	return new_slice
 
 def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=False, heatmap_r='radius', num_workers=2):
+	from numba import njit
 	new_canvas = []
 
 	if is_label == False:
 		args = [(s, z, radii, centers, brightnesses) for z, s in enumerate(canvas)]
 
 		print(canvas.shape, centers.shape, np.shape(radii))
+		jitted_draw_slice = njit(draw_slice)
 		with tqdm(total=len(args)) as pbar:
 			with ProcessPoolExecutor(max_workers=num_workers) as pool:
-				for i in pool.map(draw_slice, args):
+				for i in pool.map(jitted_draw_slice, args):
 					new_canvas.append(i)
 					pbar.update(1)
 
@@ -95,9 +91,10 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 		args = [(s, z, heatmap_radii, centers, is_seg) for z, s in enumerate(canvas)]
 
 		print(canvas.shape, centers.shape, np.shape(radii))
+		jitted_draw_label_slice = njit(draw_label_slice)
 		with tqdm(total=len(args)) as pbar:
 			with ProcessPoolExecutor(max_workers=num_workers) as pool:
-				for i in pool.map(draw_label_slice, args):
+				for i in pool.map(jitted_draw_label_slice, args):
 					new_canvas.append(i)
 					pbar.update(1)
 
@@ -183,8 +180,6 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 	b = brightness_mean - (a * array.mean())
 	array = a * array + b
 
-	array[array>255] = 255
-
 	array = ndimage.gaussian_filter(array, (3,3,3))
 
 	array = np.array(array, dtype=dtype)
@@ -194,7 +189,7 @@ def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tile
 
 def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			particle_size:float, f_mean:float, cnr:float,
-			snr:float, f_sigma:float=30, b_sigma:float=10, diameters=np.ndarray([]), make_label:bool=True, 
+			snr:float, f_sigma:float=10, b_sigma:float=5, diameters=np.ndarray([]), make_label:bool=True, 
 			heatmap_r='radius', num_workers=2, psf_kernel = 'standard'):
 	'''
 	psf between 0 and 1
@@ -212,8 +207,10 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	'''
 	centers, diameters = convert_hoomd_positions(hoomd_positions, canvas_size, diameter=r*2, diameters=diameters)
 
-	noise = (f_mean / (snr * 255))
-	b_mean = abs(f_mean - (cnr*f_sigma))
+	noise_std = (f_mean / (snr * f_mean))
+	b_mean = f_mean - (cnr*noise_std*255)
+	if b_mean < 0: b_mean=0
+
 	brightnesses = np.array([random.gauss(f_mean, f_sigma) for _ in centers], dtype="float32")
 	brightnesses[brightnesses>255]=255
 	brightnesses=np.array(brightnesses, dtype="uint8")
@@ -227,18 +224,19 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	# make bigger padded canvas
 	# this is to allow the blur to work on the edges
 	zoom_out_size_padded = [c+pad for c in zoom_out_size]
-	canvas = make_background(zoom_out_size_padded, 4, b_mean, b_sigma, dtype='uint8') 
+	canvas = make_background(zoom_out_size_padded, 2, 1, b_sigma/255, dtype='uint8')*b_mean
 	
 	# convert centers to zoom out size
-	zoom_out_centers=[]
-	for c in centers:
-		x,y,z = c
-		new_c = [x/zoom + pad/2 ,y/zoom + pad/2 ,z/zoom + pad/2 ]
-		zoom_out_centers.append(new_c)
-	zoom_out_centers = np.array(zoom_out_centers)
+	zoom_out_centers=np.array(copy.deepcopy(centers))
+	zoom_out_centers = zoom_out_centers / zoom
+	zoom_out_centers = zoom_out_centers + (pad/2)
 
-	radii = [(d*r) for d in diameters]
-	zoom_out_radii = [(i/zoom) for i in radii]
+
+	diameters = np.array(diameters)
+	# radii = [(d*r) for d in diameters]
+	# zoom_out_radii = [(i/zoom) for i in radii]
+	radii = diameters*r
+	zoom_out_radii = radii/zoom
 
 	if isinstance(psf_kernel, np.ndarray):
 		nm_pixel = (particle_size*1000) / r 
@@ -246,7 +244,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		psf_zoom = psf_nm_pixel / nm_pixel
 
 		this_kernel = ndimage.zoom(psf_kernel, psf_zoom)
-		print(f"psf_zoom {psf_zoom}")
 
 	else: raise ValueError(f"psf_kernel can be either str('Standard') or an np.ndarray but you provided {type(psf_kernel)}")
 
@@ -259,8 +256,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	canvas = crop3d(canvas, zoom_out_size) # crop to selected size to remove padding
 	canvas = ndimage.zoom(canvas, zoom)# zoom back in to original size for aliasing
 	
-	canvas = [random_noise(img, mode='gaussian', var=noise)*255 for img in canvas] # Add noise
-	
+	canvas = [random_noise(img, mode='gaussian', var=noise_std**2)*255 for img in canvas] # Add noise
 	canvas = np.array(canvas, dtype='uint8')
 	
 	# centers=[]

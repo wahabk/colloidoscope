@@ -42,7 +42,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 	)
 	params = dict(
-		roiSize = (64,64,64),
+		roiSize = (100,100,100),
 		train_data = train_data,
 		val_data = val_data,
 		test_data = test_data,
@@ -66,11 +66,11 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
 	# label_size = params['roiSize']
-	label_size = [60,60,60]
+	label_size = [96,96,96]
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
-		# tio.RandomAffine(),
+		# tio.RandomAffine(), # TODO add random affine for crop and bc
 	])
 	transforms_img = tio.Compose([
 		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
@@ -236,36 +236,38 @@ if __name__ == "__main__":
 	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'new_1400_30nm'
+	dataset_name = 'please_1400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
+	test_data =	list(range(1,599))
 	random.shuffle(all_data)
+	random.shuffle(test_data)
 
-	train_data = all_data[0:1000]
-	val_data = all_data[1000:1200]
-	test_data =	list(range(1,498))
-	# train_data = all_data[0:20]
-	# val_data = all_data[20:25]
-	# test_data =	list(range(1,50))
-	name = 'trying kernel 7'
+	# train_data = all_data[0:1200]
+	# val_data = all_data[1200:1400]
+	# test_data = test_data[:200]
+	train_data = all_data[0:100]
+	val_data = all_data[100:150]
+	test_data = test_data[:50]
+	name = 'please sharkbait'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "log"
+	post_processing = "tp"
 
 	print(f"training on {len(train_data)} val {len(val_data)} test {len(test_data)}")
 
 
 	config = {
 		"lr": 0.002165988, #0.00122678,
-		"batch_size": 8,
+		"batch_size": 2,
 		"n_blocks": 3,
 		"norm": 'INSTANCE',
-		"epochs": 2,
+		"epochs": 1,
 		"start_filters": 32,
 		"activation": "SWISH",
-		"dropout": 0.2,
+		"dropout": 0,
 		"loss_function": torch.nn.L1Loss(),
 		# "loss_function":	monai.losses.FocalLoss(gamma=0.5)#torch.nn.BCEWithLogitsLoss()	# BinaryFocalLoss(alpha=1.5, gamma=0.5) # torch.nn.BCEWithLogitsLoss() #torch.nn.L1Loss() #  #,
 	}

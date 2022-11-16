@@ -10,7 +10,6 @@ from .predict import detect
 import json
 from pathlib2 import Path
 from skimage import io
-from numba import njit
 from tqdm import tqdm
 import trackpy as tp
 import math
@@ -213,7 +212,33 @@ class DeepColloid:
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 
-	def _get_results(self, gt, pred, diameters, threshold,):
+	@staticmethod
+	def _calc_iou_dist(distances, diameters, threshold):
+		"""
+		Measure distance between two spheres normalised by diameters
+		"""
+
+		gt_idx_thresh = []
+		pred_idx_thresh = []
+		ious = []
+		for ipb, pred_list in enumerate(distances):
+			for igb, dist in enumerate(pred_list):
+				diameter = diameters[igb]
+
+				iou_dist = 1 - (dist/diameter)
+				if iou_dist < 0 : iou_dist = 0
+				iou = iou_dist
+				if iou > threshold:
+					gt_idx_thresh.append(igb)
+					pred_idx_thresh.append(ipb)
+					ious.append(iou)
+		return gt_idx_thresh, pred_idx_thresh, ious
+
+	
+	
+	def _get_results(self, gt, pred, diameters, threshold,) -> tuple:
+		from numba import njit
+
 		tp, fp, fn = 0, 0, 0
 
 		if len(pred) == 0:
@@ -230,7 +255,8 @@ class DeepColloid:
 		# for each prediction, measure its iou with ALL ground truths 
 		# and append if more than the threshold
 		dists = cdist(pred, gt)
-		gt_idx_thresh, pred_idx_thresh, ious = _calc_iou_dist(dists, diameters, threshold)
+		jitted_calc_iou_dist = njit(self._calc_iou_dist)
+		gt_idx_thresh, pred_idx_thresh, ious = jitted_calc_iou_dist(dists, diameters, threshold)
 		ious = np.array(ious)
 
 		# sort by higher iou
@@ -268,7 +294,7 @@ class DeepColloid:
 		return tp, fp, fn
 
 	def get_precision_recall(self, ground_truths, predictions, diameters, threshold):
-
+		
 		# take block of different images and find result
 		tp, fp, fn = self._get_results(ground_truths, predictions, diameters, threshold)
 
@@ -355,25 +381,3 @@ class DeepColloid:
 		sigma = sigma * math.sqrt(0.5 * math.pi) / (6 * (W-2) * (H-2))
 
 		return sigma
-
-@njit
-def _calc_iou_dist(distances, diameters, threshold):
-	"""
-	Measure distance between two spheres normalised by diameters
-	"""
-
-	gt_idx_thresh = []
-	pred_idx_thresh = []
-	ious = []
-	for ipb, pred_list in enumerate(distances):
-		for igb, dist in enumerate(pred_list):
-			diameter = diameters[igb]
-
-			iou_dist = 1 - (dist/diameter)
-			if iou_dist < 0 : iou_dist = 0
-			iou = iou_dist
-			if iou > threshold:
-				gt_idx_thresh.append(igb)
-				pred_idx_thresh.append(ipb)
-				ious.append(iou)
-	return gt_idx_thresh, pred_idx_thresh, ious
