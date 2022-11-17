@@ -574,9 +574,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 					max_diameter = int((metadata['params']['r']*2))
 					pred_positions = peak_local_max(result*255, min_distance=max_diameter)
 				if post_processing == "log":
-					sigma = int((metadata['params']['r'])/math.sqrt(3))
 					result[result<threshold] = 0
-					pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
+					max_sigma = int((metadata['params']['r']*2)/math.sqrt(3))
+					min_sigma = int((metadata['params']['r'])/math.sqrt(3))
+					pred_positions = blob_log(result*255, min_sigma=min_sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
+					# pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 
 				true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
 															pad=metadata['params']['r']/4, diameters=diameters)
