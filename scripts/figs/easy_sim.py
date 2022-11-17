@@ -13,6 +13,7 @@ from scipy import ndimage
 import math
 from scipy.signal import convolve2d
 from pathlib2 import Path
+from  colloidoscope.predict import find_positions
 
 def estimate_noise(I):
 
@@ -40,16 +41,16 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(100,100,100)
-	label_size=(100,100,100)
+	canvas_size=(64,64,64)
+	label_size=(64,64,64)
 	num_workers = 10
 
 	params = dict(
 		r=10,
-		particle_size=0.5,
-		snr=2,
-		cnr=10,
-		volfrac=0.2,
+		particle_size=0.45,
+		snr=5,
+		cnr=1,
+		volfrac=0.5,
 		brightness=100,
 	)
 
@@ -80,14 +81,14 @@ if __name__ == '__main__':
 
 	diameters = diameters * (params['r']*2)
 	# does tp/log work best on seg label?
+	true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=params['r']/4, diameters=diameters)
 	# 
 
-	tp_pred, df = dc.run_trackpy(label, diameter = dc.round_up_to_odd(params['r']*2))
+	tp_pred, df = dc.run_trackpy(canvas, diameter = dc.round_up_to_odd(params['r']*2))
 	print(dc.round_up_to_odd(params['r']*2))
 	print(tp_pred.shape)
 	# print(tp_pred, true_positions)
-	true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=params['r'], diameters=diameters)
-	tp_pred = exclude_borders(tp_pred, canvas_size, pad=params['r'])
+	tp_pred = exclude_borders(tp_pred, canvas_size, pad=params['r']/4)
 	print(true_positions.shape)
 	print(tp_pred.shape)
 
@@ -95,6 +96,19 @@ if __name__ == '__main__':
 	print('tp', prec, rec)
 	# prec, rec = dc.get_precision_recall(true_positions, coords, diameters=diameters, threshold=0.5)
 	# print('local_max', prec, rec)
+
+
+	pred, df = dc.run_trackpy(label, diameter = dc.round_up_to_odd(params['r']*2))
+	pred = find_positions(label, threshold=0)
+	print(dc.round_up_to_odd(params['r']*2))
+	print(pred.shape)
+	# print(pred, true_positions)
+	pred = exclude_borders(pred, canvas_size, pad=params['r']/4)
+	print(true_positions.shape)
+	print(pred.shape)
+
+	prec, rec = dc.get_precision_recall(true_positions, pred, diameters=diameters, threshold=0.5)
+	print('unet', prec, rec)
 
 
 	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, tp_pred, diameters)
@@ -112,7 +126,7 @@ if __name__ == '__main__':
 	# plt.show()
 
 	print(estimate_noise(canvas[0]))
-	print("snr 1", params['brightness']/estimate_noise(canvas[0]))
+	print("snr ", params['brightness']/estimate_noise(canvas[0]))
 
 	dc.view(canvas, label=label, positions=tp_pred, )#true_positions=true_positions)
 

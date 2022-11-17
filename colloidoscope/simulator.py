@@ -63,7 +63,7 @@ def draw_label_slice(args):
 					if is_seg:
 						new_slice[i,j] = 255
 					else:
-						new_slice[i,j] = 255 * np.exp(-(((dist*math.sqrt(3))-0)**2.)/((2. * heatmap_r)**2.))
+						new_slice[i,j] = 255 * np.exp(-(((dist*4)-0)**2.)/((2. * heatmap_r)**2.))
 
 	return new_slice
 
