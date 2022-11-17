@@ -120,7 +120,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 		out_channels=params['n_classes'],
 		channels=channels,
 		strides=strides,
-		# kernel_size=3,
+		kernel_size=7,
 		# up_kernel_size=3,
 		dropout=params["dropout"],
 		padding='valid',
@@ -200,11 +200,11 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'please_1400'
+	dataset_name = 'heatmap_1400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
-	test_data =	list(range(1,299))
+	test_data =	list(range(1,599))
 	random.shuffle(all_data)
 	random.shuffle(test_data)
 
@@ -214,7 +214,7 @@ if __name__ == "__main__":
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'scampi test bs'
+	name = 'tp w/ blur 6b'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
@@ -223,10 +223,10 @@ if __name__ == "__main__":
 
 	config = {
 		"lr": 0.002165988,
-		"batch_size": 16,
-		"n_blocks": 2,
+		"batch_size": 8,
+		"n_blocks": 6,
 		"norm": 'INSTANCE',
-		"epochs": 1,
+		"epochs": 8,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.1,

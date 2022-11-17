@@ -34,14 +34,14 @@ from math import sqrt
 
 
 if __name__ == '__main__':
-	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	dataset_path = '/home/wahab/Data/HDD/Colloids'
+	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(64,64,64)
-	label_size=(60,60,60)
+	canvas_size=(100,100,100)
+	label_size=(96,96,96)
 
 
 	r = 5
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 	threshold = 0.5
 
 
-	dataset_name = 'please_1400_test'
+	dataset_name = 'heatmap_1400_test'
 
 	d = dc.read_hdf5(dataset_name, index)
 	image = d['image']
@@ -95,10 +95,10 @@ if __name__ == '__main__':
 
 	# import pdb; pdb.set_trace()
 
-	# coords = peak_local_max(label, min_distance=diameter/2)
 	# coords = np.array(coords)
 	# coords = blob_log(label, min_sigma=diameter, max_sigma=diameter, overlap=0)
-	label[label<0.5] = 0
+	# label[label<0.5] = 0
+	# coords = peak_local_max(label, min_distance=metadata['params']['r'])
 	sigma = int((metadata['params']['r'])/sqrt(3))
 	# coords = blob_log(label, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1] # get rid of sigmas
 	coords = find_positions(label, threshold=0)
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, coords, diameters)
 
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
-	plt.show()
+	# plt.show()
 
 	x,y = dc.get_gr(true_positions, 50, 50, )
 	plt.plot(x, y, label=f'true n ={len(true_positions)}', color='black')
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 	x,y = dc.get_gr(coords, 50, 50, )
 	plt.plot(x, y, label=f'local_max n ={len(coords)}', color='red')
 	plt.legend()
-	plt.show()
+	# plt.show()
 
 
-	dc.view(image, label=label, positions=coords)
+	# dc.view(image, label=label, positions=coords)

@@ -151,23 +151,6 @@ def crop_positions_for_label(centers, canvas_size, label_size, diameters, pad=0)
 	return final_centers, final_diameters
 
 
-def exclude_borders(centers, canvas_size, pad, diameters=None, ):
-	
-	indices = []
-	# pad = 0
-	for idx, c in enumerate(centers):
-		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
-			indices.append(idx)
-
-	final_centers = centers[indices]
-
-	if diameters is not None:
-		final_diameters = diameters[indices]
-		return final_centers, final_diameters
-	else:
-		return final_centers
-
-
 def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='uint8'):
 	array = generate_perlin_noise_3d(canvas_shape, (octaves, octaves, octaves), tileable=tileable)
 

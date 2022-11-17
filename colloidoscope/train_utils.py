@@ -37,8 +37,6 @@ from functools import reduce
 
 from skimage.feature import peak_local_max, blob_log
 
-from colloidoscope.simulator import exclude_borders
-
 """
 Datasets
 """
@@ -408,6 +406,28 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	run.stop()
 
+def exclude_borders(centers, canvas_size, pad, diameters=None, label_size=None):
+	
+	if label_size is not None:
+		zdiff = (canvas_size[0] - label_size[0])/2
+		xdiff = (canvas_size[1] - label_size[1])/2
+		ydiff = (canvas_size[2] - label_size[2])/2
+		# print(centers[0])
+		centers = centers - [zdiff, xdiff, ydiff]
+
+	indices = []
+	# pad = 0
+	for idx, c in enumerate(centers):
+		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
+			indices.append(idx)
+
+	final_centers = centers[indices]
+
+	if diameters is not None:
+		final_diameters = diameters[indices]
+		return final_centers, final_diameters
+	else:
+		return final_centers
 
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
 		num_workers=4, batch_size=4, criterion=torch.nn.BCEWithLogitsLoss(), 
@@ -431,7 +451,10 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		else:
 			detection_diameter = heatmap_r
 
-		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
+		print(canvas_size,   label_size)
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, 
+									roiSize=canvas_size, label_size=label_size,
+									debug=True, post_processing=post_processing, device="cuda", )
 
 		if len(pred_positions>0):
 			sidebyside = make_proj(d['array'], label)
@@ -476,7 +499,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	if post_processing == "max":
 		detection_diameter = int((metadata['params']['r']*2))
 
-	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
+	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
+												roiSize=canvas_size, label_size=label_size,
+												debug=True, post_processing=post_processing,  device="cuda")
 	# test_array = test_array/test_array.max()*255
 	# test_label = test_label/test_label.max()*255
 	sidebyside = make_proj(test_array, test_label)
@@ -535,7 +560,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 			for test_idx, [result, for_tp] in tqdm(enumerate(zip(results, inputs))):
 				i = test_idx + ((batch_idx)*(batch_size))
-				metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
+				index = test_set[i]
+				metadata, true_positions, diameters = dc.read_metadata(dataset_name, index)
 				result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
 				if heatmap_r == "radius":
@@ -552,8 +578,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 					result[result<threshold] = 0
 					pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 
-				true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=metadata['params']['r'], diameters=diameters)
-				pred_positions = exclude_borders(pred_positions, canvas_size, pad=metadata['params']['r'])
+				true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
+															pad=metadata['params']['r']/4, diameters=diameters)
+				pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']/4)
 				
 				prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
 				array = dc.crop3d(np.squeeze(for_tp), roiSize=label_size)
@@ -561,8 +588,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				# array = np.squeeze(array)
 				diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
 				tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
-				tp_positions = exclude_borders(tp_positions, canvas_size, pad=metadata['params']['r'])
-
+				tp_positions = exclude_borders(tp_positions, label_size, pad=metadata['params']['r']/4)
 				tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
 				# print(f"prec {prec} rec {rec}")
 				# print(f"tp prec {tp_prec} rec {tp_rec}")
@@ -570,7 +596,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				m = {
 					'dataset'		: metadata['dataset'],
 					'n' 	 		: metadata['n'],
-					'idx'	 		: i,
+					'idx'	 		: index,
 					'volfrac'		: metadata['volfrac'],
 					'n_particles'	: metadata['n_particles'],
 					'type'			: metadata['type'],
@@ -796,9 +822,9 @@ def read_real_examples():
 	d['emily'] = {}
 	d['emily']['diameter'] = [15,9,9]
 	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
-	d['katherine'] = {}
-	d['katherine']['diameter'] = [7,7,7]
-	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
+	# d['katherine'] = {}
+	# d['katherine']['diameter'] = [7,7,7]
+	# d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
 	d['levke'] = {}
 	d['levke']['diameter'] = [15,11,11]
 	d['levke']['array'] = io.imread('examples/Data/levke.tiff')

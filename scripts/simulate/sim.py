@@ -125,8 +125,8 @@ if __name__ == '__main__':
 	test_dataset_name = dataset_name+'_test'
 	index=0
 
-	canvas_size=(200,200,200)
-	label_size=(200,200,200)
+	canvas_size=(256,256,256)
+	label_size=(256,256,256)
 
 	params = dict(
 		r=10,
@@ -183,12 +183,12 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 10,							'brightness' : 255, 						'snr' : 10, 						'volfrac' : 0.2},
-				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 10,							'brightness' : 255, 						'snr' : 10, 						'volfrac' : 0.2},
-				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 5),			'brightness' : 255, 						'snr' : 10, 						'volfrac' : 0.2},
-				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 10,							'brightness' : randrange(10, 255), 			'snr' : 10, 						'volfrac' : 0.2},
-				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 10,							'brightness' : 255, 						'snr' : uniform(0.1,5), 			'volfrac' : 0.2},			
-				'volfrac' 		: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 10,							'brightness' : 255, 						'snr' : 10, 						'volfrac' : random.choice([0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 10,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
+				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
+				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
+				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 5,							'brightness' : randrange(10, 255), 			'snr' : 5, 						'volfrac' : 0.3},
+				'snr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : uniform(0.1, 10), 		'volfrac' : 0.3},			
+				'volfrac' 		: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : random.choice([0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55])},
 			}
 
 			# define types of particles in simulation
