@@ -214,19 +214,19 @@ if __name__ == "__main__":
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'tp w/ blur 6b'
+	name = 'log w/ median'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "tp"
+	post_processing = "log"
 
 
 	config = {
 		"lr": 0.002165988,
-		"batch_size": 8,
-		"n_blocks": 6,
+		"batch_size": 16,
+		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 8,
+		"epochs": 6,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.1,
