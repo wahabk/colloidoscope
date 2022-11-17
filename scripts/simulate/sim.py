@@ -50,7 +50,7 @@ if __name__ == '__main__':
 	canvas_size=(100,100,100)
 	label_size=(100,100,100)
 	
-	dataset_name = 'heatmap_1400'
+	dataset_name = 'gauss_1400'
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
