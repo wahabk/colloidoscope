@@ -200,7 +200,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'heatmap_1400'
+	dataset_name = 'gauss_1400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
@@ -214,7 +214,7 @@ if __name__ == "__main__":
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'log w/ med + min max sigma'
+	name = 'log r/sqrt and +1'
 	# save = 'output/weights/attention_unet_202206.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
