@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
 	subject_dict = {'array' : tio.ScalarImage(tensor=array, type=tio.INTENSITY, path=None),}
 	subject = tio.Subject(subject_dict) 
-	grid_sampler = tio.inference.GridSampler(subject, patch_size=(64,64,64), patch_overlap=(16,16,16), padding_mode='mean')
+	grid_sampler = tio.inference.GridSampler(subject, patch_size=(64,64,64), patch_overlap=(0,0,0), padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=1)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') 
 
@@ -32,7 +32,6 @@ if __name__ == "__main__":
 		tensor = patch_batch['array'][tio.DATA]
 		locations = patch_batch[tio.LOCATION]
 
-		print(tensor.shape)
 
 		tensor = tensor[:,
 						:,
@@ -41,6 +40,7 @@ if __name__ == "__main__":
 						2:62
 						]
 
+		print(tensor.shape)
 		aggregator.add_batch(tensor, locations)
 
 	output_tensor = aggregator.get_output_tensor()
