@@ -200,7 +200,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'gauss_1400'
+	dataset_name = 'heatmap_1400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
@@ -218,7 +218,7 @@ if __name__ == "__main__":
 	save = 'output/weights/attention_unet_202211.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "log"
+	post_processing = "log, big as array"
 
 
 	config = {

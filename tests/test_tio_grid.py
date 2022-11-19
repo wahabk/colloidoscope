@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchio as tio
 
-from colloidoscope import DeepColloid
+# from colloidoscope import DeepColloid
 
 
 
@@ -17,13 +17,13 @@ if __name__ == "__main__":
 	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dc = DeepColloid(dataset_path)
 
-	roiSize = (1,64,64,64)
+	roiSize = (1,128,128,128)
 
 	array = np.zeros(roiSize)
 
 	subject_dict = {'array' : tio.ScalarImage(tensor=array, type=tio.INTENSITY, path=None),}
 	subject = tio.Subject(subject_dict) 
-	grid_sampler = tio.inference.GridSampler(subject, patch_size=(32,32,32), patch_overlap=(16,16,16), padding_mode='mean')
+	grid_sampler = tio.inference.GridSampler(subject, patch_size=(64,64,64), patch_overlap=(16,16,16), padding_mode='mean')
 	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=1)
 	aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') 
 
@@ -31,6 +31,15 @@ if __name__ == "__main__":
 	for i, patch_batch in enumerate(patch_loader):
 		tensor = patch_batch['array'][tio.DATA]
 		locations = patch_batch[tio.LOCATION]
+
+		print(tensor.shape)
+
+		tensor = tensor[:,
+						:,
+						2:62,
+						2:62,
+						2:62
+						]
 
 		aggregator.add_batch(tensor, locations)
 
