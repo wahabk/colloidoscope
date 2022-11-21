@@ -1,16 +1,19 @@
 import torch
 import numpy as np
-from colloidoscope.trainer import Trainer, LearningRateFinder, predict, test, train
-from colloidoscope.unet import UNet
-from colloidoscope.dataset import ColloidsDatasetSimulated
+from colloidoscope.train_utils import Trainer, LearningRateFinder, test, ColloidsDatasetSimulated
 from colloidoscope.deepcolloid import DeepColloid
 import torchio as tio
+from neptune.new.types import File
 import matplotlib.pyplot as plt
 import neptune.new as neptune
-from neptune.new.types import File
 import os
 from ray import tune
 import random
+import copy
+import monai
+import math
+from pathlib2 import Path
+from monai.networks.layers.factories import Act, Norm
 
 if __name__ == "__main__":
 
@@ -22,42 +25,61 @@ if __name__ == "__main__":
 	dc = DeepColloid(dataset_path)
 
 	dataset_name = 'janpoly'
+	num_workers=16
 	test_data = list(range(800,810))
+	name="TW:"
 
 	config = {
-		"lr": 0.005,
-		"batch_size": 4,
-		"n_blocks": 6,
-		"norm": 'batch',
-		"epochs": 5,
+		"lr": 0.002165988,
+		"batch_size": 16,
+		"n_blocks": 2,
+		"norm": 'INSTANCE',
+		"epochs": 6,
 		"start_filters": 32,
-		"activation": 'relu',
+		"activation": "SWISH",
+		"dropout": 0.1,
+		"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 
 	params = dict(
-		roiSize = (32,128,128),
+		roiSize = (100,100,100),
+		# train_data = train_data,
+		# val_data = val_data,
+		test_data = test_data,
 		dataset_name = dataset_name,
 		batch_size = config['batch_size'],
 		n_blocks = config['n_blocks'],
 		norm = config['norm'],
-		num_workers = 4,
-		n_classes = 1,
+		loss_function = config['loss_function'],
 		lr = config['lr'],
 		epochs = config['epochs'],
 		start_filters = config['start_filters'],
 		activation = config['activation'],
+		dropout = config['dropout'],
+		num_workers = num_workers,
+		n_classes = 1,
 		random_seed = 42,
 	)
+	label_size = [96,96,96]
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	model = UNet(in_channels=1,
-			out_channels=params['n_classes'],
-			n_blocks=params['n_blocks'],
-			start_filters=params['start_filters'],
-			activation=params['activation'],
-			normalization=params['norm'],
-			conv_mode='same',
-			dim=3)
+	
+	start_filters = params['start_filters']
+	n_blocks = params['n_blocks']
+	start = int(math.sqrt(start_filters))
+	channels = [2**n for n in range(start, start + n_blocks)]
+	strides = [2 for n in range(1, n_blocks)]
+	model = monai.networks.nets.AttentionUnet(
+		spatial_dims=3,
+		in_channels=1,
+		out_channels=params['n_classes'],
+		channels=channels,
+		strides=strides,
+		kernel_size=7,
+		# up_kernel_size=3,
+		dropout=params["dropout"],
+		padding='valid',
+	)
 
 	model = torch.nn.DataParallel(model)
 	model.to(device)
@@ -66,7 +88,19 @@ if __name__ == "__main__":
 	model_weights = torch.load(weights_path, map_location='cpu') # read trained weights
 	# print(model_weights.keys())
 	model.load_state_dict(model_weights) # add weights to model
+
+	run = neptune.init_run(
+		project="wahabk/colloidoscope",
+		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
+	)
+
+	run['Tags'] = str(name)
+	run['parameters'] = params
 	
 	losses = test(model, dataset_path, dataset_name, test_data, criterion=torch.nn.L1Loss(), device=device)
 
 	print(losses)
+
+	run['test/df'].upload(File.as_html(losses))
+
+	run.stop()

@@ -214,11 +214,11 @@ if __name__ == "__main__":
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'log d/sigma no max'
+	name = 'log, big as array'
 	save = 'output/weights/attention_unet_202211.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
-	save = False
-	post_processing = "log, big as array"
+	# save = False
+	post_processing = "log"
 
 
 	config = {

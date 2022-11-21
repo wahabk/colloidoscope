@@ -501,7 +501,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	if post_processing == "log":
 		#TODO add diameters as array
 		r = metadata['params']['r']
-		detection_diameter = [(r*2), (r*2)-2, (r*2)-2]
+		detection_diameter = r
 
 	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
 												roiSize=canvas_size, label_size=label_size,
@@ -580,7 +580,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				if post_processing == "log":
 					# result[result<threshold] = 0
 					sigma = metadata['params']['r']/math.sqrt(3)
-					#TODO add diameters as array
+					#TODO add diameters as array?
 					pred_positions = blob_log(result*255, min_sigma=sigma, overlap=0)[:,:-1]
 					# pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 
