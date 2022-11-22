@@ -5,42 +5,63 @@ import numpy as np
 import matplotlib.pyplot as plt
 import napari
 from random import randrange, uniform, triangular
-import numpy as np
 import random
-import psf
 from scipy import ndimage
 import math
 from scipy.signal import convolve2d
 from pathlib2 import Path
 import h5py
+import pandas as pd
 
-def write_sim_dataset(path, n, canvas, positions, NO_DIAMETERS, metadata):
-    with h5py.File(path, "a") as f:
-        dset = f.create_dataset(name=str(n), shape=canvas.shape, dtype=dtype, data = canvas, compression=1)
-    
-    # TODO write positions and metadata as pandas csv
-    # TODO remove diameters from read.py and metric.py
-    # TODO make x_train, y_train, x_test, y_test
+def write_sim_dataset(dataset_path, index, canvas, positions, metadata):
+	h_path =  dataset_path+"/test_x_train.hdf5"
+	with h5py.File(h_path, "a") as f:
+		dset = f.create_dataset(name=str(index), shape=canvas.shape, dtype="uint8", data = canvas, compression=1)
+		dset = f.create_dataset(name=str(index)+'_positions', shape=positions.shape, dtype='float32', data = positions, compression=1)
+	
+	meta_path =  dataset_path+"/test_y_train.csv"
+	if Path(meta_path).is_file():
+		# TODO write positions and metadata as pandas csv
+		# TODO remove diameters from read.py and metric.py
+		# TODO make x_train, y_train, x_test, y_test
+		df = pd.read_csv(meta_path, index_col=0)
+		# df = pd.DataFrame.from_dict(metadata)
+		df.loc[index] = metadata
 
+		# df["Z"] = positions[:,0]
+		# df["X"] = positions[:,1]
+		# df["Y"] = positions[:,2]
+		df.to_csv(meta_path)
+		print(df)
+	else:
+		
+		d = {index : metadata}
+		print(d)
+		df = pd.DataFrame.from_dict(d, orient='index')
+		print(df)
+		df.to_csv(meta_path)
 
-    return
+	print(df)
+
+	return
 
 if __name__ == '__main__':
-	dataset_path = '/mnt/scratch/ak18001/Colloids/'
-	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(100,100,100)
-	label_size=(100,100,100)
+	canvas_size=(64,64,64)
+	label_size=(64,64,64)
 	
-	dataset_name = 'gauss_1400'
+	dataset_name = 'x_train'
+	out_path = '/mnt/scratch/ak18001/Colloids/'
 	num_workers = 16
-	# heatmap_r = 'radius'
+	heatmap_r = 'radius'
 	n_samples_per_volfrac = 200
 
-    # psf_kernel = 'standard' #TODO make this change psf
+	# psf_kernel = 'standard' #TODO make this change psf
 	# read huygens psf
 	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
@@ -76,10 +97,10 @@ if __name__ == '__main__':
 				'n' 	 : index,
 				'type'	 : this_type,
 				'volfrac': volfrac,
-				'params' : params,
+				**params,
 			}
 
-			path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
+			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
 			print(f'Reading: {path} at {n+1} ...')
 
 			hoomd_positions, diameters = read_gsd(path, n+1)
@@ -101,5 +122,5 @@ if __name__ == '__main__':
 			# sidebyside = np.concatenate((projection, projection_label), axis=1)
 			# plt.imsave('output/test_sim.png', sidebyside, cmap='gray')
 
-			dc.write_hdf5(dataset_name, index, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
+			write_sim_dataset(dataset_path, index, canvas, positions=final_centers, metadata=metadata)
 			index+=1
