@@ -262,5 +262,5 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		label = np.array(label, dtype='float64')
 		return canvas, label, centers, diameters
 	else:
-		return canvas
+		return canvas, centers, diameters
 

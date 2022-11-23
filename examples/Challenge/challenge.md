@@ -32,7 +32,7 @@ This results in a high contrast to noise ratio (CNR).
 Where $b_{\mu}$ and $f_{\mu}$ are the background and foreground mean brightnesses, and $b_{\sigma}$ and $f_{\sigma}$ are their standard deviations.
 
 $$
-    CNR = \dfrac{b_{\mu} - f_{\mu}}{\sqrt{\dfrac{b_{\sigma} + f_{\sigma}}{2}}}
+    CNR = \dfrac{b_{\mu} - f_{\mu}}{\sigma}
 $$
 
 It also contributes to a high signal to noise ratio (SNR) which is simply:
