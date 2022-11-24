@@ -491,6 +491,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# test predict on sim
 	data_dict = dc.read_hdf5(dataset_name, 10000)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+	# TODO exclude borders?
 
 	if heatmap_r == "radius":
 		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
@@ -532,6 +533,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
+
 
 	if run: run['PR_curve'].upload(fig)
 	plt.clf()
