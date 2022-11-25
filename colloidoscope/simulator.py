@@ -21,7 +21,6 @@ from scipy.signal import convolve
 from tqdm import tqdm
 # import psf
 from perlin_numpy import generate_perlin_noise_3d
-from pathlib2 import Path
 
 import copy
 
@@ -151,7 +150,7 @@ def crop_positions_for_label(centers, canvas_size, label_size, diameters, pad=0)
 	return final_centers, final_diameters
 
 
-def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='uint8'):
+def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='float32'):
 	array = generate_perlin_noise_3d(canvas_shape, (octaves, octaves, octaves), tileable=tileable)
 
 	# normalise to 0 - 1
