@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 import pandas as pd
-# this lazy imports numba in case you get issues
+# this lazy imports numba in case you get issues with it
 
 def _calc_iou_dist(distances, diameter, threshold):
 	"""
@@ -157,22 +157,3 @@ def exclude_borders(centers, canvas_size, pad, diameters=None, label_size=None):
 		return final_centers, final_diameters
 	else:
 		return final_centers
-
-if __name__ == '__main__':
-	from read import read_x, read_y
-	path = ""
-	x_path = "x_train.hdf5"
-	m_path = "x_train_metadata.csv"
-	y_path = "y_train.csv"
-	index = 0
-
-	x = read_x(x_path, index)
-	y = read_y(y_path, index)
-	metadata = pd.read_csv(m_path, index_col=0)
-	metadata = metadata.iloc[index].to_dict()
-
-	print(x.shape)
-	print(metadata)
-	
-	prec, rec = get_precision_recall(y, y[:15], diameter=metadata['r']*2, threshold=0.5)
-	print(prec, rec)

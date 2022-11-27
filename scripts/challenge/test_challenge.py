@@ -4,9 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-	dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids/'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = colloidoscope.DeepColloid(dataset_path)
 
@@ -14,9 +14,9 @@ if __name__ == '__main__':
 	from metric import average_precision, plot_pr, exclude_borders
 	
 	path = ""
-	x_path = "x_train.hdf5"
-	m_path = "x_train_metadata.csv"
-	y_path = "y_train.csv"
+	x_path = dataset_path+"challenge/x_test.hdf5"
+	m_path = dataset_path+"challenge/x_test_metadata.csv"
+	y_path = dataset_path+"challenge/y_test.csv"
 	index=0
 	
 	x = read_x(x_path, index)
@@ -25,13 +25,13 @@ if __name__ == '__main__':
 	metadata = metadata.iloc[index].to_dict()
 	diameter = metadata['r']*2
 	
-	df, pred = dc.detect(x, diameter=diameter, 
+	df, pred, label = dc.detect(x, diameter=diameter, 
                                 weights_path='output/weights/attention_unet_202206.pt', 
                                 patch_overlap=(16,16,16),
                                 debug=True, device="cpu",
                                 post_processing="log", batch_size=1)
 	
-	tp_pred = dc.run_trackpy(x, diameter=diameter)
+	tp_pred, df = dc.run_trackpy(x, diameter=dc.round_up_to_odd(diameter))
 	
 	ap, precisions, recalls, thresholds = average_precision(y, pred, diameter=diameter)
 	fig = plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
@@ -39,4 +39,5 @@ if __name__ == '__main__':
 	fig = plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
 	plt.show()
 	
+	dc.view(array=x, positions=pred)
 	
