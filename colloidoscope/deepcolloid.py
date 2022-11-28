@@ -185,6 +185,7 @@ class DeepColloid:
 
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
+		#TODO add multiframe
 
 		bins = np.linspace(0, cutoff, bins)
 		drs = bins[1:] - bins[:-1]
@@ -207,8 +208,9 @@ class DeepColloid:
 		# print(hist, rg_hist)
 		# rg_hist[rg_hist==0] = 0.000001
 
+		epsilon = 1e-10
 		hist = hist / rg_hist # pdfs
-		hist[np.isnan(hist)] = 0 # fix division by zero?
+		hist[np.isnan(hist)] = epsilon # fix division by zero
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 

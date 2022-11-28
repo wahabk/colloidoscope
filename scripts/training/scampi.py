@@ -69,7 +69,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
-		# tio.RandomAffine(),
+		tio.RandomAffine(p=0.25),
 	])
 	transforms_img = tio.Compose([
 		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
@@ -208,17 +208,17 @@ if __name__ == "__main__":
 	random.shuffle(all_data)
 	random.shuffle(test_data)
 
-	train_data = all_data[0:1200]
-	val_data = all_data[1200:1400]
-	test_data = test_data[:]
-	# train_data = all_data[0:10]
-	# val_data = all_data[10:15]
-	# test_data = test_data[:20]
-	name = 'log, big as array'
+	# train_data = all_data[0:1200]
+	# val_data = all_data[1200:1400]
+	# test_data = test_data[:]
+	train_data = all_data[0:10]
+	val_data = all_data[10:15]
+	test_data = test_data[:20]
+	name = 'new_tests'
 	save = 'output/weights/attention_unet_202211.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	# save = False
-	post_processing = "log"
+	post_processing = "tp"
 
 
 	config = {
@@ -226,7 +226,7 @@ if __name__ == "__main__":
 		"batch_size": 16,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 6,
+		"epochs": 1,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.1,
