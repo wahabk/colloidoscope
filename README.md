@@ -38,6 +38,10 @@ python3.8 -m pip install .
 
 I have no documentation for this project but I will endeavor to write nice docstrings. I have provided custom jupyter notebooks in ```examples/```.
 
+You can run colloidoscope in google colab: <a href="https://colab.research.google.com/github/softmatterlab/DeepTrack-2.0/blob/master/examples/paper-examples/2-single_particle_tracking.ipynb"> <img src="https://colab.research.google.com/assets/colab-badge.svg"> Training a CNN-based single particle tracker using simulated data </a>
+
+<a href=\"https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>
+
 Colloidoscope centers around the class ```DeepColloid```. This contains all the functions you will need.
 
 First import and read your data:
