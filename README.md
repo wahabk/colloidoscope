@@ -1,6 +1,7 @@
 # Colloidoscope!
 
-<a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> <img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
+<a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> 
+<img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
 
 A project to attempt tracking colloids using confocal and deep learning. Please note this is work-in-progress.
 
@@ -40,7 +41,9 @@ python3.8 -m pip install .
 
 I have no documentation for this project but I will endeavor to write nice docstrings. I have provided custom jupyter notebooks in ```examples/```.
 
-You can run colloidoscope in google colab: <a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> <img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
+You can run colloidoscope in google colab: 
+<a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> 
+<img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
 
 Colloidoscope centers around the class ```DeepColloid```. This contains all the functions you will need.
 

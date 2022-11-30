@@ -17,17 +17,22 @@ from monai.networks.layers.factories import Act, Norm
 
 if __name__ == "__main__":
 
-	dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
+	dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	# dataset_path = '/data/mb16907/wahab/Colloids'
 	# dataset_path = '/user/home/ak18001/scratch/Colloids/' #bc4
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'janpoly'
+	dataset_name = 'heatmap_1400'
 	num_workers=16
-	test_data = list(range(800,810))
-	name="TW:"
+	test_data =	list(range(1,599))
+	random.shuffle(test_data)
+	test_data = test_data[:20]
+	name="TW: first test weights"
+
+	post_processing = 'tp'
 
 	config = {
 		"lr": 0.002165988,
@@ -43,6 +48,7 @@ if __name__ == "__main__":
 
 	params = dict(
 		roiSize = (100,100,100),
+		label_size = (96,96,96),
 		# train_data = train_data,
 		# val_data = val_data,
 		test_data = test_data,
@@ -60,7 +66,7 @@ if __name__ == "__main__":
 		n_classes = 1,
 		random_seed = 42,
 	)
-	label_size = [96,96,96]
+	
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	
@@ -84,7 +90,7 @@ if __name__ == "__main__":
 	model = torch.nn.DataParallel(model)
 	model.to(device)
 
-	weights_path = 'output/weights/unet.pt'
+	weights_path = 'output/weights/attention_unet_202211.pt'
 	model_weights = torch.load(weights_path, map_location='cpu') # read trained weights
 	# print(model_weights.keys())
 	model.load_state_dict(model_weights) # add weights to model
@@ -93,14 +99,13 @@ if __name__ == "__main__":
 		project="wahabk/colloidoscope",
 		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 	)
-
 	run['Tags'] = str(name)
 	run['parameters'] = params
-	
-	losses = test(model, dataset_path, dataset_name, test_data, criterion=torch.nn.L1Loss(), device=device)
 
-	print(losses)
+	work_dir = Path().parent.resolve()
+	
+	losses = test(model, dataset_path, dataset_name, test_data, canvas_size=params['roiSize'], label_size=params['label_size'],
+				post_processing=post_processing, criterion=torch.nn.L1Loss(), device=device, work_dir=work_dir, run=run)
 
 	run['test/df'].upload(File.as_html(losses))
-
 	run.stop()

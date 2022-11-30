@@ -345,6 +345,8 @@ class DeepColloid:
 
 		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap:.2f}', *args, **kwargs)
 		plt.title('Average Precision')
+		plt.xlabel("Recall")
+		plt.ylabel("Recall")
 		plt.xlim([-0.1,1.1])
 		plt.ylim([-0.1,1.1])
 		plt.legend()

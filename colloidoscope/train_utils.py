@@ -466,12 +466,13 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# test on real data
 	real_dict = read_real_examples()
 
-	fig, axs = plt.subplots(2,len(real_dict))
-	# axs = axs.flatten()
-	# TODO concatenate the images with numpy?
+	fig, axs = plt.subplots(1,len(real_dict))
+	axs = axs.flatten()
+	print(axs.shape, axs, len(axs))
+	plt.tight_layout()
 
 	for i, (name, d) in enumerate(real_dict.items()):
-		print(name, d['array'].shape)
+		print(name, d['array'].shape, i)
 
 		if heatmap_r == "radius":
 			detection_diameter = d['diameter']
@@ -483,32 +484,38 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 									roiSize=canvas_size, label_size=label_size,
 									debug=True, post_processing=post_processing, device="cuda", )
 
-		if len(pred_positions>0):
+		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+		
+		tp_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
+		unet_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
+		if len(pred_positions)>0:
+			print(f"trying to plot at {i}")
 			sidebyside = make_proj(d['array'], label)
-			# if run: run[name].upload(File.as_image(sidebyside))
-			sidebyside = ndimage.zoom(sidebyside, 0.5)
-			axs[0,i].imshow(np.rot90(sidebyside))
-			# axs[0,i].axis('off')
-			
-			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+			# sidebyside = ndimage.zoom(sidebyside, 0.5)
+			sidebyside = np.rot90(sidebyside)
+			if run: run[name].upload(File.as_image(sidebyside))
+			# TODO concatenate the images with numpy?
+			# axs[i,0].imshow(sidebyside, )#cmap='hot')
 
-			tp_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
-			unet_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
+			#TODO use add subplot
+			plt.sca(axs[i])
 
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
-			plot_gr(x, y, d['diameter'], label=f'TP n ={len(trackpy_pos)}, frac. = {tp_frac_detected:.2f}', color='gray', axs=axs[1,i])
+			x = x/min(d['diameter'])
+			plt.plot(x, y, label=f'TP', color='gray') # , frac. = {round(tp_frac_detected, 2)} # n ={len(trackpy_pos)}
+
 			x, y = dc.get_gr(pred_positions, 100, 100)
-			plot_gr(x, y, d['diameter'], label=f'Unet n ={len(pred_positions)}, frac. = {unet_frac_detected:.2f}', color='red', axs=axs[1,i])
-			axs[1,i].legend()
-			# plt.legend()
+			x = x/min(d['diameter'])
+			plt.plot(x, y, label=f'Unet', color='red') # , frac. = {round(unet_frac_detected, 2)} # n ={len(pred_positions)}
+
+			plt.xlabel("$r / \sigma$")
+			plt.ylabel("$g(r)$")
 
 		else:
 			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
-		# fig.suptitle("Analysis of labels and g(r) on real data")
 		plt.tight_layout()
-		# fig.update()
-		if run: run['real_grs'].upload(fig)
+		if run: run['grs'].upload(fig)
 		plt.clf()
 
 	
@@ -570,7 +577,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	model.eval()
 	with torch.no_grad():
 		for batch_idx, batch in enumerate(test_loader):
-			print(batch_idx, "/", len(test_set)/batch_size)
+			print(batch_idx, "/", int(len(test_set)/batch_size))
 			
 			x, y = batch
 			inputs = x.clone()
@@ -647,44 +654,48 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	print(losses)
 
 	plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
-	titles		= ['Volume Fraction ($\phi$)', 'SNR', 'CNR', 'Particle size ($\mu m$)', 'Brightness (8 bit)', 'Radius (pixels)']
+	titles		= ['$\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
 
-	big_fig = plt.figure(figsize=(12,16))
-	subfigs = big_fig.subfigures(1,2,wspace=0.2)
+	# fig = plt.figure(figsize=(4,3))
+	# axs = fig.subplots(4,3, sharey=True)
 
-	# plt.clf()
-	axs = subfigs[0].subplots(3,2)
-	axs = axs.flatten()
+	fig,axs = plt.subplots(2,len(plot_params),sharey=True, sharex=False)
+	plt.tight_layout(pad=0.1)
+
+	this_axs = axs[0,:].flatten()
 	for i, p in enumerate(plot_params):
 		this_df = losses[losses['type'].isin([p])]
-		axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
-		axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
-		# axs[i].title.set_text(p)
-		axs[i].set_xlabel(titles[i])
-		axs[i].set_ylim(-0.1,1.1)
-	subfigs[0].suptitle("Precision", fontsize=14) # y=2, 
-	# subfigs[0].tight_layout()
-	# if run: run['test/params_vs_prec'].upload(fig)
+		this_axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
+		this_axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
+		if i == 0: 
+			this_axs[i].set_ylabel("Precision", fontsize='large')
+			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
+			this_axs[i].set_ylim(-0.1,1.1)
+		else:
+			this_axs[i].set_yticks([])
+		this_axs[i].set_xticks([])
 
-	# plt.clf()
-	axs = subfigs[1].subplots(3,2)
-	axs = axs.flatten()
+	this_axs = axs[1,:].flatten()
 	for i, p in enumerate(plot_params):
 		this_df = losses[losses['type'].isin([p])]
-		axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
-		axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
-		# axs[i].title.set_text(p)
-		axs[i].set_xlabel(titles[i])
-		axs[i].set_ylim(-0.1,1.1)
-	subfigs[1].suptitle("Recall", fontsize=14) # y=2, 
-	# subfigs[0].tight_layout()
-	# if run: run['test/params_vs_rec'].upload(fig)
-
-	big_fig.tight_layout(pad=0)
-	if run: run['test/params_vs_PR'].upload(big_fig)
+		this_axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
+		this_axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
+		this_axs[i].set_xlabel(titles[i], fontsize='large')
+		if i == 0: 
+			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
+			this_axs[i].set_ylim(-0.1,1.1)
+			this_axs[i].set_ylabel("Recall", fontsize='large')
+		else:
+			this_axs[i].set_yticks([])
+	
+	fig.set_figwidth(13)
+	# plt.margins(x=0,y=2)
+	fig.suptitle("Precisions and Recalls", fontsize='xx-large', y=1.05)
+	if run: run['test/params_vs_PR'].upload(fig)
 
 	# plt.clf()
-	fig, axs = plt.subplots(3,2)
+	fig, axs = plt.subplots(3,2, sharey=True)
+	fig.tight_layout()
 	axs = axs.flatten()
 	for i, p in enumerate(plot_params):
 		this_df = losses[losses['type'].isin([p])]
@@ -693,9 +704,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		# axs[i].title.set_text(p)
 		axs[i].set_xlabel(titles[i])
 		axs[i].set_ylim(-0.1,1.1)
+		plt.margins()
 	fig.suptitle("Loss")
-	fig.tight_layout(pad=0)
-	# fig.update()
 	if run: run['test/params_vs_loss'].upload(fig)
 
 	return losses
