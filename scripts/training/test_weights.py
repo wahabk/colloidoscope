@@ -31,9 +31,9 @@ if __name__ == "__main__":
 	test_data =	list(range(1,599))
 	random.shuffle(test_data)
 	test_data = test_data[:20]
-	name="TW: first test weights"
+	name="TW: log"
 
-	post_processing = 'tp'
+	post_processing = 'log'
 
 	config = {
 		"lr": 0.002165988,

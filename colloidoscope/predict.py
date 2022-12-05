@@ -210,7 +210,8 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		if isinstance(diameter, list): diameter = np.array(diameter)
 		# result[result<threshold] = 0
 		sigma = (diameter/2)/math.sqrt(3)
-		positions = blob_log(result*255, min_sigma=sigma, overlap=0)[:,:-1]
+		max_sigma = (diameter*4)/math.sqrt(3)
+		positions = blob_log(result*255, min_sigma=sigma,  max_sigma=max_sigma, overlap=0)[:,:-1]
 	elif post_processing == "classic":
 		positions = find_positions(result*255, threshold)
 

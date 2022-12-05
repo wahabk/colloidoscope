@@ -4,8 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
-	dataset_path = '/home/ak18001/Data/HDD/Colloids/challenge/'
+	dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	# dataset_path = '/home/ak18001/Data/HDD/Colloids/challenge/'
 	# dataset_path = '/home/wahab/Data/HDD/Colloids/'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = colloidoscope.DeepColloid(dataset_path)
@@ -16,12 +16,15 @@ if __name__ == '__main__':
 	path = ""
 	x_path = dataset_path+"challenge/x_test.hdf5"
 	m_path = dataset_path+"challenge/x_test_metadata.csv"
-	y_path = dataset_path+"challenge/y_test.csv"
+	y_path = dataset_path+"challenge/y_test_new.csv"
 	index=0
 	
 	x = read_x(x_path, index)
 	y = read_y(y_path, index)
 	metadata = pd.read_csv(m_path, index_col=0)
+	print(y.shape)
+	exit()
+
 	metadata = metadata.iloc[index].to_dict()
 	diameter = metadata['r']*2
 	

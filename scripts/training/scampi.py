@@ -208,17 +208,17 @@ if __name__ == "__main__":
 	random.shuffle(all_data)
 	random.shuffle(test_data)
 
-	# train_data = all_data[0:1200]
-	# val_data = all_data[1200:1400]
-	# test_data = test_data[:]
-	train_data = all_data[0:10]
-	val_data = all_data[10:15]
-	test_data = test_data[:20]
-	name = 'new_tests'
+	train_data = all_data[0:1200]
+	val_data = all_data[1200:1400]
+	test_data = test_data[:]
+	# train_data = all_data[0:10]
+	# val_data = all_data[10:15]
+	# test_data = test_data[:20]
+	name = 'att unet  + log'
 	save = 'output/weights/attention_unet_202211.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	# save = False
-	post_processing = "tp"
+	post_processing = "log"
 
 
 	config = {
@@ -226,7 +226,7 @@ if __name__ == "__main__":
 		"batch_size": 16,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 1,
+		"epochs": 5,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.1,

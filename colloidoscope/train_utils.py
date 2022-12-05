@@ -468,109 +468,110 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	os.chdir(work_dir)
 	dataset_name = dataset_name+"_test"
 	
-	# # test on real data
-	# real_dict = read_real_examples()
+	# test on real data
+	real_dict = read_real_examples()
 
-	# real_len = len(real_dict)
-	# fig, axs = plt.subplots(real_len,3,)
-	# plt.tight_layout(pad=0.01)
+	real_len = len(real_dict)
+	fig, axs = plt.subplots(real_len,3,)
+	plt.tight_layout(pad=0.01)
 
-	# for i, (name, d) in enumerate(real_dict.items()):
-	# 	print(name, d['array'].shape, i, real_len)
+	for i, (name, d) in enumerate(real_dict.items()):
+		print(name, d['array'].shape, i, real_len)
 
-	# 	if heatmap_r == "radius":
-	# 		detection_diameter = d['diameter']
-	# 	else:
-	# 		detection_diameter = heatmap_r
+		if heatmap_r == "radius":
+			detection_diameter = d['diameter']
+		else:
+			detection_diameter = heatmap_r
 
-	# 	print(canvas_size,   label_size)
-	# 	df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, 
-	# 								roiSize=canvas_size, label_size=label_size,
-	# 								debug=True, post_processing=post_processing, device="cuda", )
+		print(canvas_size,   label_size)
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, 
+									roiSize=canvas_size, label_size=label_size,
+									debug=True, post_processing=post_processing, device="cuda", )
 
-	# 	trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
 		
-	# 	tp_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
-	# 	unet_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
-	# 	if len(pred_positions)>0:
-	# 		array_projection = np.max(d['array'], axis=0)
-	# 		label_projection = np.max(label, axis=0)*255
-	# 		axs[i,0].imshow(array_projection, cmap='gray')
-	# 		axs[i,0].set_xticks([])
-	# 		axs[i,0].set_yticks([])
-	# 		axs[i,0].set_title(name, fontsize="xx-large")
-	# 		axs[i,1].imshow(label_projection, cmap='gist_heat')
-	# 		axs[i,1].set_xticks([])
-	# 		axs[i,1].set_yticks([])
+		tp_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(trackpy_pos), d['array'].size)
+		unet_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
+		if len(pred_positions)>0:
+			array_projection = np.max(d['array'], axis=0)
+			label_projection = np.max(label, axis=0)*255
+			axs[i,0].imshow(array_projection, cmap='gray')
+			axs[i,0].set_xticks([])
+			axs[i,0].set_yticks([])
+			axs[i,0].set_title(name, fontsize="xx-large")
+			axs[i,1].imshow(label_projection, cmap='gist_heat')
+			axs[i,1].set_xticks([])
+			axs[i,1].set_yticks([])
+			#TODO add zoom in col
 			
 
-	# 		x, y = dc.get_gr(trackpy_pos, 100, 100)
-	# 		plot_gr(x, y, d['diameter'], label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,2], fontsize='x-large')
-	# 		x, y = dc.get_gr(pred_positions, 100, 100)
-	# 		plot_gr(x, y, d['diameter'], label=f'Unet n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,2], fontsize='x-large')
-	# 		if i != real_len-1:
-	# 			axs[i,2].set_xlabel("")
-	# 			axs[i,2].set_xticks([])
-	# 		axs[i,2].legend(loc='lower right', fontsize='large')
+			x, y = dc.get_gr(trackpy_pos, 100, 100)
+			plot_gr(x, y, d['diameter'], label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,2], fontsize='x-large')
+			x, y = dc.get_gr(pred_positions, 100, 100)
+			plot_gr(x, y, d['diameter'], label=f'Unet n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,2], fontsize='x-large')
+			if i != real_len-1:
+				axs[i,2].set_xlabel("")
+				axs[i,2].set_xticks([])
+			axs[i,2].legend(loc='lower right', fontsize='large')
 
-	# 	else:
-	# 		print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
+		else:
+			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
-	# fig.set_figwidth(3*4)
-	# fig.set_figheight(real_len*4)
-	# if run: run['grs'].upload(fig)
-	# plt.clf()
+	fig.set_figwidth(3*4)
+	fig.set_figheight(real_len*4)
+	if run: run['grs'].upload(fig)
+	plt.clf()
 
 	
-	# # test predict on sim
-	# data_dict = dc.read_hdf5(dataset_name, 10000)
-	# test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
-	# # TODO exclude borders in ap?
+	# test predict on sim
+	data_dict = dc.read_hdf5(dataset_name, 10000)
+	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+	# TODO exclude borders in ap?
 
-	# if heatmap_r == "radius":
-	# 	detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-	# else:
-	# 	detection_diameter = heatmap_r
-	# if post_processing == "max":
-	# 	detection_diameter = int((metadata['params']['r']*2))
-	# if post_processing == "log":
-	# 	#TODO add diameters as array
-	# 	r = metadata['params']['r']
-	# 	detection_diameter = r
+	if heatmap_r == "radius":
+		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+	else:
+		detection_diameter = heatmap_r
+	if post_processing == "max":
+		detection_diameter = int((metadata['params']['r']*2))
+	if post_processing == "log":
+		#TODO add diameters as array
+		r = metadata['params']['r']
+		detection_diameter = r
 
-	# df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
-	# 											roiSize=canvas_size, label_size=label_size,
-	# 											debug=True, post_processing=post_processing,  device="cuda")
-	# # test_array = test_array/test_array.max()*255
-	# # test_label = test_label/test_label.max()*255
-	# sidebyside = make_proj(test_array, test_label)
-	# if run: run['prediction'].upload(File.as_image(sidebyside))
-	# trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
+												roiSize=canvas_size, label_size=label_size,
+												debug=True, post_processing=post_processing,  device="cuda")
+	# test_array = test_array/test_array.max()*255
+	# test_label = test_label/test_label.max()*255
+	sidebyside = make_proj(test_array, test_label)
+	if run: run['prediction'].upload(File.as_image(sidebyside))
+	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
 
-	# try:
-	# 	x, y = dc.get_gr(true_positions, 100, 100)
-	# 	plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', color='gray')
-	# 	x, y = dc.get_gr(pred_positions, 100, 100)
-	# 	plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'Unet n ={len(pred_positions)}', color='red')
-	# 	x, y = dc.get_gr(trackpy_positions, 100, 100)
-	# 	plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_positions)}', color='black')
-	# 	plt.legend()
-	# 	fig = plt.gcf()
-	# 	fig.set_size_inches(6.4, 4.8)
-	# 	if run: run['gr'].upload(fig)
-	# 	plt.clf()
-	# except:
-	# 	print('Skipping gr() as bad pred')
-	# 	if run: run['gr'] = 'failed'
+	try:
+		x, y = dc.get_gr(true_positions, 100, 100)
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', color='gray')
+		x, y = dc.get_gr(pred_positions, 100, 100)
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'Unet n ={len(pred_positions)}', color='red')
+		x, y = dc.get_gr(trackpy_positions, 100, 100)
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_positions)}', color='black')
+		plt.legend()
+		fig = plt.gcf()
+		fig.set_size_inches(6.4, 4.8)
+		if run: run['gr'].upload(fig)
+		plt.clf()
+	except:
+		print('Skipping gr() as bad pred')
+		if run: run['gr'] = 'failed'
  
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	# if run: run['AP'] = ap
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
-	# ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
-	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
+	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
+	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
 
-	# if run: run['PR_curve'].upload(fig)
-	# plt.clf()
+	if run: run['AP'] = ap
+	if run: run['PR_curve'].upload(fig)
+	plt.clf()
 
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
@@ -661,7 +662,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# fig = plt.figure(figsize=(4,3))
 	# axs = fig.subplots(4,3, sharey=True)
 
-	fig,axs = plt.subplots(2,len(plot_params))
+	fig,axs = plt.subplots(2,len(plot_params),  sharey=True)
 	plt.tight_layout(pad=0)
 
 	this_axs = axs[0,:].flatten()
@@ -683,8 +684,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		this_axs[i].set_xlabel(titles[i], fontsize='large')
 		if i == 0: 
 			this_axs[i].set_ylabel("Recall", fontsize='large')
-			# this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
-			# this_axs[i].set_ylim(-0.1,1.1)
 
 	
 	fig.set_figwidth(13)
@@ -703,9 +702,10 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		if i == 0: 
 			this_axs[i].set_ylabel("Loss", fontsize='large')
 			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
-			axs[i].set_ylim(-0.1,1.1)
 		else:
 			this_axs[i].set_yticks([])
+	plt.yscale('log')
+	plt.ylim(pow(10,-2),pow(10,0))
 	fig.suptitle("Loss", y=1.1, fontsize='xx-large')
 	fig.set_figheight(2)
 	fig.set_figwidth(13)
@@ -890,14 +890,14 @@ def read_real_examples():
 	d['levke']['diameter'] = [15,11,11]
 	d['levke']['volfrac'] = 0.58
 	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
-	# d['james'] = {}
-	# d['james']['diameter'] = [17,15,15]
-	# d['james']['volfrac'] = 0.58
-	# d['james']['array'] = io.imread('examples/Data/james.tiff')
-	# d['jamesdecon'] = {}
-	# d['jamesdecon']['diameter'] = [17,15,15]
-	# d['jamesdecon']['volfrac'] = 0.58
-	# d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d['james'] = {}
+	d['james']['diameter'] = [17,15,15]
+	d['james']['volfrac'] = 0.58
+	d['james']['array'] = io.imread('examples/Data/james.tiff')
+	d['jamesdecon'] = {}
+	d['jamesdecon']['diameter'] = [17,15,15]
+	d['jamesdecon']['volfrac'] = 0.58
+	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
 
 	return d
 

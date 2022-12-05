@@ -214,6 +214,24 @@ class DeepColloid:
 		bin_centres = (bins[1:] + bins[:-1]) / 2
 		return bin_centres, hist # as x, y
 
+	def plot_gr(self, x, y, diameter, label=f'prediction', color='gray', axs=None, fontsize='medium', xlim=(0,5)):
+		if isinstance(diameter, list): diameter = min(diameter)
+		x = x / diameter
+		if axs is None:
+			plt.plot(x, y, label=label, color=color)
+			plt.xlabel("$r / \sigma$", fontsize=fontsize)
+			plt.ylabel("$g(r)$", fontsize=fontsize)
+			plt.xticks(list(range(xlim[0], xlim[1])))
+			plt.xlim(xlim)
+			plt.legend()
+		else:
+			axs.plot(x, y, label=label, color=color)
+			axs.set_xlabel("$r / \sigma$", fontsize=fontsize)
+			axs.set_ylabel("$g(r)$", fontsize=fontsize)
+			axs.set_xticks(list(range(xlim[0], xlim[1])))
+			axs.set_xlim(xlim)
+		return
+
 	@staticmethod
 	def _calc_iou_dist(distances, diameters, threshold):
 		"""
@@ -339,18 +357,30 @@ class DeepColloid:
 
 		return ap, precisions, recalls, thresholds
 
-	def plot_pr(self, ap, precisions, recalls, thresholds, name, tag='o-', *args, **kwargs):
+	def plot_pr(self, ap, precisions, recalls, thresholds, name, tag='o-', axs=None, title='Average Precision', *args, **kwargs):
 		# display = metrics.PrecisionRecallDisplay(precision=precisions, 
 		# recall=recalls, estimator_name=name).plot()
 
-		plt.plot(recalls, precisions, tag, label=f'{name} AP = {ap:.2f}', *args, **kwargs)
-		plt.title('Average Precision')
-		plt.xlabel("Recall")
-		plt.ylabel("Recall")
-		plt.xlim([-0.1,1.1])
-		plt.ylim([-0.1,1.1])
-		plt.legend()
-		return plt.gcf()
+		if axs is None:
+			plt.plot(recalls, precisions, tag, label=f'{name} AP={ap:.2f}', *args, **kwargs)
+			if title is None: pass
+			else: plt.title(title)
+			plt.xlabel("Recall")
+			plt.ylabel("Recall")
+			plt.xlim([-0.1,1.1])
+			plt.ylim([-0.1,1.1])
+			plt.legend()
+			return plt.gcf()
+
+		else:
+			axs.plot(recalls, precisions, tag, label=f'{name} AP={ap:.2f}', *args, **kwargs)
+			if title is None: pass
+			else: axs.set_title(title)
+			axs.set_xlabel("Recall")
+			axs.set_ylabel("Recall")
+			axs.set_xlim([-0.1,1.1])
+			axs.set_ylim([-0.1,1.1])
+			axs.legend()
 
 	def run_trackpy(self, array, diameter=5, *args, **kwargs) -> np.ndarray: #, pd.DataFrame]
 		df = tp.locate(array, diameter=diameter, *args, **kwargs)
