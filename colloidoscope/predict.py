@@ -126,6 +126,22 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			# norm=params["norm"],
 			padding='valid',
 		)
+	
+	if 'attention_unet_202211' in weights_path:
+		n_blocks=2
+		start = int(math.sqrt(32))
+		channels = [2**n for n in range(start, start + n_blocks)]
+		strides = [2 for n in range(1, n_blocks)]
+		model = monai.networks.nets.AttentionUnet(
+			spatial_dims=3,
+			in_channels=1,
+			out_channels=1,
+			channels=channels,
+			strides=strides,
+			kernel_size=7,
+			# up_kernel_size=3,
+			padding='valid',
+		)
 
 	if device == "cuda": model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
 	elif device == "cpu": 
@@ -210,7 +226,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		if isinstance(diameter, list): diameter = np.array(diameter)
 		# result[result<threshold] = 0
 		sigma = (diameter/2)/math.sqrt(3)
-		max_sigma = (diameter*4)/math.sqrt(3)
+		max_sigma = (diameter)/math.sqrt(3)
 		positions = blob_log(result*255, min_sigma=sigma,  max_sigma=max_sigma, overlap=0)[:,:-1]
 	elif post_processing == "classic":
 		positions = find_positions(result*255, threshold)

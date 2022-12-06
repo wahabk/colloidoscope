@@ -31,7 +31,7 @@ if __name__ == "__main__":
 	test_data =	list(range(1,599))
 	random.shuffle(test_data)
 	test_data = test_data[:20]
-	name="TW: log"
+	name="TW: log min r max d"
 
 	post_processing = 'log'
 
