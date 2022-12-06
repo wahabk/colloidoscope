@@ -9,7 +9,7 @@ array = dc.read_tif('examples/Data/jamesdecon.tiff')
 array = dc.crop3d(array, roiSize=(256,256,256))
 print(array.shape, array.dtype)
 df, positions, label = dc.detect(array, diameter=15, 
-                                weights_path='output/weights/attention_unet_202206.pt', 
+                                weights_path='output/weights/attention_unet_202211.pt', 
                                 patch_overlap=(16,16,16),
                                 debug=True, device="cpu",
                                 post_processing="log", batch_size=1)
