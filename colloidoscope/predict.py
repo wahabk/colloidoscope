@@ -88,8 +88,8 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 	return tp_predictions
 
 def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
-			patch_overlap:tuple=(0, 0, 0), roiSize:tuple=(64,64,64), label_size:tuple=(60,60,60), post_processing:str="tp", threshold:float=0.5, 
-			debug:bool=False, device=None, batch_size=4) -> pd.DataFrame:
+			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), label_size:tuple=(60,60,60), post_processing:str="tp", threshold:float=0.5, 
+			debug:bool=False, device="cpu", batch_size=4) -> pd.DataFrame:
 	"""Detect 3d spheres from confocal microscopy
 
 	Args:
@@ -126,6 +126,22 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			# norm=params["norm"],
 			padding='valid',
 		)
+	
+	if 'attention_unet_202211' in weights_path:
+		n_blocks=2
+		start = int(math.sqrt(32))
+		channels = [2**n for n in range(start, start + n_blocks)]
+		strides = [2 for n in range(1, n_blocks)]
+		model = monai.networks.nets.AttentionUnet(
+			spatial_dims=3,
+			in_channels=1,
+			out_channels=1,
+			channels=channels,
+			strides=strides,
+			kernel_size=7,
+			# up_kernel_size=3,
+			padding='valid',
+		)
 
 	if device == "cuda": model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
 	elif device == "cpu": 
@@ -135,7 +151,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
 		model.load_state_dict(model_weights) # add weights to model
 	
-	if device == "cuda": model = model.to(device)
+	if device == "cuda": model = model.module.to(device)
 	elif device == "cpu": model = model.module.to(device)
 
 	
@@ -195,10 +211,10 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	output_tensor = aggregator.get_output_tensor()
 	output_tensor = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(output_tensor)  # remove batch dim and channel dim -> [H, W]
+	result = (result-result.min())/result.max()
 
-	result = ndimage.gaussian_filter(result, (1,1,1), mode="reflect")
-	result = result/result.max()
-
+	# result = ndimage.gaussian_filter(result, (1,1,1), mode="reflect")
+	result = ndimage.median_filter(result, size=2)
 	# find positions from label
 
 	if post_processing == "tp":
@@ -207,15 +223,15 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		if isinstance(diameter, list): diameter = diameter[0]
 		positions = peak_local_max(result*255, min_distance=int((diameter/2)))
 	elif post_processing == "log":
-		result[result<threshold]=0
-		if isinstance(diameter, list): 
-			sigma = int((diameter[0]/2)/math.sqrt(3))
-			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0.1)[:,:-1]
-		else:
-			sigma = int((diameter/2)/math.sqrt(3))
-			positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0.1)[:,:-1]
+		if isinstance(diameter, list): diameter = np.array(diameter)
+		# result[result<threshold] = 0
+		sigma = (diameter/2)/math.sqrt(3)
+		max_sigma = (diameter)/math.sqrt(3)
+		positions = blob_log(result*255, min_sigma=sigma,  max_sigma=max_sigma, overlap=0)[:,:-1]
 	elif post_processing == "classic":
-		positions = find_positions(result, threshold)
+		positions = find_positions(result*255, threshold)
+
+	if len(positions)==0: positions = [[0,0,0]];  print("\n\n\nNOT DETECTING PARTICLES\n\n\n")
 
 	d = {
 		'x' : positions[:,1],

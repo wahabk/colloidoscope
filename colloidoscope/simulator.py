@@ -21,7 +21,6 @@ from scipy.signal import convolve
 from tqdm import tqdm
 # import psf
 from perlin_numpy import generate_perlin_noise_3d
-from pathlib2 import Path
 
 import copy
 
@@ -63,7 +62,7 @@ def draw_label_slice(args):
 					if is_seg:
 						new_slice[i,j] = 255
 					else:
-						new_slice[i,j] = 255 * np.exp(-(((dist*math.sqrt(3))-0)**2.)/((2. * heatmap_r)**2.))
+						new_slice[i,j] = 255 * np.exp(-(((dist*4)-0)**2.)/((2. * heatmap_r)**2.))
 
 	return new_slice
 
@@ -151,24 +150,7 @@ def crop_positions_for_label(centers, canvas_size, label_size, diameters, pad=0)
 	return final_centers, final_diameters
 
 
-def exclude_borders(centers, canvas_size, pad, diameters=None, ):
-	
-	indices = []
-	# pad = 0
-	for idx, c in enumerate(centers):
-		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
-			indices.append(idx)
-
-	final_centers = centers[indices]
-
-	if diameters is not None:
-		final_diameters = diameters[indices]
-		return final_centers, final_diameters
-	else:
-		return final_centers
-
-
-def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='uint8'):
+def make_background(canvas_shape, octaves, brightness_mean, brightness_std, tileable=(False, False, False), dtype='float32'):
 	array = generate_perlin_noise_3d(canvas_shape, (octaves, octaves, octaves), tileable=tileable)
 
 	# normalise to 0 - 1
@@ -279,5 +261,5 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		label = np.array(label, dtype='float64')
 		return canvas, label, centers, diameters
 	else:
-		return canvas
+		return canvas, centers, diameters
 

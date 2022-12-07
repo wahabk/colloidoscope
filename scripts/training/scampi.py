@@ -69,18 +69,18 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
-		# tio.RandomAffine(),
+		tio.RandomAffine(p=0.25),
 	])
 	transforms_img = tio.Compose([
-		# tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
-		# tio.RandomBlur(p=0.1),
-		# tio.OneOf({
-		# 	tio.RandomNoise(0.1, 0.01): 0.1,
-		# 	tio.RandomBiasField(0.1): 0.1,
-		# 	tio.RandomGamma((-0.3,0.3)): 0.1,
-		# 	tio.RandomMotion(): 0.3,
-		# }),                                    
-		# tio.RescaleIntensity((0.05,0.95)),
+		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
+		tio.RandomBlur(p=0.1),
+		tio.OneOf({
+			tio.RandomNoise(0.1, 0.01): 0.1,
+			tio.RandomBiasField(0.1): 0.1,
+			tio.RandomGamma((-0.3,0.3)): 0.1,
+			tio.RandomMotion(): 0.3,
+		}),                                    
+		tio.RescaleIntensity((0.05,0.95)),
 	])
 
 	# create a training data loader
@@ -120,7 +120,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 		out_channels=params['n_classes'],
 		channels=channels,
 		strides=strides,
-		# kernel_size=3,
+		kernel_size=7,
 		# up_kernel_size=3,
 		dropout=params["dropout"],
 		padding='valid',
@@ -183,7 +183,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 		# run['model/weights'].upload(model_name)
 
 	losses = test(model, dataset_path, dataset_name, test_data, run=run, 
-				criterion=criterion, device=device, num_workers=num_workers, batch_size=1,
+				criterion=criterion, device=device, num_workers=num_workers, batch_size=params['batch_size'],
 				canvas_size=params['roiSize'], label_size=label_size, heatmap_r='radius', 
 				work_dir=work_dir, post_processing=post_processing)
 	run['test/df'].upload(File.as_html(losses))
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'fixed_1400'
+	dataset_name = 'heatmap_1400'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,1400))
@@ -210,26 +210,26 @@ if __name__ == "__main__":
 
 	train_data = all_data[0:1200]
 	val_data = all_data[1200:1400]
-	test_data = test_data[:200]
+	test_data = test_data[:]
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'new_sim'
-	# save = 'output/weights/attention_unet_202206.pt'
+	name = 'att unet  + log'
+	# save = 'output/weights/attention_unet_202211.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
-	post_processing = "tp"
+	post_processing = "log"
 
 
 	config = {
 		"lr": 0.002165988,
-		"batch_size": 8,
+		"batch_size": 16,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 3,
+		"epochs": 5,
 		"start_filters": 32,
 		"activation": "SWISH",
-		"dropout": 0.2,
+		"dropout": 0.1,
 		"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 

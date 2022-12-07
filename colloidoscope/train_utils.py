@@ -33,11 +33,12 @@ from .predict import *
 from torch.nn import BCELoss
 import torch.nn.functional as F
 
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+
+
 from functools import reduce
 
 from skimage.feature import peak_local_max, blob_log
-
-from colloidoscope.simulator import exclude_borders
 
 """
 Datasets
@@ -408,9 +409,56 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data, test_d
 
 	run.stop()
 
+def exclude_borders(centers, canvas_size, pad, diameters=None, label_size=None):
+	
+	if label_size is not None:
+		zdiff = (canvas_size[0] - label_size[0])/2
+		xdiff = (canvas_size[1] - label_size[1])/2
+		ydiff = (canvas_size[2] - label_size[2])/2
+		# print(centers[0])
+		centers = centers - [zdiff, xdiff, ydiff]
+
+	indices = []
+	# pad = 0
+	for idx, c in enumerate(centers):
+		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
+			indices.append(idx)
+
+	final_centers = centers[indices]
+
+	if diameters is not None:
+		final_diameters = diameters[indices]
+		return final_centers, final_diameters
+	else:
+		return final_centers
+
+def plot_gr(x, y, diameter, label=f'prediction', color='gray', axs=None, fontsize='medium'):
+	if isinstance(diameter, list): diameter = min(diameter)
+	x = x / diameter
+	if axs is None:
+		plt.plot(x, y, label=label, color=color)
+		plt.xlabel("$r / \sigma$", fontsize=fontsize)
+		plt.ylabel("$g(r)$", fontsize=fontsize)
+		plt.xticks(list(range(0,6)))
+		plt.xlim((0,5))
+		plt.legend()
+	else:
+		axs.plot(x, y, label=label, color=color)
+		axs.set_xlabel("$r / \sigma$", fontsize=fontsize)
+		axs.set_ylabel("$g(r)$", fontsize=fontsize)
+		axs.set_xticks(list(range(0,6)))
+		axs.set_xlim((0,5))
+	return
+
+def frac_detected(target_volfrac, radius, n_particles, image_size):
+	single_vol = (4/3) * np.pi * radius**3
+	measured_volume = n_particles * single_vol
+	measured_volfrac = measured_volume / image_size
+	fraction_detected = measured_volfrac / target_volfrac
+	return fraction_detected
 
 def test(model, dataset_path, dataset_name, test_set, threshold=0.5, 
-		num_workers=4, batch_size=1, criterion=torch.nn.BCEWithLogitsLoss(), 
+		num_workers=4, batch_size=4, criterion=torch.nn.BCEWithLogitsLoss(), 
 		run=False, device='cpu', canvas_size:tuple=(64,64,64), label_size:tuple=(64,64,64), 
 		heatmap_r="radius", post_processing="tp", work_dir=None):
 	
@@ -423,51 +471,62 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# test on real data
 	real_dict = read_real_examples()
 
-	for name, d in real_dict.items():
-		print(name, d['array'].shape)
+	real_len = len(real_dict)
+	fig, axs = plt.subplots(real_len,3,)
+	plt.tight_layout(pad=0.01)
+
+	for i, (name, d) in enumerate(real_dict.items()):
+		print(name, d['array'].shape, i, real_len)
 
 		if heatmap_r == "radius":
 			detection_diameter = d['diameter']
 		else:
 			detection_diameter = heatmap_r
 
-		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
+		print(canvas_size,   label_size)
+		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, 
+									roiSize=canvas_size, label_size=label_size,
+									debug=True, post_processing=post_processing, device="cuda", )
 
-		if len(pred_positions>0):
-			sidebyside = make_proj(d['array'], label)
-			if run: run[name].upload(File.as_image(sidebyside))
+		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+		
+		tp_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(trackpy_pos), d['array'].size)
+		unet_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
+		if len(pred_positions)>0:
+			array_projection = np.max(d['array'], axis=0)
+			label_projection = np.max(label, axis=0)*255
+			axs[i,0].imshow(array_projection, cmap='gray')
+			axs[i,0].set_xticks([])
+			axs[i,0].set_yticks([])
+			axs[i,0].set_title(name, fontsize="xx-large")
+			axs[i,1].imshow(label_projection, cmap='gist_heat')
+			axs[i,1].set_xticks([])
+			axs[i,1].set_yticks([])
+			#TODO add zoom in col
+			
 
-			trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
-			plt.plot(x, y, label=f'tp n ={len(trackpy_pos)}', color='gray')
+			plot_gr(x, y, d['diameter'], label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,2], fontsize='x-large')
 			x, y = dc.get_gr(pred_positions, 100, 100)
-			plt.plot(x, y, label=f'unet n ={len(pred_positions)}', color='red')
-			plt.legend()
-			fig = plt.gcf()
-			if run: run[name+'gr'].upload(fig)
-			plt.clf()
-
-			if name == 'levke':
-				target_volfrac = 0.58
-				n_particles = len(pred_positions)
-				r = 11/2
-				single_vol = (4/3) * np.pi * r**3
-				measured_volume = n_particles * single_vol
-				measured_volfrac = measured_volume / d['array'].size
-				fraction_missing = 1 - (measured_volfrac / target_volfrac)
-				if run: 
-					run['estimates/measured_volfrac'] = measured_volfrac
-					run['estimates/target_volfrac'] = target_volfrac
-					run['estimates/n_particles'] = n_particles
-					run['estimates/fraction_missing'] = fraction_missing
+			plot_gr(x, y, d['diameter'], label=f'Unet n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,2], fontsize='x-large')
+			if i != real_len-1:
+				axs[i,2].set_xlabel("")
+				axs[i,2].set_xticks([])
+			axs[i,2].legend(loc='lower right', fontsize='large')
 
 		else:
 			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
+
+	fig.set_figwidth(3*4)
+	fig.set_figheight(real_len*4)
+	if run: run['grs'].upload(fig)
+	plt.clf()
 
 	
 	# test predict on sim
 	data_dict = dc.read_hdf5(dataset_name, 10000)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+	# TODO exclude borders in ap?
 
 	if heatmap_r == "radius":
 		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
@@ -475,33 +534,42 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		detection_diameter = heatmap_r
 	if post_processing == "max":
 		detection_diameter = int((metadata['params']['r']*2))
+	if post_processing == "log":
+		#TODO add diameters as array
+		r = metadata['params']['r']
+		detection_diameter = r
 
-	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, debug=True, post_processing=post_processing)
+	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
+												roiSize=canvas_size, label_size=label_size,
+												debug=True, post_processing=post_processing,  device="cuda")
+	# test_array = test_array/test_array.max()*255
+	# test_label = test_label/test_label.max()*255
 	sidebyside = make_proj(test_array, test_label)
 	if run: run['prediction'].upload(File.as_image(sidebyside))
 	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
 
 	try:
 		x, y = dc.get_gr(true_positions, 100, 100)
-		plt.plot(x, y, label=f'true n ={len(true_positions)}', color='gray')
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', color='gray')
 		x, y = dc.get_gr(pred_positions, 100, 100)
-		plt.plot(x, y, label=f'Unet n ={len(pred_positions)}', color='red')
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'Unet n ={len(pred_positions)}', color='red')
 		x, y = dc.get_gr(trackpy_positions, 100, 100)
-		plt.plot(x, y, label=f'trackpy n ={len(trackpy_positions)}', color='black')
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_positions)}', color='black')
 		plt.legend()
 		fig = plt.gcf()
+		fig.set_size_inches(6.4, 4.8)
 		if run: run['gr'].upload(fig)
 		plt.clf()
 	except:
 		print('Skipping gr() as bad pred')
 		if run: run['gr'] = 'failed'
-
+ 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	if run: run['AP'] = ap
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
 
+	if run: run['AP'] = ap
 	if run: run['PR_curve'].upload(fig)
 	plt.clf()
 
@@ -511,17 +579,13 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	losses = []
 	model.eval()
 	with torch.no_grad():
-		for idx, batch in tqdm(enumerate(test_loader)):
-
-			i = test_set[idx]
-			metadata, true_positions, diameters = dc.read_metadata(dataset_name, i)
-			# diameters=diameters*metadata['params']['r']*2 # TODO FIX IN SIM
+		for batch_idx, batch in enumerate(test_loader):
+			print(batch_idx, "/", int(len(test_set)/batch_size))
 			
 			x, y = batch
-			for_tp = x.clone()
+			inputs = x.clone()
 			x, y = x.to(device), y.to(device)
-			# print(x.shape, x.max(), x.min())
-			# print(y.shape, y.max(), y.min())
+
 			out = model(x)  # send through model/network
 			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
@@ -532,98 +596,119 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 				out = torch.sigmoid(out)
 			loss = loss.cpu().numpy()
 			# post process to numpy array
-			result = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+			results = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+			inputs = inputs.cpu().numpy()
 
-			if heatmap_r == "radius":
-				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-			else:
-				detection_diameter = heatmap_r
-			if post_processing == "tp":
-				pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
-			elif post_processing == "max":
-				max_diameter = int((metadata['params']['r']*2))
-				pred_positions = peak_local_max(result*255, min_distance=max_diameter)
-			if post_processing == "log":
-				sigma = int((metadata['params']['r'])/math.sqrt(3))
-				result[result<threshold] = 0
-				pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
+			for test_idx, [result, for_tp] in tqdm(enumerate(zip(results, inputs))):
+				i = test_idx + ((batch_idx)*(batch_size))
+				index = test_set[i]
+				metadata, true_positions, diameters = dc.read_metadata(dataset_name, index)
+				result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
-			true_positions, diameters = exclude_borders(true_positions, canvas_size, pad=metadata['params']['r'], diameters=diameters)
-			pred_positions = exclude_borders(pred_positions, canvas_size, pad=metadata['params']['r'])
-			
-			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-			array = dc.crop3d(np.squeeze(for_tp.cpu().numpy()), roiSize=label_size)
-			# array = for_tp.cpu().numpy()
-			# array = np.squeeze(array)
-			# print(array.shape)
-			diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
-			print(array.shape, array.dtype, diam)
-			print("why  is tp slow :(")
-			tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
-			print("done")
-			tp_positions = exclude_borders(tp_positions, canvas_size, pad=metadata['params']['r'])
+				if heatmap_r == "radius":
+					detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+				else:
+					detection_diameter = heatmap_r
+				if post_processing == "tp":
+					pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
+				elif post_processing == "max":
+					max_diameter = int((metadata['params']['r']*2))
+					pred_positions = peak_local_max(result*255, min_distance=max_diameter)
+				if post_processing == "log":
+					# result[result<threshold] = 0
+					sigma = metadata['params']['r']/math.sqrt(3)
+					#TODO add diameters as array?
+					pred_positions = blob_log(result*255, min_sigma=sigma, overlap=0)[:,:-1]
+					# pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
 
-			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
-			# print(f"prec {prec} rec {rec}")
-			# print(f"tp prec {tp_prec} rec {tp_rec}")
+				true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
+															pad=metadata['params']['r']/4, diameters=diameters)
+				pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']/4)
+				
+				prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
+				array = dc.crop3d(np.squeeze(for_tp), roiSize=label_size)
+				# array = for_tp.cpu().numpy()
+				# array = np.squeeze(array)
+				diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
+				tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
+				tp_positions = exclude_borders(tp_positions, label_size, pad=metadata['params']['r']/4)
+				tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
+				# print(f"prec {prec} rec {rec}")
+				# print(f"tp prec {tp_prec} rec {tp_rec}")
 
-			m = {
-				'dataset'		: metadata['dataset'],
-				'n' 	 		: metadata['n'],
-				'idx'	 		: i,
-				'volfrac'		: metadata['volfrac'],
-				'n_particles'	: metadata['n_particles'],
-				'type'			: metadata['type'],
-				**metadata['params'],
-				'loss'	 		: float(loss),
-				'precision'	 	: float(prec),
-				'recall'	 	: float(rec),
-				'tp_precision'	: float(tp_prec),
-				'tp_recall'	 	: float(tp_rec),
-			}
+				m = {
+					'dataset'		: metadata['dataset'],
+					'n' 	 		: metadata['n'],
+					'idx'	 		: index,
+					'volfrac'		: metadata['volfrac'],
+					'n_particles'	: metadata['n_particles'],
+					'type'			: metadata['type'],
+					**metadata['params'],
+					'loss'	 		: float(loss),
+					'precision'	 	: float(prec),
+					'recall'	 	: float(rec),
+					'tp_precision'	: float(tp_prec),
+					'tp_recall'	 	: float(tp_rec),
+				}
 
-			losses.append(m)
+				losses.append(m)
 
 	losses = pd.DataFrame(losses)
 	print(losses)
 
 	plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
+	titles		= ['$\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
 
-	plt.clf()
-	fig, axs = plt.subplots(3,2)
+	# fig = plt.figure(figsize=(4,3))
+	# axs = fig.subplots(4,3, sharey=True)
+
+	fig,axs = plt.subplots(2,len(plot_params),  sharey=True)
+	plt.tight_layout(pad=0)
+
+	this_axs = axs[0,:].flatten()
+	for i, p in enumerate(plot_params):
+		this_df = losses[losses['type'].isin([p])]
+		this_axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
+		this_axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
+		this_axs[i].set_xticks([])
+		if i == 0: 
+			this_axs[i].set_ylabel("Precision", fontsize='large')
+			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
+			this_axs[i].set_ylim(-0.1,1.1)
+
+	this_axs = axs[1,:].flatten()
+	for i, p in enumerate(plot_params):
+		this_df = losses[losses['type'].isin([p])]
+		this_axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
+		this_axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
+		this_axs[i].set_xlabel(titles[i], fontsize='large')
+		if i == 0: 
+			this_axs[i].set_ylabel("Recall", fontsize='large')
+
+	
+	fig.set_figwidth(13)
+	fig.suptitle("Precisions and Recalls", fontsize='xx-large', y=1.05)
+	if run: run['test/params_vs_PR'].upload(fig)
+
+	# plt.clf()
+	fig, axs = plt.subplots(1,len(plot_params), sharey="row")
+	fig.tight_layout(pad=0)
 	axs = axs.flatten()
 	for i, p in enumerate(plot_params):
 		this_df = losses[losses['type'].isin([p])]
-		axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
-		axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
-		axs[i].title.set_text(p)
-		axs[i].set_ylim(-0.1,1.1)
-	fig.tight_layout()
-	if run: run['test/params_vs_prec'].upload(fig)
-
-	plt.clf()
-	fig, axs = plt.subplots(3,2)
-	axs = axs.flatten()
-	for i, p in enumerate(plot_params):
-		this_df = losses[losses['type'].isin([p])]
-		axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
-		axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
-		axs[i].title.set_text(p)
-		axs[i].set_ylim(-0.1,1.1)
-	fig.tight_layout()
-	if run: run['test/params_vs_rec'].upload(fig)
-
-	plt.clf()
-	fig, axs = plt.subplots(3,2)
-	axs = axs.flatten()
-	for i, p in enumerate(plot_params):
-		this_df = losses[losses['type'].isin([p])]
-		sns.scatterplot(x=p, y = 'loss', data=this_df, ax=axs[i])
+		sns.scatterplot(x=p, 		y = 'loss', data=this_df, ax=axs[i])
 		axs[i].scatter(x=p, 		y = 'loss', data=this_df, color='blue')
-		axs[i].title.set_text(p)
-		axs[i].set_ylim(-0.1,1.1)
-	fig.tight_layout()
+		axs[i].set_xlabel(titles[i], fontsize='large')
+		if i == 0: 
+			this_axs[i].set_ylabel("Loss", fontsize='large')
+			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
+		else:
+			this_axs[i].set_yticks([])
+	plt.yscale('log')
+	plt.ylim(pow(10,-2),pow(10,0))
+	fig.suptitle("Loss", y=1.1, fontsize='xx-large')
+	fig.set_figheight(2)
+	fig.set_figwidth(13)
 	if run: run['test/params_vs_loss'].upload(fig)
 
 	return losses
@@ -794,21 +879,25 @@ def read_real_examples():
 	# d['abraham'] = {}
 	# d['abraham']['diameter'] = [13,11,11]
 	# d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
-	# d['emily'] = {}
-	# d['emily']['diameter'] = [15,9,9]
-	# d['emily']['array'] = io.imread('examples/Data/emily.tiff')
-	d['katherine'] = {}
-	d['katherine']['diameter'] = [7,7,7]
-	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
-	# d['levke'] = {}
-	# d['levke']['diameter'] = [15,11,11]
-	# d['levke']['array'] = io.imread('examples/Data/levke.tiff')
-	# d['james'] = {}
-	# d['james']['diameter'] = [17,15,15]
-	# d['james']['array'] = io.imread('examples/Data/james.tiff')
-	# d['jamesdecon'] = {}
-	# d['jamesdecon']['diameter'] = [17,15,15]
-	# d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d['emily'] = {}
+	d['emily']['diameter'] = [15,9,9]
+	d['emily']['volfrac'] = 0.5
+	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
+	# d['katherine'] = {}
+	# d['katherine']['diameter'] = [7,7,7]
+	# d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
+	d['levke'] = {}
+	d['levke']['diameter'] = [15,11,11]
+	d['levke']['volfrac'] = 0.58
+	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
+	d['james'] = {}
+	d['james']['diameter'] = [17,15,15]
+	d['james']['volfrac'] = 0.58
+	d['james']['array'] = io.imread('examples/Data/james.tiff')
+	d['jamesdecon'] = {}
+	d['jamesdecon']['diameter'] = [17,15,15]
+	d['jamesdecon']['volfrac'] = 0.58
+	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
 
 	return d
 
@@ -846,6 +935,8 @@ class DiceLoss(torch.nn.Module):
         return 1 - dice
 
 def make_proj(test_array, test_label):
+
+	# TODO add scale bars
 
 	array_projection = np.max(test_array, axis=0)
 	label_projection = np.max(test_label, axis=0)*255
