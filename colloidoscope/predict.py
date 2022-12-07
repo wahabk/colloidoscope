@@ -151,7 +151,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
 		model.load_state_dict(model_weights) # add weights to model
 	
-	if device == "cuda": model = model.to(device)
+	if device == "cuda": model = model.module.to(device)
 	elif device == "cpu": model = model.module.to(device)
 
 	
