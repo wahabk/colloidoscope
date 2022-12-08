@@ -28,12 +28,14 @@ class DeepColloid:
 
 		Args:
 			array (np.ndarray): Image for particles to be detected from.
-			diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5.
+			diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5. If post_processing == str(max) this has to be int it will be min_distance.
 			model (torch.nn.Module, optional): Pytorch model. Defaults to None.
 			weights_path (Union[str, Path], optional): Path to model weights file. Defaults to None.
 			patch_overlap (tuple, optional): Overlap for patch based inference, overlap must be diff between input and output shape (if they are not the same). Defaults to (16, 16, 16).
 			roiSize (tuple, optional): Size of ROI for model. Defaults to (64,64,64).
 			debug (bool, optional): Option to return model output and positions in format for testing. Defaults to False.
+			post_processing (str, optional): one of ["tp", "max", "log"]
+			run_on (str, optional): Which device to run on, can be "cpu" or "cuda"
 
 		Returns:
 			pd.DataFrame: TrackPy positions dataframe

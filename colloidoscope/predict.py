@@ -89,7 +89,7 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 
 def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
 			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), label_size:tuple=(60,60,60), post_processing:str="tp", threshold:float=0.5, 
-			debug:bool=False, device="cpu", batch_size=4) -> pd.DataFrame:
+			debug:bool=False, run_on="cpu", batch_size=4) -> pd.DataFrame:
 	"""Detect 3d spheres from confocal microscopy
 
 	Args:
@@ -100,6 +100,8 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		patch_overlap (tuple, optional): Overlap for patch based inference, overlap must be diff between input and output shape (if they are not the same). Defaults to (16, 16, 16).
 		roiSize (tuple, optional): Size of ROI for model. Defaults to (64,64,64).
 		debug (bool, optional): Option to return model output and positions in format for testing. Defaults to False.
+		post_processing (str, optional): one of ["tp", "max", "log"]
+		run_on (str, optional): Which device to run on, can be "cpu" or "cuda"
 
 	Returns:
 		pd.DataFrame: TrackPy positions dataframe
@@ -107,11 +109,15 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 
 	# TODO write asserts
 
-	if post_processing not in ["tp", "max", "log", "classic"]:
+	if post_processing not in ["tp", "max", "log"]:
 		raise ValueError(f"post_processing can be str(tp), or str(max) but you provided {post_processing}")
 	
 	# initialise torch device
-	if device is None: device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	if run_on not in ["cpu", "cuda"]:
+		raise ValueError(f"You gave run_on={run_on} but it can only be cuda or cpu")
+	elif run_on == "cuda" and torch.cuda.is_available() == False:
+		raise ValueError("You gave run_on='cuda' but cuda isnt available, check torch installation")
+	device = torch.device(run_on)
 	print(f'predicting on {device}')
 
 	# model
@@ -143,16 +149,13 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			padding='valid',
 		)
 
-	if device == "cuda": model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
-	elif device == "cpu": 
-		model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
+	model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
 
 	if weights_path is not None:
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
 		model.load_state_dict(model_weights) # add weights to model
 	
-	if device == "cuda": model = model.module.to(device)
-	elif device == "cpu": model = model.module.to(device)
+	model = model.module.to(device)
 
 	
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
@@ -228,10 +231,11 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		sigma = (diameter/2)/math.sqrt(3)
 		max_sigma = (diameter)/math.sqrt(3)
 		positions = blob_log(result*255, min_sigma=sigma,  max_sigma=max_sigma, overlap=0)[:,:-1]
-	elif post_processing == "classic":
-		positions = find_positions(result*255, threshold)
+		# TODO exclude borders
 
 	if len(positions)==0: positions = [[0,0,0]];  print("\n\n\nNOT DETECTING PARTICLES\n\n\n")
+
+
 
 	d = {
 		'x' : positions[:,1],
