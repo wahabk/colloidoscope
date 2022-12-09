@@ -117,8 +117,10 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		raise ValueError(f"You gave run_on={run_on} but it can only be cuda or cpu")
 	elif run_on == "cuda" and torch.cuda.is_available() == False:
 		raise ValueError("You gave run_on='cuda' but cuda isnt available, check torch installation")
+	
+	print(f"Requrested to run on {run_on}")
 	device = torch.device(run_on)
-	print(f'predicting on {device}')
+	print(f'Predicting on {device}')
 
 	# model
 	if model is None:
