@@ -1,6 +1,5 @@
 # From https://github.com/johschmidt42/PyTorch-2D-3D-UNet-Tutorial
 # thank you joh
-from pytest import skip
 import torch
 from torch import batch_norm, nn
 

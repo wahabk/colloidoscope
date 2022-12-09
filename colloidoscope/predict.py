@@ -87,6 +87,29 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 
 	return tp_predictions
 
+def exclude_borders(centers, canvas_size, pad, diameters=None, label_size=None):
+	
+	if label_size is not None:
+		zdiff = (canvas_size[0] - label_size[0])/2
+		xdiff = (canvas_size[1] - label_size[1])/2
+		ydiff = (canvas_size[2] - label_size[2])/2
+		# print(centers[0])
+		centers = centers - [zdiff, xdiff, ydiff]
+
+	indices = []
+	# pad = 0
+	for idx, c in enumerate(centers):
+		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
+			indices.append(idx)
+
+	final_centers = centers[indices]
+
+	if diameters is not None:
+		final_diameters = diameters[indices]
+		return final_centers, final_diameters
+	else:
+		return final_centers
+
 def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
 			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), label_size:tuple=(60,60,60), post_processing:str="tp", threshold:float=0.5, 
 			debug:bool=False, run_on="cpu", batch_size=4) -> pd.DataFrame:
@@ -231,8 +254,9 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		if isinstance(diameter, list): diameter = np.array(diameter)
 		# result[result<threshold] = 0
 		sigma = (diameter/2)/math.sqrt(3)
-		max_sigma = (diameter)/math.sqrt(3)
+		max_sigma = (diameter*2)/math.sqrt(3)
 		positions = blob_log(result*255, min_sigma=sigma,  max_sigma=max_sigma, overlap=0)[:,:-1]
+		pred_positions = exclude_borders(positions, result.shape, pad=diameter/4)
 		# TODO exclude borders
 
 	if len(positions)==0: positions = [[0,0,0]];  print("\n\n\nNOT DETECTING PARTICLES\n\n\n")

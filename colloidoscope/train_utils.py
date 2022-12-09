@@ -27,7 +27,7 @@ from ray import tune
 import torchio as tio
 
 from .deepcolloid import DeepColloid
-from .models.unet import UNet
+# from .models.unet import UNet
 # from .simulator import crop_pos_for_test
 from .predict import *
 from torch.nn import BCELoss
@@ -503,7 +503,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			axs[i,1].set_xticks([])
 			axs[i,1].set_yticks([])
 			#TODO add zoom in col
-			
+
+			pred_positions = exclude_borders(pred_positions, label_size, pad=d['diameter']/2)
+			trackpy_pos = exclude_borders(trackpy_pos, label_size, pad=d['diameter']/2)
 
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
 			plot_gr(x, y, d['diameter'], label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,2], fontsize='x-large')
@@ -537,7 +539,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	if post_processing == "log":
 		#TODO add diameters as array
 		r = metadata['params']['r']
-		detection_diameter = r
+		detection_diameter = r*2
 
 	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
 												roiSize=canvas_size, label_size=label_size,
@@ -547,6 +549,11 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	sidebyside = make_proj(test_array, test_label)
 	if run: run['prediction'].upload(File.as_image(sidebyside))
 	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+
+	true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
+															pad=metadata['params']['r']/4, diameters=diameters)
+	pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']/4)
+	trackpy_pos = exclude_borders(trackpy_pos, label_size, pad=metadata['params']['r']/4)
 
 	try:
 		x, y = dc.get_gr(true_positions, 100, 100)
@@ -563,6 +570,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	except:
 		print('Skipping gr() as bad pred')
 		if run: run['gr'] = 'failed'
+
+
  
 	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
 	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
@@ -616,7 +625,9 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 					pred_positions = peak_local_max(result*255, min_distance=max_diameter)
 				if post_processing == "log":
 					# result[result<threshold] = 0
-					sigma = metadata['params']['r']/math.sqrt(3)
+					diameter = metadata['params']['r']*2
+					sigma = (diameter/2)/math.sqrt(3)
+					max_sigma = (diameter*2)/math.sqrt(3)
 					#TODO add diameters as array?
 					pred_positions = blob_log(result*255, min_sigma=sigma, overlap=0)[:,:-1]
 					# pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
