@@ -10,9 +10,9 @@ setup(
         # long_description=LONG_DESCRIPTION,
         packages=find_packages(),
         install_requires=[
-                'torch',
                 'numpy==1.20.0',
                 'numba',
+                'torch',
                 'matplotlib',
                 'pathlib2',
                 'pandas',
