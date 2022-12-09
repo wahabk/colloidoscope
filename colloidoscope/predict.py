@@ -120,7 +120,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 	
 	print(f"Requested to run on {run_on}")
 	device = torch.device(run_on)
-	print(f'Predicting on {device}')
+	print(f"Predicting on {device}")
 
 	# model
 	if model is None:
@@ -158,7 +158,8 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		model.load_state_dict(model_weights) # add weights to model
 	
 	if run_on == "cpu": model = model.module.to(device)
-	
+	if run_on == "cuda": model = model.to(device)
+
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
 	array = np.expand_dims(array, 0) # add batch axis
 	tensor = torch.from_numpy(array)
