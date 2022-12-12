@@ -281,145 +281,17 @@ class Trainer:
 
 
 """
-Train and test
+Test
 """
 
-
-def train(config, name, dataset_path, dataset_name, train_data, val_data, test_data, save=False, tuner=True, device_ids=[0,1], num_workers=10):
-	'''
-	by default for ray tune
-	'''
-
-	# TODO use MONAI
-	#TODO calculate nblocks or only pad first block
-	#TODO adjust initialisation for focal loss
-
-	dc = DeepColloid(dataset_path)
-
-	# setup neptune
-	run = neptune.init(
-		project="wahabk/colloidoscope",
-		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
-	)
-	params = dict(
-		roiSize = (64,64,64),
-		train_data = train_data,
-		val_data = val_data,
-		test_data = test_data,
-		dataset_name = dataset_name,
-		batch_size = config['batch_size'],
-		n_blocks = config['n_blocks'],
-		norm = config['norm'],
-		loss_function = config['loss_function'],
-		lr = config['lr'],
-		epochs = config['epochs'],
-		start_filters = config['start_filters'],
-		activation = config['activation'],
-		num_workers = num_workers,
-		n_classes = 1,
-		random_seed = 42,
-	)
-	run['Tags'] = name
-	run['parameters'] = params
-	#TODO find a way to precalculate this - should i only unpad the first block?
-	if config['n_blocks'] == 2: label_size = (48,48,48)
-	if config['n_blocks'] == 3: label_size = (24,24,24)
-
-	transforms_affine = tio.Compose([
-		# tio.RandomFlip(axes=(1,2), flip_probability=0.5),
-		# tio.RandomAffine(),
-	])
-	transforms_img = tio.Compose([
-		tio.RandomAnisotropy(p=0.1),              # make images look anisotropic 25% of times
-		tio.RandomBlur(p=0.1),
-		# tio.OneOf({
-		# 	tio.RandomNoise(0.1, 0.01): 0.1,
-		# 	tio.RandomBiasField(0.1): 0.1,
-		# 	tio.RandomGamma((-0.3,0.3)): 0.1,
-		# 	tio.RandomMotion(): 0.3,
-		# }),
-		tio.RescaleIntensity((0.05,0.95)),
-	])
-
-	# create a training data loader
-	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None, label_size=label_size) 
-	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
-	# create a validation data loader
-	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data'], label_size=label_size) 
-	val_loader = torch.utils.data.DataLoader(val_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
-
-	# device
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	print(f'training on {device}')
-
-	# model
-	model = UNet(in_channels=1,
-				out_channels=params['n_classes'],
-				n_blocks=params['n_blocks'],
-				start_filters=params['start_filters'],
-				activation=params['activation'],
-				normalization=params['norm'],
-				conv_mode='valid',
-				up_mode='transposed',
-				dim=3,
-				skip_connect=None,
-				)
-
-	model = torch.nn.DataParallel(model, device_ids=device_ids)
-	model.to(device)
-
-	# loss function
-	# criterion = torch.nn.BCEWithLogitsLoss()
-	criterion = params['loss_function']
-
-	params['loss_function'] = str(copy.deepcopy(params['loss_function']))
-
-	# optimizer
-	# optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-	optimizer = torch.optim.Adam(model.parameters(), params['lr'])
-	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
-	# scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, cycle_momentum=False)
-
-	# trainer
-	trainer = Trainer(model=model,
-					device=device,
-					criterion=criterion,
-					optimizer=optimizer,
-					training_DataLoader=train_loader,
-					validation_DataLoader=val_loader,
-					lr_scheduler=scheduler,
-					epochs=params['epochs'],
-					logger=run,
-					tuner=tuner,
-					)
-
-	# start training
-	training_losses, validation_losses, lr_rates = trainer.run_trainer()
-
-	run['learning_rates'].log(lr_rates)
-	
-	if save:
-		model_name = save
-		torch.save(model.state_dict(), model_name)
-		# run['model/weights'].upload(model_name)
-
-	losses = test(model, dataset_path, dataset_name, test_data, run=run, criterion=criterion, device=device, num_workers=num_workers, label_size=label_size)
-	run['test/df'].upload(File.as_html(losses))
-	# run['test/test'].log(losses) #if dict
-
-	run.stop()
-
 def exclude_borders(centers, canvas_size, pad, diameters=None, label_size=None):
-	
 	if label_size is not None:
 		zdiff = (canvas_size[0] - label_size[0])/2
 		xdiff = (canvas_size[1] - label_size[1])/2
 		ydiff = (canvas_size[2] - label_size[2])/2
-		# print(centers[0])
 		centers = centers - [zdiff, xdiff, ydiff]
 
 	indices = []
-	# pad = 0
 	for idx, c in enumerate(centers):
 		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
 			indices.append(idx)
@@ -486,12 +358,15 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		print(canvas_size,   label_size)
 		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, 
 									roiSize=canvas_size, label_size=label_size,
-									debug=True, post_processing=post_processing, device="cuda", )
+									debug=True, post_processing=post_processing, run_on="cuda", 
+									remove_borders=True)
 
 		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
+		trackpy_pos = exclude_borders(trackpy_pos, d['array'].shape, pad=d['diameter'][0]/2)
 		
 		tp_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(trackpy_pos), d['array'].size)
 		unet_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
+
 		if len(pred_positions)>0:
 			array_projection = np.max(d['array'], axis=0)
 			label_projection = np.max(label, axis=0)*255
@@ -502,10 +377,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			axs[i,1].imshow(label_projection, cmap='gist_heat')
 			axs[i,1].set_xticks([])
 			axs[i,1].set_yticks([])
-			#TODO add zoom in col
-
-			pred_positions = exclude_borders(pred_positions, label_size, pad=d['diameter']/2)
-			trackpy_pos = exclude_borders(trackpy_pos, label_size, pad=d['diameter']/2)
+			#TODO add zoom in co			
 
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
 			plot_gr(x, y, d['diameter'], label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,2], fontsize='x-large')
@@ -529,13 +401,12 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	data_dict = dc.read_hdf5(dataset_name, 10000)
 	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
 	# TODO exclude borders in ap?
+	print(test_array.shape, test_array.dtype, test_array.min(), test_array.max(), test_array.mean())
 
 	if heatmap_r == "radius":
 		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
 	else:
 		detection_diameter = heatmap_r
-	if post_processing == "max":
-		detection_diameter = int((metadata['params']['r']*2))
 	if post_processing == "log":
 		#TODO add diameters as array
 		r = metadata['params']['r']
@@ -543,44 +414,57 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
 												roiSize=canvas_size, label_size=label_size,
-												debug=True, post_processing=post_processing,  device="cuda")
-	# test_array = test_array/test_array.max()*255
-	# test_label = test_label/test_label.max()*255
-	sidebyside = make_proj(test_array, test_label)
-	if run: run['prediction'].upload(File.as_image(sidebyside))
-	trackpy_positions, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+												debug=True, post_processing=post_processing,  run_on="cuda",
+												remove_borders=True)
+	test_label = np.array(test_label*255, dtype="uint8")
+	print(test_array.shape, test_array.dtype, test_array.min(), test_array.max(), test_array.mean())
+	print(test_label.shape, test_label.dtype, test_label.min(), test_label.max(), test_label.mean())
+	# test_array = (test_array/test_array.max())*255
+	# test_label = (test_label/test_label.max())*255
 
-	true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
-															pad=metadata['params']['r']/4, diameters=diameters)
-	pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']/4)
-	trackpy_pos = exclude_borders(trackpy_pos, label_size, pad=metadata['params']['r']/4)
+	trackpy_pos, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+
+	true_positions, diameters = exclude_borders(true_positions, canvas_size=test_array.shape, pad=metadata['params']['r']*1, diameters=diameters)
+	trackpy_pos = exclude_borders(trackpy_pos, test_array.shape, pad=metadata['params']['r']*1)
+
+	# biggr fig
+	fig, axs = plt.subplots(1,4)
+	plt.tight_layout(pad=0.1)
+
+	array_projection = np.max(test_array, axis=0)
+	label_projection = np.max(test_label, axis=0)
+	array_projection = ndimage.zoom(array_projection, 2)
+	label_projection = ndimage.zoom(label_projection, 2)
+	axs[0].imshow(array_projection, cmap='gray')
+	axs[0].set_xticks([])
+	axs[0].set_yticks([])
+	axs[0].set_title("Image", fontsize="large")
+	axs[1].imshow(label_projection, cmap='gist_heat')
+	axs[1].set_xticks([])
+	axs[1].set_yticks([])
+	axs[1].set_title("Prediction", fontsize="large")
 
 	try:
 		x, y = dc.get_gr(true_positions, 100, 100)
-		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', color='gray')
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', axs=axs[2], color='gray')
 		x, y = dc.get_gr(pred_positions, 100, 100)
-		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'Unet n ={len(pred_positions)}', color='red')
-		x, y = dc.get_gr(trackpy_positions, 100, 100)
-		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_positions)}', color='black')
-		plt.legend()
-		fig = plt.gcf()
-		fig.set_size_inches(6.4, 4.8)
-		if run: run['gr'].upload(fig)
-		plt.clf()
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'Unet n ={len(pred_positions)}', axs=axs[2], color='red')
+		x, y = dc.get_gr(trackpy_pos, 100, 100)
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_pos)}', axs=axs[2], color='black')
+		axs[2].legend()
 	except:
 		print('Skipping gr() as bad pred')
 		if run: run['gr'] = 'failed'
-
-
  
-	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red')
-	ap, precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_positions, diameters=diameters)
-	fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='trackpy', tag='x-', color='gray')
+	ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red', axs=axs[3])
+	tp_ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_pos, diameters=diameters)
+	dc.plot_pr(ap, precisions, recalls, thresholds, name='TP', tag='x-', color='gray', axs=axs[3])
 
+	fig.set_figwidth(12)
+	fig.set_figheight(2)
 	if run: run['AP'] = ap
-	if run: run['PR_curve'].upload(fig)
-	plt.clf()
+	if run: run['bigGR'].upload(fig)
 
 	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
@@ -628,24 +512,21 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 					diameter = metadata['params']['r']*2
 					sigma = (diameter/2)/math.sqrt(3)
 					max_sigma = (diameter*2)/math.sqrt(3)
-					#TODO add diameters as array?
-					pred_positions = blob_log(result*255, min_sigma=sigma, overlap=0)[:,:-1]
-					# pred_positions = blob_log(result, min_sigma=sigma, max_sigma=sigma, overlap=0)[:,:-1]
+					pred_positions = blob_log(result*255, min_sigma=sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
+				
+				array = dc.crop3d(np.squeeze(for_tp), roiSize=label_size)
+				detection_diameter  =  dc.round_up_to_odd(metadata['params']['r']*2)
+				tp_positions, _ = dc.run_trackpy(array, diameter=detection_diameter)
 
 				true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
-															pad=metadata['params']['r']/4, diameters=diameters)
-				pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']/4)
+															pad=metadata['params']['r']*1, diameters=diameters)
+				pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']*1)
+				tp_positions = exclude_borders(tp_positions, label_size, pad=metadata['params']['r']*1)
 				
+
 				prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-				array = dc.crop3d(np.squeeze(for_tp), roiSize=label_size)
-				# array = for_tp.cpu().numpy()
-				# array = np.squeeze(array)
-				diam  =  dc.round_up_to_odd(metadata['params']['r']*2)
-				tp_positions, _ = dc.run_trackpy(array, diameter=diam) # why is this slow :(
-				tp_positions = exclude_borders(tp_positions, label_size, pad=metadata['params']['r']/4)
 				tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
-				# print(f"prec {prec} rec {rec}")
-				# print(f"tp prec {tp_prec} rec {tp_rec}")
+
 
 				m = {
 					'dataset'		: metadata['dataset'],
@@ -670,9 +551,6 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
 	titles		= ['$\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
 
-	# fig = plt.figure(figsize=(4,3))
-	# axs = fig.subplots(4,3, sharey=True)
-
 	fig,axs = plt.subplots(2,len(plot_params),  sharey=True)
 	plt.tight_layout(pad=0)
 
@@ -696,12 +574,10 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		if i == 0: 
 			this_axs[i].set_ylabel("Recall", fontsize='large')
 
-	
 	fig.set_figwidth(13)
 	fig.suptitle("Precisions and Recalls", fontsize='xx-large', y=1.05)
 	if run: run['test/params_vs_PR'].upload(fig)
 
-	# plt.clf()
 	fig, axs = plt.subplots(1,len(plot_params), sharey="row")
 	fig.tight_layout(pad=0)
 	axs = axs.flatten()

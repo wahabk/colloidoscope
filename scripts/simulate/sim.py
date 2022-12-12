@@ -47,13 +47,13 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(100,100,100)
-	label_size=(100,100,100)
+	canvas_size=(64,64,64)
+	label_size=(64,64,64)
 	
-	dataset_name = 'gauss_1400'
+	dataset_name = 'heatmap_3400' # with sqrt 3
 	num_workers = 16
 	heatmap_r = 'radius'
-	n_samples_per_volfrac = 200
+	n_samples_per_volfrac = 499
 	n_per_type = 100 # for testing
 
 

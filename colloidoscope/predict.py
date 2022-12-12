@@ -88,16 +88,13 @@ def run_trackpy(array, diameter=5, *args, **kwargs):
 	return tp_predictions
 
 def exclude_borders(centers, canvas_size, pad, diameters=None, label_size=None):
-	
 	if label_size is not None:
 		zdiff = (canvas_size[0] - label_size[0])/2
 		xdiff = (canvas_size[1] - label_size[1])/2
 		ydiff = (canvas_size[2] - label_size[2])/2
-		# print(centers[0])
 		centers = centers - [zdiff, xdiff, ydiff]
 
 	indices = []
-	# pad = 0
 	for idx, c in enumerate(centers):
 		if pad<=c[0]<=(canvas_size[0]-pad) and pad<=c[1]<=(canvas_size[1]-pad) and pad<=c[2]<=(canvas_size[2]-pad):
 			indices.append(idx)
@@ -110,9 +107,12 @@ def exclude_borders(centers, canvas_size, pad, diameters=None, label_size=None):
 	else:
 		return final_centers
 
-def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
+def round_up_to_odd(f):
+	return int(np.floor(f) // 2 * 2 - 1) # // is floor division
+
+def detect(input_array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=None, weights_path:Union[str, Path] = None, 
 			patch_overlap:tuple=(16, 16, 16), roiSize:tuple=(64,64,64), label_size:tuple=(60,60,60), post_processing:str="tp", threshold:float=0.5, 
-			debug:bool=False, run_on="cpu", batch_size=4) -> pd.DataFrame:
+			debug:bool=False, run_on="cpu", batch_size=4, remove_borders=True) -> pd.DataFrame:
 	"""Detect 3d spheres from confocal microscopy
 
 	Args:
@@ -125,6 +125,7 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		debug (bool, optional): Option to return model output and positions in format for testing. Defaults to False.
 		post_processing (str, optional): one of ["tp", "max", "log"]
 		run_on (str, optional): Which device to run on, can be "cpu" or "cuda"
+		remove_borders (bool, optional): Whether to exclude predictions in border when log
 
 	Returns:
 		pd.DataFrame: TrackPy positions dataframe
@@ -132,14 +133,14 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 
 	# TODO write asserts
 
-	if post_processing not in ["tp", "max", "log"]:
-		raise ValueError(f"post_processing can be str(tp), or str(max) but you provided {post_processing}")
+	if post_processing not in ["tp", "log"]:
+		raise ValueError(f"post_processing can be str(tp), or str(log) but you provided {post_processing}")
 	
 	# initialise torch device
 	if run_on not in ["cpu", "cuda"]:
 		raise ValueError(f"You gave run_on={run_on} but it can only be cuda or cpu")
 	elif run_on == "cuda" and torch.cuda.is_available() == False:
-		raise ValueError("You gave run_on='cuda' but cuda isnt available, check torch installation")
+		raise ValueError("You gave run_on='cuda' but cuda isnt available, check torch installation or colab runtime")
 	
 	print(f"Requested to run on {run_on}")
 	device = torch.device(run_on)
@@ -157,8 +158,8 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			# norm=params["norm"],
 			padding='valid',
 		)
-	
-	if 'attention_unet_202211' in weights_path:
+
+	if isinstance(weights_path, str) and 'attention_unet_202211' in weights_path:
 		n_blocks=2
 		start = int(math.sqrt(32))
 		channels = [2**n for n in range(start, start + n_blocks)]
@@ -180,16 +181,15 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 		model_weights = torch.load(weights_path, map_location=device) # read trained weights
 		model.load_state_dict(model_weights) # add weights to model
 	
+	# The weights require dataparallel because it's used in training
+	# But dataparallel doesn't work on cpu so remove it if need be
 	if run_on == "cpu": model = model.module.to(device)
 	if run_on == "cuda": model = model.to(device)
 
+	array = copy.deepcopy(input_array)
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
-	array = np.expand_dims(array, 0) # add batch axis
+	array = np.expand_dims(array, 0) # add batch axis, unsqueeze for torch
 	tensor = torch.from_numpy(array)
-	# tensor = tensor.unsqueeze(1)
-
-	# print(tensor.shape, tensor.max(), tensor.min())
-	# print(path)
 
 	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
 	# subject_dict = {'scan' : tio.ScalarImage(tensor=tensor, type=tio.INTENSITY, path=None),}
@@ -216,52 +216,36 @@ def detect(array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.Module=
 			# locations = patch_batch[tio.LOCATION]
 			input_tensor = patch_batch['image']
 			locations = patch_batch['location']
-			# input_tensor, locations = patch_batch[0], patch_batch[1]
+
 			input_tensor.to(device)
 			out = model(input_tensor)  # send through model/network
 			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
-			# print(input_tensor.shape, out_sigmoid.shape, locations.shape, locations)
-			# print(out_sigmoid.shape, input_tensor.shape)
-			
-			# blank = torch.zeros_like(input_tensor) # because tio doesnt accept outputs of different sizes
-			# out_sigmoid = insert_in_center(blank, out_sigmoid)
-			# out_sigmoid = out_sigmoid.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-			# for pred, loc in zip(out_sigmoid, locations):
-			# 	output_tensor[	loc[0,0]:loc[0,1], 
-			# 					loc[1,0]:loc[1,1], 
-			# 					loc[2,0]:loc[2,1], 
-			# 					loc[3,0]:loc[3,1]] = pred
 
-			# aggregator.add_batch(out_sigmoid, locations)
 			aggregator.append_batch(out_sigmoid, locations)
 
 	# post process to numpy array
 	output_tensor = aggregator.get_output_tensor()
 	output_tensor = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
 	result = np.squeeze(output_tensor)  # remove batch dim and channel dim -> [H, W]
-	result = (result-result.min())/result.max()
+	result = (result-result.min())/result.max() # normalise output
+	result = ndimage.median_filter(result, size=2) # smooth predictions over patch overlaps
 
-	# result = ndimage.gaussian_filter(result, (1,1,1), mode="reflect")
-	result = ndimage.median_filter(result, size=2)
+	if result.shape != input_array.shape: raise ValueError("\n\n\n ERROR IN OUTPUT SHAPE \n\n\n")
+
 	# find positions from label
-
 	if post_processing == "tp":
 		positions = run_trackpy(result*255, diameter=diameter)
-	elif post_processing == "max":
-		if isinstance(diameter, list): diameter = diameter[0]
-		positions = peak_local_max(result*255, min_distance=int((diameter/2)))
 	elif post_processing == "log":
 		if isinstance(diameter, list): diameter = np.array(diameter)
-		# result[result<threshold] = 0
-		sigma = (diameter/2)/math.sqrt(3)
+		min_sigma = (diameter/2)/math.sqrt(3)
 		max_sigma = (diameter*2)/math.sqrt(3)
-		positions = blob_log(result*255, min_sigma=sigma,  max_sigma=max_sigma, overlap=0)[:,:-1]
-		pred_positions = exclude_borders(positions, result.shape, pad=diameter/4)
-		# TODO exclude borders
+		positions = blob_log(result*255, min_sigma=min_sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
+	
+	if remove_borders: 
+		if isinstance(diameter, (np.ndarray, list)): diameter = diameter[0]
+		positions = exclude_borders(positions, result.shape, pad=diameter/2)
 
 	if len(positions)==0: positions = [[0,0,0]];  print("\n\n\nNOT DETECTING PARTICLES\n\n\n")
-
-
 
 	d = {
 		'x' : positions[:,1],
