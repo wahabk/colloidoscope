@@ -183,7 +183,7 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 10,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 5,							'brightness' : randrange(10, 255), 			'snr' : 5, 						'volfrac' : 0.3},

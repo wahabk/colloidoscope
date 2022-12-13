@@ -218,11 +218,6 @@ class Trainer:
 			self.optimizer.zero_grad()  # zerograd the parameters
 			out = self.model(input_)  # one forward pass
 			# print(out.shape)
-			if self.transformer: 
-				try:
-					out = out[0]
-				except:
-					print(out.shape)
 					
 			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
@@ -459,7 +454,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
 	dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red', axs=axs[3])
 	tp_ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_pos, diameters=diameters)
-	dc.plot_pr(ap, precisions, recalls, thresholds, name='TP', tag='x-', color='gray', axs=axs[3])
+	dc.plot_pr(tp_ap, precisions, recalls, thresholds, name='TP', tag='x-', color='gray', axs=axs[3])
 
 	fig.set_figwidth(12)
 	fig.set_figheight(2)
