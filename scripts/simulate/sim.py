@@ -53,7 +53,7 @@ if __name__ == '__main__':
 	dataset_name = 'heatmap_3400' # with sqrt 3
 	num_workers = 16
 	heatmap_r = 'radius'
-	n_samples_per_volfrac = 499
+	n_samples_per_volfrac = 490
 	n_per_type = 100 # for testing
 
 
