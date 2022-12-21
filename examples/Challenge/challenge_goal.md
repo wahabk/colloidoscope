@@ -4,23 +4,23 @@ Many applications are used to track spheres in three dimensions, however, the mo
 
 This is defined as the volume fraction ($\phi$ or volfrac for short) and represents the volume of the particles divided by the total volume of the region of interest. Below you can see an image of various real images of colloids at different volume fractions.
 
-![real](colloidReal.png)
+![real](https://postimg.cc/S2n7yD4Z)
 
 Moreover, it is impossible to create manually labelled data for this project since there are thousands of colloids per 3d volume, and more importantly manual labelling would be too subjective. Due to this we have created a simulated training dataset.
 To reduce photobleaching of the tiny particles during imaging we need to reduce the confocal laser power. 
 This results in a low contrast to noise ratio (CNR). See [the wikipedia article](https://en.wikipedia.org/wiki/Contrast-to-noise_ratio) for more detail.
 
-Where $b_{\mu}$ and $f_{\mu}$ are the background and foreground mean brightnesses, and $\sigma$ is the standard deviation of gaussian noise.
+Where $`b_{\mu}$ and $f_{\mu}`$ are the background and foreground mean brightnesses, and $\sigma$ is the standard deviation of gaussian noise.
 
-$$
+```math
     CNR = \dfrac{b_{\mu} - f_{\mu}}{\sigma}
-$$
+```
 
 It also contributes to a high signal to noise ratio (SNR) which is simply:
 
-$$
+```math
     SNR = \dfrac{f_{\mu}}{\sigma}
-$$
+```
 
 In addition to the SNR and CNR described this problem has further unique challenges
 - Relatively small training sample size (n=1400)
@@ -29,7 +29,7 @@ In addition to the SNR and CNR described this problem has further unique challen
 
 The figure below shows some of the steps of the simulation
 
-![Sim](colloidSim.png)
+![Sim](https://postimg.cc/xXPPgXgP)
 
 The simulation steps are very simple:
 1. Background is drawn
@@ -62,9 +62,23 @@ print(prec, rec) # Should be 1,1
 prec, rec = get_precision_recall(y, y[:len(y)//2], diameter=metadata['r']*2, threshold=0.5)
 print(prec, rec) # Should be 1,~0.5
 
-# Find and plot the average precision
-ap, precisions, recalls, thresholds = average_precision(y, y[:len(y)//2], diameter=diameter)
-fig = plot_pr(ap, precisions, recalls, thresholds, name='prediction', tag='x-', color='red')
+# Find the average precision
+# Note the canvas size has to be provided to remove predicitons around the borders which usually cause errors
+# The first value is what matters (ap)
+ap, precisions, recalls = average_precision(y, y[:len(y)//2], diameter=diameter, canvas_size=x.shape)
+
+# the metric also provides the precisions and recalls to visualise the performance
+fig = plot_pr(ap, precisions, recalls, name='prediction', tag='x-', color='red')
 plt.show()
 ```
+
+Precision tells us the fraction of predictions that are true, and recall tells us how many of all the particles did we detect.
+
+In physics, precision is key therefore this is the most important aspect of the detection.
+You'll find that the benchmark TrackPy enjoys very high precision, usually above 99%. 
+However, this comes at the cost of lower recall, it usually detects only 30% of the particles.
+
+The AP accross different threshold from 0 to 1 at 0.1 increments provides a good overall metric for the performance of the predictor. 
+The goal is to push recall as high as possible, without sacrificing a precision below 95%.
+
 

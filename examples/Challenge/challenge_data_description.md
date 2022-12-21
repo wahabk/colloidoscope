@@ -3,7 +3,7 @@
 
 The training data (x_train) for this project consists of an hdf5 file that contain the image volumes, and a csv file that contains the metadata. We provide a `read.py` file that reads this for you to get you going quickly.
 
-The hdf5 file contains 1400 64x64x64 scans (x). The final output of the approach should be the true positions (with or without model post processing). You can predict the diameters if you'd like but this isnt necessary for the challenge as in each image all the particles have the same size.
+The X hdf5 file contains 1400 64x64x64 scans (zero indexed). The final output of the approach should be the true positions (with or without model post processing). You can predict the diameters if you'd like but this isnt necessary for the challenge as in each image all the particles have the same size.
 
 The metadata parameters are as follows:
 - volfrac: volume fraction or density of spheres in the volume (usually between 0.1 and 0.55).
