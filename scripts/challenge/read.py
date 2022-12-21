@@ -35,3 +35,41 @@ def read_y(path:str, index:int, dim_order:str="ZXY") -> np.ndarray:
 
 	return positions
 
+def extract_y(pos_df, index, dim_order="ZXY"):
+	"""Helper function to extract indices without reading the csv repeatedly
+	"""
+
+	pos_df = pos_df.dropna()
+	pos_index = pos_df[pos_df.image_index == index]
+	list_ = list(zip(pos_index[dim_order[0]], pos_index[dim_order[1]], pos_index[dim_order[2]]))
+	positions = np.array(list_, dtype='float32')
+
+	return positions
+
+def write_y(df, index, positions, dim_order="ZXY", min_n_pos=2000):
+	"""Helper function to write a df
+
+	Args:
+		df (pandas.DataFrame): Dataframe to append the new positions to
+		index (int): index of the image for the positions
+		positions (np.ndarray): np.array of shape (n, 3) of particle positions
+		dim_order (str, optional): _description_. Defaults to "ZXY".
+		min_n_pos (int, optional): _description_. Defaults to 2000.
+
+	Returns:
+		_type_: _description_
+	"""
+	len_nans = min_n_pos - len(positions)
+	nans = np.empty((len_nans, 3))
+	nans[:] = np.nan
+	positions = np.concatenate([positions, nans], axis=0)
+
+	indices = np.full((len(positions),1), fill_value=int(index))
+	positions_with_indices = np.concatenate([indices, positions], axis=1)
+	pos_df = pd.DataFrame(positions_with_indices)
+	dim1, dim2, dim3 = dim_order
+	pos_df.columns = ["image_index", dim1, dim2, dim3]
+
+	df = pd.concat([df, pos_df], axis=0, ignore_index=True)
+
+	return df

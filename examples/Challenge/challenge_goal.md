@@ -2,15 +2,15 @@
 
 Many applications are used to track spheres in three dimensions, however, the most difficult part of detecting colloids is how densely packed they are. Most methods struggle to detect a majority of the particles, and there is a higher incidence of false detections due to spheres that are touching.
 
-This is defined as the volume fraction ($\phi$ or volfrac for short) and represents the volume of the particles divided by the total volume of the region of interest. Below you can see an image of various real images of colloids at different volume fractions.
+This is defined as the volume fraction ($`\phi`$ or volfrac for short) and represents the volume of the particles divided by the total volume of the region of interest. Below you can see an image of various real images of colloids at different volume fractions.
 
-![real](https://postimg.cc/S2n7yD4Z)
+![real](https://i.postimg.cc/k4cjvppd/colloid-Real.png)
 
 Moreover, it is impossible to create manually labelled data for this project since there are thousands of colloids per 3d volume, and more importantly manual labelling would be too subjective. Due to this we have created a simulated training dataset.
 To reduce photobleaching of the tiny particles during imaging we need to reduce the confocal laser power. 
 This results in a low contrast to noise ratio (CNR). See [the wikipedia article](https://en.wikipedia.org/wiki/Contrast-to-noise_ratio) for more detail.
 
-Where $`b_{\mu}$ and $f_{\mu}`$ are the background and foreground mean brightnesses, and $\sigma$ is the standard deviation of gaussian noise.
+Where $`b_{\mu}`$ and $`f_{\mu}`$ are the background and foreground mean brightnesses, and $`\sigma`$ is the standard deviation of gaussian noise.
 
 ```math
     CNR = \dfrac{b_{\mu} - f_{\mu}}{\sigma}
@@ -29,7 +29,7 @@ In addition to the SNR and CNR described this problem has further unique challen
 
 The figure below shows some of the steps of the simulation
 
-![Sim](https://postimg.cc/xXPPgXgP)
+![Sim](https://i.postimg.cc/2SsXkvZg/colloid-Sim.png)
 
 The simulation steps are very simple:
 1. Background is drawn
@@ -81,4 +81,26 @@ However, this comes at the cost of lower recall, it usually detects only 30% of 
 The AP accross different threshold from 0 to 1 at 0.1 increments provides a good overall metric for the performance of the predictor. 
 The goal is to push recall as high as possible, without sacrificing a precision below 95%.
 
+# Uploading your predictions
 
+When you are ready top upload your predictions, there is some formatting you must follow for your data to be processed by the website.
+The dataframe is in long-form, meaning each row is a position of one particle from one image.
+The image_index shows which image each particle is from.
+Every image has to have 2000 rows to fit the challenge website (and stop you from guessing!).
+
+You can use the `write_y` function to make a csv file that works with the website
+
+```python
+import write_y
+
+df = pd.DataFrame(columns=['image_index', "Z", "X", "Y"])
+dim_order = "ZXY"
+
+for index in tqdm(range(10)):
+    prediction = # run or read model prediction into numpy array, NOTE the dim_order provided above
+
+    df = write_y(df, index, positions, dim_order=dim_order)
+
+df.to_csv("/path/to/saved_prediction.csv")
+
+```

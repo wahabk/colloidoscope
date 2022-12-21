@@ -18,6 +18,6 @@ The only argument that trackpy needs is the diameter (in pixels) of the particle
 To get a numpy array use the following, note the dimension order zxy, this can be changed to whatever you're used to, but ensure you remain consistent and feed the dimension order to the read_y function.
 
 ```python
-L = list(zip(df['z'], df['y'], df['x']))
-tp_predictions = np.array(L, dtype='float32')
+l = list(zip(df['z'], df['y'], df['x']))
+tp_predictions = np.array(l, dtype='float32')
 ```
