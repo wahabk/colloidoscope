@@ -3,8 +3,18 @@ Colloids average precision metric function
 """
 
 import numpy as np
-from read import read_x, read_y, extract_y
 from metric import average_precision
+
+def extract_y(pos_df, index, dim_order="ZXY"):
+	"""Helper function to extract indices without reading the csv repeatedly
+	"""
+
+	pos_df = pos_df.dropna()
+	pos_index = pos_df[pos_df.image_index == index]
+	list_ = list(zip(pos_index[dim_order[0]], pos_index[dim_order[1]], pos_index[dim_order[2]]))
+	positions = np.array(list_, dtype='float32')
+
+	return positions
 
 def ap_metric_function(dataframe_y_true, dataframe_y_pred):
     """
@@ -30,7 +40,7 @@ def ap_metric_function(dataframe_y_true, dataframe_y_pred):
     diameters = [6,11,11,11,8,7,8,9,9,6,]
     for index in range(10):
         y_pred = extract_y(dataframe_y_pred, index)
-        y_true = extract_y(dataframe_y_true)
+        y_true = extract_y(dataframe_y_true, index)
 
         ap, precisions, recalls = average_precision(y_true, y_pred, diameter=diameters[index], canvas_size=(128,128,128))
         scores.append(ap)

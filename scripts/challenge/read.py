@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 def read_x(path:str, index:int) -> np.ndarray:
-	"""Read x from hdf 5 file at index
+	"""Read x from hdf5 file at index
 
 	Args:
 		path (str): Path to hdf5 file.
@@ -35,17 +35,6 @@ def read_y(path:str, index:int, dim_order:str="ZXY") -> np.ndarray:
 
 	return positions
 
-def extract_y(pos_df, index, dim_order="ZXY"):
-	"""Helper function to extract indices without reading the csv repeatedly
-	"""
-
-	pos_df = pos_df.dropna()
-	pos_index = pos_df[pos_df.image_index == index]
-	list_ = list(zip(pos_index[dim_order[0]], pos_index[dim_order[1]], pos_index[dim_order[2]]))
-	positions = np.array(list_, dtype='float32')
-
-	return positions
-
 def write_y(df, index, positions, dim_order="ZXY", min_n_pos=2000):
 	"""Helper function to write a df
 
@@ -53,11 +42,11 @@ def write_y(df, index, positions, dim_order="ZXY", min_n_pos=2000):
 		df (pandas.DataFrame): Dataframe to append the new positions to
 		index (int): index of the image for the positions
 		positions (np.ndarray): np.array of shape (n, 3) of particle positions
-		dim_order (str, optional): _description_. Defaults to "ZXY".
-		min_n_pos (int, optional): _description_. Defaults to 2000.
+		dim_order (str, optional): Dimension ordering of writing position coordinates. Defaults to "ZXY".
+		min_n_pos (int, optional): Minimum number of particles per image, this is so it fits with website formatting. Defaults to 2000.
 
 	Returns:
-		_type_: _description_
+		dataframe
 	"""
 	len_nans = min_n_pos - len(positions)
 	nans = np.empty((len_nans, 3))
