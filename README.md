@@ -3,7 +3,7 @@
 <a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> 
 <img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
 
-<img src="https://i.postimg.cc/Y2dn4TF6/fig-Website-Little.png" alt="paddyfig1" width="800px"/>
+<img src="https://i.postimg.cc/Y2dn4TF6/fig-Website-Little.png" alt="paddyfig1"/>
 
 A project to track colloids using confocal and deep learning.
 
