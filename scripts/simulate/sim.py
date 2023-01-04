@@ -47,13 +47,13 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(100,100,100)
-	label_size=(100,100,100)
+	canvas_size=(64,64,64)
+	label_size=(64,64,64)
 	
-	dataset_name = 'gauss_1400'
+	dataset_name = 'heatmap_3400' # with sqrt 3
 	num_workers = 16
 	heatmap_r = 'radius'
-	n_samples_per_volfrac = 200
+	n_samples_per_volfrac = 490
 	n_per_type = 100 # for testing
 
 
@@ -183,7 +183,7 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 10,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 5,							'brightness' : randrange(10, 255), 			'snr' : 5, 						'volfrac' : 0.3},

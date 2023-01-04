@@ -13,4 +13,11 @@ array = # Read your image here
 df = tp.locate(array, diameter=diameter)
 ```
 
-The only argument that trackpy needs is the diameter (in pixels) of the particles.
+The only argument that trackpy needs is the diameter (in pixels) of the particles - note this must be an odd number.
+
+To get a numpy array use the following, note the dimension order zxy, this can be changed to whatever you're used to, but ensure you remain consistent and feed the dimension order to the read_y function.
+
+```python
+l = list(zip(df['z'], df['y'], df['x']))
+tp_predictions = np.array(l, dtype='float32')
+```

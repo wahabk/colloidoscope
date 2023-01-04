@@ -64,8 +64,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	#TODO find a way to precalculate this - should i only unpad the first block?
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
-	# label_size = params['roiSize']
-	label_size = [96,96,96]
+	label_size = params['roiSize']
+	# label_size = [96,96,96]
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
@@ -108,10 +108,18 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	# 	out_channels=params['n_classes'],
 	# 	channels=channels,
 	# 	strides=strides,
+	# 	kernel_size=7,
 	# 	num_res_units=params["n_blocks"],
-	# 	act=params['activation'],
-	# 	norm=params["norm"],
+	# 	# act=params['activation'],
+	# 	# norm=params["norm"],
 	# 	dropout=params["dropout"]
+	# )
+
+	# model = monai.networks.nets.DenseNet(
+	# 	spatial_dims=3,
+	# 	in_channels=1,
+	# 	out_channels=params['n_classes'],
+	# 	dropout_prob = params["dropout"],
 	# )
 
 	model = monai.networks.nets.AttentionUnet(
@@ -123,7 +131,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 		kernel_size=7,
 		# up_kernel_size=3,
 		dropout=params["dropout"],
-		padding='valid',
+		padding='same',
 	)
 
 	"""
@@ -214,7 +222,7 @@ if __name__ == "__main__":
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'att unet  + log'
+	name = 'att! unet+log same'
 	# save = 'output/weights/attention_unet_202211.pt'
 	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
 	save = False
@@ -226,7 +234,7 @@ if __name__ == "__main__":
 		"batch_size": 16,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 5,
+		"epochs": 10,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.1,

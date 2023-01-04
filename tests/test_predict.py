@@ -12,9 +12,9 @@ print(array.shape, array.dtype)
 df, positions, label = dc.detect(array, diameter=15, 
                                 weights_path='output/weights/attention_unet_202211.pt', 
                                 patch_overlap=(16,16,16),
-                                debug=True, run_on="cpu",
+                                debug=True, run_on="cuda",
                                 roiSize=(100,100,100), label_size=(96,96,96),
-                                post_processing="log", batch_size=1)
+                                post_processing="tp", batch_size=1)
 print(df)
 array = np.array(array, dtype="uint8")
 tp_pred, df =  dc.run_trackpy(array, diameter=15)

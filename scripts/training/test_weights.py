@@ -30,10 +30,10 @@ if __name__ == "__main__":
 	num_workers=16
 	test_data =	list(range(1,599))
 	random.shuffle(test_data)
-	test_data = test_data[:20]
-	name="TW: log min r max d"
+	test_data = test_data[:50]
+	name="TW: tp excl borders"
 
-	post_processing = 'log'
+	post_processing = 'tp'
 
 	config = {
 		"lr": 0.002165988,
