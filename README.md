@@ -3,43 +3,24 @@
 <a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> 
 <img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
 
-A project to attempt tracking colloids using confocal and deep learning. Please note this is work-in-progress.
+<img src="https://i.postimg.cc/Y2dn4TF6/fig-Website-Little.png" alt="paddyfig1" width="800px"/>
 
-Colloidoscope is essentially a U-net trained on simulated data. Before using colloidoscope I would use TrackPy or nplocate. This is designed to work on very small colloids (~200nm) with a very bad point spread function, that is anisotropic and has high z blur.
+A project to track colloids using confocal and deep learning.
+
+Colloidoscope is essentially a U-net trained on simulated data. This is designed to to improve tracking on very small colloids (~200nm) with a very bad point spread function, that is anisotropic and has high z blur.
 
 Pretrained weights and hyperparameter training history available upon request.
 
 # Installation
-
-Quickest (not preferred)
 
 ```
 pip3 install git+https://github.com/wahabk/colloidoscope
 ```
 
 
-Option 1, make sure you use a virtual environment:
-
-```
-cd <installation_dir>
-git clone https://github.com/wahabk/colloidoscope
-# activate your virtual environment, make sure you use python 3.8
-python3.8 -m pip install .
-```
-
-Option 2, To get going with conda (most robust and includes hoomdblue):
-
-```
-cd <installation_dir>
-git clone https://github.com/wahabk/colloidoscope
-conda env create -f environment.yaml # this will create an env using python 3.8 named 'colloids'
-conda activate colloids
-python3.8 -m pip install .
-```
-
 # Usage: Quick Start
 
-I have no documentation for this project but I will endeavor to write nice docstrings. I have provided custom jupyter notebooks in ```examples/```.
+I have provided custom jupyter notebooks in ```examples/```.
 
 You can run colloidoscope in google colab: 
 <a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> 
@@ -65,10 +46,7 @@ Then simply use ```dc.detect()``` to track your image, this will return a pandas
 df = dc.detect(image, weights_path='path/to/model_weights.pt')
 ```
 
-## Model limitations
-- This only accepts np arrays that are at least [32,128,128] in size (z,x,y)
-- Note the dimension order is (z,x,y), this is important since the model has only been trained on simulations with z blur in this order
-- This has been tested on particles with size 4 - 12 pixel radius
+Please check `examples/` for scripts and jupyter notebooks.
 
 ## Useful things
 - All available average precision functions only work with bounding boxes. Colloidoscope has a function ```dc.average_precision(true_positions, predicted_precisions)``` that will find AP based on positions alone - since the distance is more important for this project than the IOU.
@@ -76,21 +54,7 @@ df = dc.detect(image, weights_path='path/to/model_weights.pt')
 
 # Dependencies
 
- - Python 3.8
- - pathlib2 
- - trackpy 
- - pytorch 
- - numpy 
- - numba 
- - matplotlib 
- - h5py 
- - napari 
- - scipy 
- - scikit-learn 
- - scikit-image 
- - torchio 
- - neptune 
- - hoomdblue (only for simulations)
+Check `setup.py`.
 
 # Dev 
 ## Simulations
