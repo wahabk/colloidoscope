@@ -81,7 +81,7 @@ def draw_mask_slice(args):
 					new_slice[i,j] = 1
 	return new_slice
 
-def make_mask(shape, centers, diameter, num_workers=10):
+def make_mask(array, centers, diameter, num_workers=10):
 	r = np.min(diameter)/2
 	canvas = np.zeros(array.shape)
 	args = [(s, z, r, centers) for z, s in enumerate(canvas)]
