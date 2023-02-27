@@ -31,7 +31,8 @@ if __name__ == "__main__":
 	test_data =	list(range(1,599))
 	random.shuffle(test_data)
 	test_data = test_data[:50]
-	name="TW: tp excl borders"
+	name="new TW: tp"
+	weights_path = 'output/weights/attention_unet_202211.pt'
 
 	post_processing = 'tp'
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
 		"epochs": 6,
 		"start_filters": 32,
 		"activation": "SWISH",
-		"dropout": 0.1,
+		"dropout": 0.2,
 		"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 
@@ -91,7 +92,6 @@ if __name__ == "__main__":
 	model = torch.nn.DataParallel(model)
 	model.to(device)
 
-	weights_path = 'output/weights/attention_unet_202211.pt'
 	model_weights = torch.load(weights_path, map_location='cpu') # read trained weights
 	# print(model_weights.keys())
 	model.load_state_dict(model_weights) # add weights to model

@@ -27,7 +27,7 @@ class DeepColloid:
 		"""Detect 3d spheres from confocal microscopy
 
 		Args:
-			array (np.ndarray): Image for particles to be detected from.
+			array (np.ndarray): Image for particles to be detected from. The shape can be 3 for a single volume (X,Y,Z) or 4 for a time series (T,X,Y,Z). Make sure the time axis is first.
 			diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5. If post_processing == str(max) this has to be int it will be min_distance.
 			model (torch.nn.Module, optional): Pytorch model. Defaults to None.
 			weights_path (Union[str, Path], optional): Path to model weights file. Defaults to None.

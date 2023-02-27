@@ -84,7 +84,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	])
 
 	# create a training data loader
-	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None, label_size=label_size) 
+	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=transforms_affine, label_size=label_size) 
 	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
 	# create a validation data loader
 	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data'], label_size=label_size) 
@@ -131,7 +131,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 		kernel_size=7,
 		# up_kernel_size=3,
 		dropout=params["dropout"],
-		padding='same',
+		padding='valid',
 	)
 
 	"""
@@ -223,8 +223,8 @@ if __name__ == "__main__":
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
 	name = 'att! unet+log same'
-	# save = 'output/weights/attention_unet_202211.pt'
-	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
+	# save = 'output/weights/attention_unet_202206.pt'  from jup and trying to fix testing f78f094 
+	# save = 'output/weights/attention_unet_202211.pt' from trying log diameters, saving weights 7c15929
 	save = False
 	post_processing = "log"
 
@@ -234,10 +234,10 @@ if __name__ == "__main__":
 		"batch_size": 16,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 10,
+		"epochs": 6,
 		"start_filters": 32,
 		"activation": "SWISH",
-		"dropout": 0.1,
+		"dropout": 0.2,
 		"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
 

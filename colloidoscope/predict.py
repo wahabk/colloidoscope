@@ -116,7 +116,7 @@ def detect(input_array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.M
 	"""Detect 3d spheres from confocal microscopy
 
 	Args:
-		array (np.ndarray): Image for particles to be detected from.
+		array (np.ndarray): Image for particles to be detected from.The shape can be 3 for a single volume (X,Y,Z) or 4 for a time series (T,X,Y,Z). Make sure the time axis is first.
 		diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5. If post_processing == str(max) this has to be int it will be min_distance.
 		model (torch.nn.Module, optional): Pytorch model. Defaults to None.
 		weights_path (Union[str, Path], optional): Path to model weights file. Defaults to None.
@@ -138,10 +138,18 @@ def detect(input_array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.M
 	
 	# initialise torch device
 	if run_on not in ["cpu", "cuda"]:
-		raise ValueError(f"You gave run_on={run_on} but it can only be cuda or cpu")
+		raise ValueError(f"You gave run_on={run_on} but it can only be 'cuda' or 'cpu'")
 	elif run_on == "cuda" and torch.cuda.is_available() == False:
 		raise ValueError("You gave run_on='cuda' but cuda isnt available, check torch installation or colab runtime")
-	
+	if isinstance(input_array, np.ndarray) == False:
+		raise ValueError(f"Input array must be a numpy array. Convert it before detecting. You gave type {type(input_array)}")
+	if len(input_array.shape) == 4:
+		is_time_series = True
+	elif len(input_array.shape) == 3:
+		is_time_series = False
+	else:
+		raise ValueError(f"Input array must be a 3d volume (X,Y,Z) or 4d time series (T,X,Y,Z). You gave an array of shape {input_array.shape}")
+ 
 	print(f"Requested to run on {run_on}")
 	device = torch.device(run_on)
 	print(f"Predicting on {device}")
@@ -188,9 +196,8 @@ def detect(input_array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.M
 
 	array = copy.deepcopy(input_array)
 	array = np.array(array/array.max(), dtype=np.float32) # normalise input
-	array = np.expand_dims(array, 0) # add batch axis, unsqueeze for torch
-	tensor = torch.from_numpy(array)
-
+	if is_time_series == False: array = np.expand_dims(array, 0) # add time  axis
+	input_tensor = torch.from_numpy(array)
 	# TODO NORMALISE BRIGHTNESS HISTOGRAM BEFORE PREDICITON
 	# subject_dict = {'scan' : tio.ScalarImage(tensor=tensor, type=tio.INTENSITY, path=None),}
 	# subject = tio.Subject(subject_dict) # use torchio subject to enable using grid sampling
@@ -198,64 +205,77 @@ def detect(input_array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.M
 	# patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
 	# aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='crop') # average for bc, crop for normal
 	
-	grid_sampler = MyGridSampler(tensor, patch_size=roiSize, overlap=patch_overlap, label_size=label_size)
-	patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
-	aggregator = MyAggregator(grid_sampler, overlap_mode='avg') # average for bc, crop for normal
+	all_positions = []
 
-	# patch_iter = PatchIter(patch_size=roiSize, start_pos=(0, 0, 0))
-	# ds = GridPatchDataset(data=[array],
-    #                           patch_iter=patch_iter,
-    #                           transform=None)
-	# patch_loader = torch.utils.data.DataLoader(ds, batch_size=batch_size)
-	# output_tensor = np.zeros_like(array)
+	for tensor in input_tensor:
+		tensor = tensor.unsqueeze(0)
+		grid_sampler = MyGridSampler(tensor, patch_size=roiSize, overlap=patch_overlap, label_size=label_size)
+		patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
+		aggregator = MyAggregator(grid_sampler, overlap_mode='avg') # average for bc, crop for normal
 
-	model.eval()
-	with torch.no_grad():
-		for i, patch_batch in tqdm(enumerate(patch_loader)):
-			# input_tensor = patch_batch['scan'][tio.DATA]
-			# locations = patch_batch[tio.LOCATION]
-			input_tensor = patch_batch['image']
-			locations = patch_batch['location']
+		model.eval()
+		with torch.no_grad():
+			for i, patch_batch in tqdm(enumerate(patch_loader)):
+				# input_tensor = patch_batch['scan'][tio.DATA]
+				# locations = patch_batch[tio.LOCATION]
+				input_tensor = patch_batch['image']
+				locations = patch_batch['location']
 
-			input_tensor.to(device)
-			out = model(input_tensor)  # send through model/network
-			out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
+				input_tensor.to(device)
+				out = model(input_tensor)  # send through model/network
+				out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
 
-			aggregator.append_batch(out_sigmoid, locations)
+				aggregator.append_batch(out_sigmoid, locations)
 
-	# post process to numpy array
-	output_tensor = aggregator.get_output_tensor()
-	output_tensor = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-	result = np.squeeze(output_tensor)  # remove batch dim and channel dim -> [H, W]
-	result = (result-result.min())/result.max() # normalise output
-	result = ndimage.median_filter(result, size=2) # smooth predictions over patch overlaps
+		# post process to numpy array
+		output_tensor = aggregator.get_output_tensor()
+		output_tensor = output_tensor.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+		result = np.squeeze(output_tensor)  # remove batch dim and channel dim -> [H, W]
+		result = (result-result.min())/result.max() # normalise output
+		result = ndimage.median_filter(result, size=2) # smooth predictions over patch overlaps
 
-	if result.shape != input_array.shape: raise ValueError("\n\n\n ERROR IN OUTPUT SHAPE \n\n\n")
+		# find positions from label
+		if post_processing == "tp":
+			positions = run_trackpy(result*255, diameter=diameter)
+		elif post_processing == "log":
+			if isinstance(diameter, list): diameter = np.array(diameter)
+			min_sigma = (diameter/2)/math.sqrt(3)
+			max_sigma = (diameter*2)/math.sqrt(3)
+			positions = blob_log(result*255, min_sigma=min_sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
+		
+		if remove_borders: 
+			if isinstance(diameter, (np.ndarray, list)): diameter = diameter[0]
+			positions = exclude_borders(positions, result.shape, pad=diameter/2)
 
-	# find positions from label
-	if post_processing == "tp":
-		positions = run_trackpy(result*255, diameter=diameter)
-	elif post_processing == "log":
-		if isinstance(diameter, list): diameter = np.array(diameter)
-		min_sigma = (diameter/2)/math.sqrt(3)
-		max_sigma = (diameter*2)/math.sqrt(3)
-		positions = blob_log(result*255, min_sigma=min_sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
-	
-	if remove_borders: 
-		if isinstance(diameter, (np.ndarray, list)): diameter = diameter[0]
-		positions = exclude_borders(positions, result.shape, pad=diameter/2)
+		if len(positions)==0: positions = [[0,0,0]];  print("\n\n\nNOT DETECTING PARTICLES\n\n\n")
+  
+		all_positions.append(positions)
 
-	if len(positions)==0: positions = [[0,0,0]];  print("\n\n\nNOT DETECTING PARTICLES\n\n\n")
+	all_positions = np.array(all_positions, dtype="float32")
 
-	d = {
-		'x' : positions[:,1],
-		'y' : positions[:,2],
-		'z' : positions[:,0],
-		}
-	df = pd.DataFrame().from_dict(d) #, orient='index')
+	if is_time_series:
+		df = pd.DataFrame()
+		for i, positions in enumerate(all_positions):
+
+			d = {
+				't' : i,
+				'x' : positions[:,1],
+				'y' : positions[:,2],
+				'z' : positions[:,0],
+				}
+			frame_df = pd.DataFrame().from_dict(d) #, orient='index')
+			df = pd.concat([df, frame_df], axis="index")
+	else:
+		all_positions = all_positions[0]
+		d = {
+			'x' : positions[:,1],
+			'y' : positions[:,2],
+			'z' : positions[:,0],
+			}
+		df = pd.DataFrame().from_dict(d) #, orient='index')
 
 	if debug:
-		return df, positions, result
+		return df, all_positions, result
 	else:
 		return df
 

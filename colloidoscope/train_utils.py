@@ -758,28 +758,29 @@ def read_real_examples():
 
 	d = {}
 
-	# d['abraham'] = {}
-	# d['abraham']['diameter'] = [13,11,11]
-	# d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
-	d['emily'] = {}
-	d['emily']['diameter'] = [15,9,9]
-	d['emily']['volfrac'] = 0.5
-	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
-	# d['katherine'] = {}
-	# d['katherine']['diameter'] = [7,7,7]
-	# d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
-	d['levke'] = {}
-	d['levke']['diameter'] = [15,11,11]
-	d['levke']['volfrac'] = 0.58
-	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
-	d['james'] = {}
-	d['james']['diameter'] = [17,15,15]
-	d['james']['volfrac'] = 0.58
-	d['james']['array'] = io.imread('examples/Data/james.tiff')
-	d['jamesdecon'] = {}
-	d['jamesdecon']['diameter'] = [17,15,15]
-	d['jamesdecon']['volfrac'] = 0.58
-	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d["A - Emulsion (3μm @ 0.64 φ)"] = {}
+	d["A - Emulsion (3μm @ 0.64 φ)"]['diameter'] = 13
+	array = io.imread('examples/Data/abraham.tiff') 
+	d["A - Emulsion (3μm @ 0.64 φ)"]['array'] = ndimage.zoom(array, 1.5)
+	d["B - Silica (1.2μm @0.2 φ)"] = {}
+	d["B - Silica (1.2μm @0.2 φ)"]['diameter'] = 7
+	d["B - Silica (1.2μm @0.2 φ)"]['array'] = io.imread('examples/Data/katherine.tiff')
+	d["C - Silica (560nm @ 0.55 φ)"] = {}
+	d["C - Silica (560nm @ 0.55 φ)"]['diameter'] = [17,15,15]
+	d["C - Silica (560nm @ 0.55 φ)"]['volfrac'] = 0.58
+	d["C - Silica (560nm @ 0.55 φ)"]['array'] = io.imread('examples/Data/james.tiff')
+	d["D - Silica (560nm @ 0.55 φ)"] = {}
+	d["D - Silica (560nm @ 0.55 φ)"]['diameter'] = [17,15,15]
+	d["D - Silica (560nm @ 0.55 φ)"]['volfrac'] = 0.58
+	d["D - Silica (560nm @ 0.55 φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d["E - Silica (500nm @ 0.50 φ) "] = {}
+	d["E - Silica (500nm @ 0.50 φ) "]['diameter'] = 13
+	d["E - Silica (500nm @ 0.50 φ) "]['volfrac'] = 0.5
+	d["E - Silica (500nm @ 0.50 φ) "]['array'] = io.imread('examples/Data/emily.tiff')
+	d["F - PMMA (315nm @ 0.58 φ)"] = {}
+	d["F - PMMA (315nm @ 0.58 φ)"]['diameter'] = [15,11,11]
+	d["F - PMMA (315nm @ 0.58 φ)"]['volfrac'] = 0.58
+	d["F - PMMA (315nm @ 0.58 φ)"]['array'] = io.imread('examples/Data/levke.tiff')
 
 	return d
 
