@@ -222,7 +222,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 
 	if isinstance(psf_kernel, np.ndarray):
 		nm_pixel = (particle_size*1000) / r 
-		psf_nm_pixel = 50 # standard_huygens_pixel_nm
+		psf_nm_pixel = 30 # standard_huygens_pixel_nm
 		psf_zoom = psf_nm_pixel / nm_pixel
 
 		this_kernel = ndimage.zoom(psf_kernel, psf_zoom)
