@@ -32,7 +32,7 @@ if __name__ == "__main__":
 	random.shuffle(test_data)
 	test_data = test_data[:50]
 	name="new TW: tp"
-	weights_path = 'output/weights/attention_unet_202211.pt'
+	weights_path = 'output/weights/attention_unet_202206.pt'
 
 	post_processing = 'tp'
 
@@ -77,15 +77,25 @@ if __name__ == "__main__":
 	start = int(math.sqrt(start_filters))
 	channels = [2**n for n in range(start, start + n_blocks)]
 	strides = [2 for n in range(1, n_blocks)]
+	# model = monai.networks.nets.AttentionUnet(
+	# 	spatial_dims=3,
+	# 	in_channels=1,
+	# 	out_channels=params['n_classes'],
+	# 	channels=channels,
+	# 	strides=strides,
+	# 	kernel_size=7,
+	# 	# up_kernel_size=3,
+	# 	dropout=params["dropout"],
+	# 	padding='same',
+	# )
 	model = monai.networks.nets.AttentionUnet(
 		spatial_dims=3,
 		in_channels=1,
-		out_channels=params['n_classes'],
-		channels=channels,
-		strides=strides,
-		kernel_size=7,
-		# up_kernel_size=3,
-		dropout=params["dropout"],
+		out_channels=1,
+		channels=[32, 64, 128],
+		strides=[2,2],
+		# act=params['activation'],
+		# norm=params["norm"],
 		padding='valid',
 	)
 

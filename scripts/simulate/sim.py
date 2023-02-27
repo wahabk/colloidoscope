@@ -30,8 +30,6 @@ import math
 from scipy.signal import convolve2d
 from pathlib2 import Path
 
-
-
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
 	side_projection = np.max(scan, axis=1)
@@ -50,22 +48,22 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'heatmap_3400' # with sqrt 3
+	dataset_name = 'heatmap_3000' # with sqrt 3
 	num_workers = 16
 	heatmap_r = 'radius'
-	n_samples_per_volfrac = 490
+	n_samples_per_volfrac = 300
 	n_per_type = 100 # for testing
 
 
 	# psf_kernel = 'standard' #TODO make this change psf
 	# read huygens psf
-	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_50xy_50z.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
 	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
 	psf_kernel = psf_kernel/psf_kernel.max()
 
 	# each volfrac has 500, make 200 for training and validation and rest for testing
-	phis = np.array([[round(x, 2)]*n_samples_per_volfrac for x in np.linspace(0.25,0.55,7)])
+	phis = np.array([[round(x, 2)]*n_samples_per_volfrac for x in np.linspace(0.1,0.55,10)])
 	print(phis.shape)
 
 	index = 1
@@ -79,7 +77,7 @@ if __name__ == '__main__':
 			types = {
 			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
 			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
-			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
+			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
 			}
 
 			keys = list(types.keys())
@@ -96,10 +94,10 @@ if __name__ == '__main__':
 				'params' : params,
 			}
 
-			path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
-			print(f'Reading: {path} at {n+1} ...')
+			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
+			print(f'Reading: {path} at {n+n_per_type} ...')
 
-			hoomd_positions, diameters = read_gsd(path, n+1)
+			hoomd_positions, diameters = read_gsd(path, n+n_per_type)
 
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 										params['snr'], diameters=diameters, make_label=True, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
@@ -129,12 +127,12 @@ if __name__ == '__main__':
 	label_size=(256,256,256)
 
 	params = dict(
-		r=10,
-		particle_size=0.25,
+		r=7,
+		particle_size=1,
 		snr=3,
 		cnr=3,
 		volfrac=0.55,
-		brightness=100,
+		brightness=125,
 	)
 
 	metadata = {
@@ -149,7 +147,7 @@ if __name__ == '__main__':
 	hoomd_positions, diameters = read_gsd(path, 499)
 
 	# read huygens psf
-	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_50xy_50z.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
 	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
 	psf_kernel = psf_kernel/psf_kernel.max()
@@ -170,7 +168,7 @@ if __name__ == '__main__':
 	test_list = [[s]*n_per_type for s in test_params]
 	
 	# read huygens psf
-	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_50xy_50z.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
 	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
 	psf_kernel = psf_kernel/psf_kernel.max()
@@ -183,7 +181,7 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
+				'r' 			: {'r' : randrange(4,16), 	'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 5,							'brightness' : randrange(10, 255), 			'snr' : 5, 						'volfrac' : 0.3},

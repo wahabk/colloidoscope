@@ -339,7 +339,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	real_dict = read_real_examples()
 
 	real_len = len(real_dict)
-	fig, axs = plt.subplots(real_len,3,)
+	fig, axs = plt.subplots(real_len,4,)
 	plt.tight_layout(pad=0.01)
 
 	for i, (name, d) in enumerate(real_dict.items()):
@@ -356,37 +356,52 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 									debug=True, post_processing=post_processing, run_on="cuda", 
 									remove_borders=True)
 
+
+		if isinstance(detection_diameter, (list, tuple)):
+			int_diameter = d['diameter'][0]
+		else:
+			int_diameter = d['diameter']
 		trackpy_pos, df = dc.run_trackpy(d['array'], diameter = detection_diameter)
-		trackpy_pos = exclude_borders(trackpy_pos, d['array'].shape, pad=d['diameter'][0]/2)
+		trackpy_pos = exclude_borders(trackpy_pos, d['array'].shape, pad=int_diameter/2)
 		
-		tp_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(trackpy_pos), d['array'].size)
-		unet_frac_detected = frac_detected(d['volfrac'], max(d['diameter'])/2, len(pred_positions), d['array'].size)
+		tp_frac_detected = frac_detected(d['volfrac'], int_diameter/2, len(trackpy_pos), d['array'].size)
+		unet_frac_detected = frac_detected(d['volfrac'], int_diameter/2, len(pred_positions), d['array'].size)
 
 		if len(pred_positions)>0:
 			array_projection = np.max(d['array'], axis=0)
 			label_projection = np.max(label, axis=0)*255
-			axs[i,0].imshow(array_projection, cmap='gray')
+			axs[i,0].imshow(array_projection)
 			axs[i,0].set_xticks([])
 			axs[i,0].set_yticks([])
 			axs[i,0].set_title(name, fontsize="xx-large")
+			axs[i,1].set_title("Prediction", fontsize="xx-large")
 			axs[i,1].imshow(label_projection, cmap='gist_heat')
 			axs[i,1].set_xticks([])
 			axs[i,1].set_yticks([])
-			#TODO add zoom in co			
+			#TODO add zoom in co
+
+			# pred_positions.sort()
+			this_pos = list(pred_positions[len(pred_positions)//2])
+			zoom_in = dc.crop3d(label, (32,32,32), center=this_pos)
+			zoom_in_proj = np.max(zoom_in, 0)*255
+			axs[i,2].set_title("Prediction zoom", fontsize="xx-large")
+			axs[i,2].imshow(zoom_in_proj, cmap='gist_heat')
+			axs[i,2].set_xticks([])
+			axs[i,2].set_yticks([])
 
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
-			plot_gr(x, y, d['diameter'], label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,2], fontsize='x-large')
+			plot_gr(x, y, int_diameter, label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,3], fontsize='x-large')
 			x, y = dc.get_gr(pred_positions, 100, 100)
-			plot_gr(x, y, d['diameter'], label=f'Unet n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,2], fontsize='x-large')
+			plot_gr(x, y, int_diameter, label=f'U-net n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,3], fontsize='x-large')
 			if i != real_len-1:
-				axs[i,2].set_xlabel("")
-				axs[i,2].set_xticks([])
-			axs[i,2].legend(loc='lower right', fontsize='large')
+				axs[i,3].set_xlabel("")
+				axs[i,3].set_xticks([])
+			axs[i,3].legend(loc='lower right', fontsize='large')
 
 		else:
 			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
-	fig.set_figwidth(3*4)
+	fig.set_figwidth(4*4)
 	fig.set_figheight(real_len*4)
 	if run: run['grs'].upload(fig)
 	plt.clf()
@@ -424,16 +439,18 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	# biggr fig
 	fig, axs = plt.subplots(1,4)
-	plt.tight_layout(pad=0.1)
+	axs.flatten()
+	plt.tight_layout()
 
 	array_projection = np.max(test_array, axis=0)
 	label_projection = np.max(test_label, axis=0)
 	array_projection = ndimage.zoom(array_projection, 2)
 	label_projection = ndimage.zoom(label_projection, 2)
-	axs[0].imshow(array_projection, cmap='gray')
+	print(array_projection.shape, array_projection.dtype, array_projection.min(), array_projection.max(), array_projection.mean())
+	axs[0].imshow(array_projection)
 	axs[0].set_xticks([])
 	axs[0].set_yticks([])
-	axs[0].set_title("Image", fontsize="large")
+	axs[0].set_title("Simulated image", fontsize="large")
 	axs[1].imshow(label_projection, cmap='gist_heat')
 	axs[1].set_xticks([])
 	axs[1].set_yticks([])
@@ -443,7 +460,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		x, y = dc.get_gr(true_positions, 100, 100)
 		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', axs=axs[2], color='gray')
 		x, y = dc.get_gr(pred_positions, 100, 100)
-		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'Unet n ={len(pred_positions)}', axs=axs[2], color='red')
+		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'U-net n ={len(pred_positions)}', axs=axs[2], color='red')
 		x, y = dc.get_gr(trackpy_pos, 100, 100)
 		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_pos)}', axs=axs[2], color='black')
 		axs[2].legend()
@@ -452,7 +469,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		if run: run['gr'] = 'failed'
  
 	ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	dc.plot_pr(ap, precisions, recalls, thresholds, name='Unet', tag='o-', color='red', axs=axs[3])
+	dc.plot_pr(ap, precisions, recalls, thresholds, name='U-net', tag='o-', color='red', axs=axs[3])
 	tp_ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_pos, diameters=diameters)
 	dc.plot_pr(tp_ap, precisions, recalls, thresholds, name='TP', tag='x-', color='gray', axs=axs[3])
 
@@ -544,7 +561,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	print(losses)
 
 	plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
-	titles		= ['$\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
+	titles		= ['Density $\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
 
 	fig,axs = plt.subplots(2,len(plot_params),  sharey=True)
 	plt.tight_layout(pad=0)
@@ -559,6 +576,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			this_axs[i].set_ylabel("Precision", fontsize='large')
 			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
 			this_axs[i].set_ylim(-0.1,1.1)
+			this_axs[i].legend(["TP", "U-net"])
 
 	this_axs = axs[1,:].flatten()
 	for i, p in enumerate(plot_params):
@@ -758,29 +776,32 @@ def read_real_examples():
 
 	d = {}
 
-	d["A - Emulsion (3μm @ 0.64 φ)"] = {}
-	d["A - Emulsion (3μm @ 0.64 φ)"]['diameter'] = 13
+	d["A - Emulsion (3μm 0.64Φ)"] = {}
+	d["A - Emulsion (3μm 0.64Φ)"]['diameter'] = 13
+	d["A - Emulsion (3μm 0.64Φ)"]['volfrac'] = 0.64
 	array = io.imread('examples/Data/abraham.tiff') 
-	d["A - Emulsion (3μm @ 0.64 φ)"]['array'] = ndimage.zoom(array, 1.5)
-	d["B - Silica (1.2μm @0.2 φ)"] = {}
-	d["B - Silica (1.2μm @0.2 φ)"]['diameter'] = 7
-	d["B - Silica (1.2μm @0.2 φ)"]['array'] = io.imread('examples/Data/katherine.tiff')
-	d["C - Silica (560nm @ 0.55 φ)"] = {}
-	d["C - Silica (560nm @ 0.55 φ)"]['diameter'] = [17,15,15]
-	d["C - Silica (560nm @ 0.55 φ)"]['volfrac'] = 0.58
-	d["C - Silica (560nm @ 0.55 φ)"]['array'] = io.imread('examples/Data/james.tiff')
-	d["D - Silica (560nm @ 0.55 φ)"] = {}
-	d["D - Silica (560nm @ 0.55 φ)"]['diameter'] = [17,15,15]
-	d["D - Silica (560nm @ 0.55 φ)"]['volfrac'] = 0.58
-	d["D - Silica (560nm @ 0.55 φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
-	d["E - Silica (500nm @ 0.50 φ) "] = {}
-	d["E - Silica (500nm @ 0.50 φ) "]['diameter'] = 13
-	d["E - Silica (500nm @ 0.50 φ) "]['volfrac'] = 0.5
-	d["E - Silica (500nm @ 0.50 φ) "]['array'] = io.imread('examples/Data/emily.tiff')
-	d["F - PMMA (315nm @ 0.58 φ)"] = {}
-	d["F - PMMA (315nm @ 0.58 φ)"]['diameter'] = [15,11,11]
-	d["F - PMMA (315nm @ 0.58 φ)"]['volfrac'] = 0.58
-	d["F - PMMA (315nm @ 0.58 φ)"]['array'] = io.imread('examples/Data/levke.tiff')
+	d["A - Emulsion (3μm 0.64Φ)"]['array'] = ndimage.zoom(array, 2.25)
+	d["B - Silica (1.2μm 0.2Φ)"] = {}
+	d["B - Silica (1.2μm 0.2Φ)"]['diameter'] = 7
+	d["B - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
+	array  = io.imread('examples/Data/katherine.tiff')
+	d["B - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(array, 2)
+	d["C - Silica (560nm 0.55Φ)"] = {}
+	d["C - Silica (560nm 0.55Φ)"]['diameter'] = [17,15,15]
+	d["C - Silica (560nm 0.55Φ)"]['volfrac'] = 0.55
+	d["C - Silica (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/james.tiff')
+	d["D - Silica Decon (560nm 0.55Φ)"] = {}
+	d["D - Silica Decon (560nm 0.55Φ)"]['diameter'] = [17,15,15]
+	d["D - Silica Decon (560nm 0.55Φ)"]['volfrac'] = 0.55
+	d["D - Silica Decon (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	# d["E - Silica (500nm 0.50Φ) "] = {}
+	# d["E - Silica (500nm 0.50Φ) "]['diameter'] = 13
+	# d["E - Silica (500nm 0.50Φ) "]['volfrac'] = 0.5
+	# d["E - Silica (500nm 0.50Φ) "]['array'] = io.imread('examples/Data/emily.tiff')
+	d["E - PMMA (315nm 0.58Φ)"] = {}
+	d["E - PMMA (315nm 0.58Φ)"]['diameter'] = [15,11,11]
+	d["E - PMMA (315nm 0.58Φ)"]['volfrac'] = 0.58
+	d["E - PMMA (315nm 0.58Φ)"]['array'] = io.imread('examples/Data/levke.tiff')
 
 	return d
 
