@@ -72,7 +72,7 @@ def _get_results(gt, pred, diameter, threshold,) -> tuple:
 		for i, idx in enumerate(args_desc):
 			gt_idx = gt_idx_thresh[idx]
 			pr_idx = pred_idx_thresh[idx]
-			# If the boxes have not been matched, add them to matches
+			# If the boxes have not been matched already, add them to matches
 			if (gt_idx not in gt_match_idx) and (pr_idx not in pred_match_idx):
 				gt_match_idx.append(gt_idx)
 				pred_match_idx.append(pr_idx)
