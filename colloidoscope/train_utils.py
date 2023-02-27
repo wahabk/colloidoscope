@@ -366,6 +366,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		
 		tp_frac_detected = frac_detected(d['volfrac'], int_diameter/2, len(trackpy_pos), d['array'].size)
 		unet_frac_detected = frac_detected(d['volfrac'], int_diameter/2, len(pred_positions), d['array'].size)
+		fs = 20
 
 		if len(pred_positions)>0:
 			array_projection = np.max(d['array'], axis=0)
@@ -373,8 +374,8 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			axs[i,0].imshow(array_projection)
 			axs[i,0].set_xticks([])
 			axs[i,0].set_yticks([])
-			axs[i,0].set_title(name, fontsize="xx-large")
-			axs[i,1].set_title("Prediction", fontsize="xx-large")
+			axs[i,0].set_title(name, fontsize=fs)
+			axs[i,1].set_title("Prediction", fontsize=fs)
 			axs[i,1].imshow(label_projection, cmap='gist_heat')
 			axs[i,1].set_xticks([])
 			axs[i,1].set_yticks([])
@@ -384,19 +385,21 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			this_pos = list(pred_positions[len(pred_positions)//2])
 			zoom_in = dc.crop3d(label, (32,32,32), center=this_pos)
 			zoom_in_proj = np.max(zoom_in, 0)*255
-			axs[i,2].set_title("Prediction zoom", fontsize="xx-large")
+			axs[i,2].set_title("Prediction zoom", fontsize=fs)
 			axs[i,2].imshow(zoom_in_proj, cmap='gist_heat')
 			axs[i,2].set_xticks([])
 			axs[i,2].set_yticks([])
 
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
-			plot_gr(x, y, int_diameter, label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,3], fontsize='x-large')
+			plot_gr(x, y, int_diameter, label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,3], fontsize=16)
 			x, y = dc.get_gr(pred_positions, 100, 100)
-			plot_gr(x, y, int_diameter, label=f'U-net n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,3], fontsize='x-large')
+			plot_gr(x, y, int_diameter, label=f'U-net n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,3], fontsize=16)
 			if i != real_len-1:
 				axs[i,3].set_xlabel("")
 				axs[i,3].set_xticks([])
 			axs[i,3].legend(loc='lower right', fontsize='large')
+			axs[i,3].set_title("$g(r)$", fontsize=fs)
+
 
 		else:
 			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
@@ -464,6 +467,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		x, y = dc.get_gr(trackpy_pos, 100, 100)
 		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_pos)}', axs=axs[2], color='black')
 		axs[2].legend()
+		axs[2].set_title("$g(r)$", fontsize="xx-large")
 	except:
 		print('Skipping gr() as bad pred')
 		if run: run['gr'] = 'failed'

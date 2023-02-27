@@ -368,7 +368,7 @@ class DeepColloid:
 			if title is None: pass
 			else: plt.title(title)
 			plt.xlabel("Recall")
-			plt.ylabel("Recall")
+			plt.ylabel("Precision")
 			plt.xlim([-0.1,1.1])
 			plt.ylim([-0.1,1.1])
 			plt.legend()
@@ -379,7 +379,7 @@ class DeepColloid:
 			if title is None: pass
 			else: axs.set_title(title)
 			axs.set_xlabel("Recall")
-			axs.set_ylabel("Recall")
+			axs.set_ylabel("Precision")
 			axs.set_xlim([-0.1,1.1])
 			axs.set_ylim([-0.1,1.1])
 			axs.legend()
