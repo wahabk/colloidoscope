@@ -48,16 +48,15 @@ if __name__ == '__main__':
 	canvas_size=(64,64,64)
 	label_size=(64,64,64)
 	
-	dataset_name = 'heatmap_3000' # with sqrt 3
+	dataset_name = 'heatmap_3000_2' # with sqrt 3
 	num_workers = 16
 	heatmap_r = 'radius'
 	n_samples_per_volfrac = 300
 	n_per_type = 100 # for testing
 
-
 	# psf_kernel = 'standard' #TODO make this change psf
 	# read huygens psf
-	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_50xy_50z.tif'
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
 	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
 	psf_kernel = psf_kernel/psf_kernel.max()
@@ -127,12 +126,12 @@ if __name__ == '__main__':
 	label_size=(256,256,256)
 
 	params = dict(
-		r=7,
+		r=6,
 		particle_size=1,
-		snr=3,
-		cnr=3,
-		volfrac=0.55,
-		brightness=125,
+		snr=4,
+		cnr=4,
+		volfrac=0.5,
+		brightness=200,
 	)
 
 	metadata = {
@@ -147,7 +146,7 @@ if __name__ == '__main__':
 	hoomd_positions, diameters = read_gsd(path, 499)
 
 	# read huygens psf
-	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_50xy_50z.tif'
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
 	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
 	psf_kernel = psf_kernel/psf_kernel.max()
@@ -159,16 +158,15 @@ if __name__ == '__main__':
 	final_diameters = final_diameters*params['r']*2
 	dc.write_hdf5(test_dataset_name, 10000, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 
-
 	# Sim for testing
-	canvas_size=(100,100,100)
-	label_size=(100,100,100)
+	canvas_size=(64,64,64)
+	label_size=(64,64,64)
 
 	test_params = ['volfrac','particle_size','r','brightness','cnr','snr',]
 	test_list = [[s]*n_per_type for s in test_params]
 	
 	# read huygens psf
-	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_50xy_50z.tif'
+	psf_path = Path(dataset_path) / 'Real/PSF' / 'psf_stedXY.tif'
 	psf_kernel = dc.read_tif(str(psf_path))
 	psf_kernel = dc.crop3d(psf_kernel, (54,16,16), (27,139,140))
 	psf_kernel = psf_kernel/psf_kernel.max()

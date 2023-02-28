@@ -53,7 +53,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 
 	"""	
 
-	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None, return_metadata=False, label_size:tuple=(64,64,64)):	
+	def __init__(self, dataset_path:str, dataset_name:str, indices:list, transform=None, label_transform=None, return_metadata=False, label_size:tuple=(64,64,64), roi_size:tuple=None):	
 		super().__init__()
 		self.dataset_path = dataset_path
 		self.dataset_name = dataset_name
@@ -62,6 +62,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		self.label_transform = label_transform
 		self.return_metadata = return_metadata
 		self.label_size = label_size
+		self.roi_size = roi_size
 
 
 	def __len__(self):
@@ -79,6 +80,7 @@ class ColloidsDatasetSimulated(torch.utils.data.Dataset):
 		# napari.run()
 
 		y = dc.crop3d(y, self.label_size)
+		if self.roi_size: X = dc.crop3d(X, self.roi_size)
 
 		X = np.array(X/X.max(), dtype=np.float32)
 		y = np.array(y/y.max() , dtype=np.float32)
@@ -218,7 +220,7 @@ class Trainer:
 			self.optimizer.zero_grad()  # zerograd the parameters
 			out = self.model(input_)  # one forward pass
 			# print(out.shape)
-					
+			
 			if isinstance(self.criterion, torch.nn.BCEWithLogitsLoss) == False:
 				out = torch.sigmoid(out)
 				loss = self.criterion(out, target)
@@ -340,7 +342,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 	real_len = len(real_dict)
 	fig, axs = plt.subplots(real_len,4,)
-	plt.tight_layout(pad=0.01)
+	plt.tight_layout(pad=0)
 
 	for i, (name, d) in enumerate(real_dict.items()):
 		print(name, d['array'].shape, i, real_len)
@@ -410,79 +412,80 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	plt.clf()
 
 	
-	# test predict on sim
-	data_dict = dc.read_hdf5(dataset_name, 10000)
-	test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
-	# TODO exclude borders in ap?
-	print(test_array.shape, test_array.dtype, test_array.min(), test_array.max(), test_array.mean())
+	# # test predict on sim
+	# data_dict = dc.read_hdf5(dataset_name, 10000)
+	# test_array, true_positions, label, diameters, metadata = data_dict['image'], data_dict['positions'], data_dict['label'], data_dict['diameters'], data_dict['metadata']
+	# # TODO exclude borders in ap?
+	# print(test_array.shape, test_array.dtype, test_array.min(), test_array.max(), test_array.mean())
 
-	if heatmap_r == "radius":
-		detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-	else:
-		detection_diameter = heatmap_r
-	if post_processing == "log":
-		#TODO add diameters as array
-		r = metadata['params']['r']
-		detection_diameter = r*2
+	# if heatmap_r == "radius":
+	# 	# detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+	# 	detection_diameter = metadata['params']['r']*2 - 1
+	# else:
+	# 	detection_diameter = heatmap_r
+	# if post_processing == "log":
+	# 	#TODO add diameters as array
+	# 	r = metadata['params']['r']
+	# 	detection_diameter = r*2
 
-	df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
-												roiSize=canvas_size, label_size=label_size,
-												debug=True, post_processing=post_processing,  run_on="cuda",
-												remove_borders=True)
-	test_label = np.array(test_label*255, dtype="uint8")
-	print(test_array.shape, test_array.dtype, test_array.min(), test_array.max(), test_array.mean())
-	print(test_label.shape, test_label.dtype, test_label.min(), test_label.max(), test_label.mean())
-	# test_array = (test_array/test_array.max())*255
-	# test_label = (test_label/test_label.max())*255
+	# df, pred_positions, test_label = dc.detect(test_array, diameter = detection_diameter, model=model, 
+	# 											roiSize=canvas_size, label_size=label_size,
+	# 											debug=True, post_processing=post_processing,  run_on="cuda",
+	# 											remove_borders=True)
+	# test_label = np.array(test_label*255, dtype="uint8")
+	# print(test_array.shape, test_array.dtype, test_array.min(), test_array.max(), test_array.mean())
+	# print(test_label.shape, test_label.dtype, test_label.min(), test_label.max(), test_label.mean())
+	# # test_array = (test_array/test_array.max())*255
+	# # test_label = (test_label/test_label.max())*255
 
-	trackpy_pos, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
+	# trackpy_pos, df = dc.run_trackpy(test_array, dc.round_up_to_odd(metadata['params']['r']*2))
 
-	true_positions, diameters = exclude_borders(true_positions, canvas_size=test_array.shape, pad=metadata['params']['r']*1, diameters=diameters)
-	trackpy_pos = exclude_borders(trackpy_pos, test_array.shape, pad=metadata['params']['r']*1)
+	# true_positions, diameters = exclude_borders(true_positions, canvas_size=test_array.shape, pad=metadata['params']['r']*1, diameters=diameters)
+	# trackpy_pos = exclude_borders(trackpy_pos, test_array.shape, pad=metadata['params']['r']*1)
 
-	# biggr fig
-	fig, axs = plt.subplots(1,4)
-	axs.flatten()
-	plt.tight_layout()
+	# # biggr fig
+	# fig, axs = plt.subplots(1,4)
+	# axs.flatten()
+	# plt.tight_layout()
 
-	array_projection = np.max(test_array, axis=0)
-	label_projection = np.max(test_label, axis=0)
-	array_projection = ndimage.zoom(array_projection, 2)
-	label_projection = ndimage.zoom(label_projection, 2)
-	print(array_projection.shape, array_projection.dtype, array_projection.min(), array_projection.max(), array_projection.mean())
-	axs[0].imshow(array_projection)
-	axs[0].set_xticks([])
-	axs[0].set_yticks([])
-	axs[0].set_title("Simulated image", fontsize="large")
-	axs[1].imshow(label_projection, cmap='gist_heat')
-	axs[1].set_xticks([])
-	axs[1].set_yticks([])
-	axs[1].set_title("Prediction", fontsize="large")
+	# array_projection = np.max(test_array, axis=0)
+	# label_projection = np.max(test_label, axis=0)
+	# # array_projection = ndimage.zoom(array_projection, 2)
+	# # label_projection = ndimage.zoom(label_projection, 2)
+	# print(array_projection.shape, array_projection.dtype, array_projection.min(), array_projection.max(), array_projection.mean())
+	# axs[0].imshow(array_projection)
+	# axs[0].set_xticks([])
+	# axs[0].set_yticks([])
+	# axs[0].set_title("Simulated image", fontsize="large")
+	# axs[1].imshow(label_projection, cmap='gist_heat')
+	# axs[1].set_xticks([])
+	# axs[1].set_yticks([])
+	# axs[1].set_title("Prediction", fontsize="large")
 
-	try:
-		x, y = dc.get_gr(true_positions, 100, 100)
-		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', axs=axs[2], color='gray')
-		x, y = dc.get_gr(pred_positions, 100, 100)
-		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'U-net n ={len(pred_positions)}', axs=axs[2], color='red')
-		x, y = dc.get_gr(trackpy_pos, 100, 100)
-		plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_pos)}', axs=axs[2], color='black')
-		axs[2].legend()
-		axs[2].set_title("$g(r)$", fontsize="xx-large")
-	except:
-		print('Skipping gr() as bad pred')
-		if run: run['gr'] = 'failed'
+	# try:
+	# 	x, y = dc.get_gr(true_positions, 100, 100)
+	# 	plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'True n ={len(true_positions)}', axs=axs[2], color='gray')
+	# 	x, y = dc.get_gr(pred_positions, 100, 100)
+	# 	plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'U-net n ={len(pred_positions)}', axs=axs[2], color='red')
+	# 	x, y = dc.get_gr(trackpy_pos, 100, 100)
+	# 	plot_gr(x, y, diameter=(metadata['params']['r']*2), label=f'TP n ={len(trackpy_pos)}', axs=axs[2], color='black')
+	# 	axs[2].legend()
+	# 	axs[2].set_title("$g(r)$", fontsize="xx-large")
+	# except:
+	# 	print('Skipping gr() as bad pred')
+	# 	if run: run['gr'] = 'failed'
  
-	ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
-	dc.plot_pr(ap, precisions, recalls, thresholds, name='U-net', tag='o-', color='red', axs=axs[3])
-	tp_ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_pos, diameters=diameters)
-	dc.plot_pr(tp_ap, precisions, recalls, thresholds, name='TP', tag='x-', color='gray', axs=axs[3])
+	# ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, pred_positions, diameters=diameters)
+	# dc.plot_pr(ap, precisions, recalls, thresholds, name='U-net', tag='o-', color='red', axs=axs[3])
+	# tp_ap, 	precisions, recalls, thresholds = dc.average_precision(true_positions, trackpy_pos, diameters=diameters)
+	# dc.plot_pr(tp_ap, precisions, recalls, thresholds, name='TP', tag='x-', color='gray', axs=axs[3])
 
-	fig.set_figwidth(12)
-	fig.set_figheight(2)
-	if run: run['AP'] = ap
-	if run: run['bigGR'].upload(fig)
+	# fig.set_figwidth(12)
+	# fig.set_figheight(2)
+	# if run: run['AP'] = ap
+	# if run: run['bigGR'].upload(fig)
 
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, transform=None) 
+	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, roi_size=canvas_size, transform=None) 
 	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
 	losses = []
@@ -780,32 +783,32 @@ def read_real_examples():
 
 	d = {}
 
-	d["A - Emulsion (3μm 0.64Φ)"] = {}
-	d["A - Emulsion (3μm 0.64Φ)"]['diameter'] = 13
-	d["A - Emulsion (3μm 0.64Φ)"]['volfrac'] = 0.64
-	array = io.imread('examples/Data/abraham.tiff') 
-	d["A - Emulsion (3μm 0.64Φ)"]['array'] = ndimage.zoom(array, 2.25)
-	d["B - Silica (1.2μm 0.2Φ)"] = {}
-	d["B - Silica (1.2μm 0.2Φ)"]['diameter'] = 7
-	d["B - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
-	array  = io.imread('examples/Data/katherine.tiff')
-	d["B - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(array, 2)
-	d["C - Silica (560nm 0.55Φ)"] = {}
-	d["C - Silica (560nm 0.55Φ)"]['diameter'] = [17,15,15]
-	d["C - Silica (560nm 0.55Φ)"]['volfrac'] = 0.55
-	d["C - Silica (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/james.tiff')
-	d["D - Silica Decon (560nm 0.55Φ)"] = {}
-	d["D - Silica Decon (560nm 0.55Φ)"]['diameter'] = [17,15,15]
-	d["D - Silica Decon (560nm 0.55Φ)"]['volfrac'] = 0.55
-	d["D - Silica Decon (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d["A - Silica (560nm 0.55Φ)"] = {}
+	d["A - Silica (560nm 0.55Φ)"]['diameter'] = [17,15,15]
+	d["A - Silica (560nm 0.55Φ)"]['volfrac'] = 0.55
+	d["A - Silica (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/james.tiff')
+	d["B - Silica Decon (560nm 0.55Φ)"] = {}
+	d["B - Silica Decon (560nm 0.55Φ)"]['diameter'] = [17,15,15]
+	d["B - Silica Decon (560nm 0.55Φ)"]['volfrac'] = 0.55
+	d["B - Silica Decon (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
 	# d["E - Silica (500nm 0.50Φ) "] = {}
 	# d["E - Silica (500nm 0.50Φ) "]['diameter'] = 13
 	# d["E - Silica (500nm 0.50Φ) "]['volfrac'] = 0.5
 	# d["E - Silica (500nm 0.50Φ) "]['array'] = io.imread('examples/Data/emily.tiff')
-	d["E - PMMA (315nm 0.58Φ)"] = {}
-	d["E - PMMA (315nm 0.58Φ)"]['diameter'] = [15,11,11]
-	d["E - PMMA (315nm 0.58Φ)"]['volfrac'] = 0.58
-	d["E - PMMA (315nm 0.58Φ)"]['array'] = io.imread('examples/Data/levke.tiff')
+	d["C - PMMA (315nm 0.58Φ)"] = {}
+	d["C - PMMA (315nm 0.58Φ)"]['diameter'] = [15,11,11]
+	d["C - PMMA (315nm 0.58Φ)"]['volfrac'] = 0.58
+	d["C - PMMA (315nm 0.58Φ)"]['array'] = io.imread('examples/Data/levke.tiff')
+	d["D - Emulsion (3μm 0.64Φ)"] = {}
+	d["D - Emulsion (3μm 0.64Φ)"]['diameter'] = 15
+	d["D - Emulsion (3μm 0.64Φ)"]['volfrac'] = 0.64
+	array = io.imread('examples/Data/abraham.tiff') 
+	d["D - Emulsion (3μm 0.64Φ)"]['array'] = ndimage.zoom(array, 2.25)
+	d["E - Silica (1.2μm 0.2Φ)"] = {}
+	d["E - Silica (1.2μm 0.2Φ)"]['diameter'] = 15
+	d["E - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
+	array  = io.imread('examples/Data/katherine.tiff')
+	d["E - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(array, 2)
 
 	return d
 
@@ -831,7 +834,7 @@ class DiceLoss(torch.nn.Module):
     def forward(self, inputs, targets, smooth=1):
         
         #comment out if your model contains a sigmoid or equivalent activation layer
-        # inputs = torch.sigmoid(inputs)       
+        inputs = torch.sigmoid(inputs)       
         
         #flatten label and prediction tensors
         inputs = inputs.view(-1)

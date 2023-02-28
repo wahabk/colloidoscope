@@ -223,9 +223,9 @@ def detect(input_array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.M
 
 				input_tensor.to(device)
 				out = model(input_tensor)  # send through model/network
-				out_sigmoid = torch.sigmoid(out)  # perform sigmoid on output because logits
+				out = torch.sigmoid(out)  # perform sigmoid on output because logits
 
-				aggregator.append_batch(out_sigmoid, locations)
+				aggregator.append_batch(out, locations)
 
 		# post process to numpy array
 		output_tensor = aggregator.get_output_tensor()
