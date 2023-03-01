@@ -64,6 +64,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
 	# label_size = params['roiSize']
+	# label_size = [60,60,60]
 	label_size = [64,64,64]
 
 	transforms_affine = tio.Compose([
@@ -83,7 +84,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	])
 
 	# create a training data loader
-	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None, label_size=label_size) 
+	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=transforms_affine, label_size=label_size) 
 	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
 	# create a validation data loader
 	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data'], label_size=label_size) 
@@ -101,18 +102,18 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 
 	print(f"channels {channels}, strides {strides}")
 
-	model = monai.networks.nets.UNet(
-		spatial_dims=3,
-		in_channels=1,
-		out_channels=params['n_classes'],
-		channels=channels,
-		strides=strides,
-		kernel_size=7,
-		num_res_units=params["n_blocks"],
-		# act=params['activation'],
-		# norm=params["norm"],
-		dropout=params["dropout"]
-	)
+	# model = monai.networks.nets.UNet(
+	# 	spatial_dims=3,
+	# 	in_channels=1,
+	# 	out_channels=params['n_classes'],
+	# 	channels=channels,
+	# 	strides=strides,
+	# 	kernel_size=7,
+	# 	num_res_units=params["n_blocks"],
+	# 	# act=params['activation'],
+	# 	# norm=params["norm"],
+	# 	dropout=params["dropout"]
+	# )
 
 	# model = monai.networks.nets.DenseNet(
 	# 	spatial_dims=3,
@@ -121,17 +122,17 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	# 	dropout_prob = params["dropout"],
 	# )
 
-	# model = monai.networks.nets.AttentionUnet(
-	# 	spatial_dims=3,
-	# 	in_channels=1,
-	# 	out_channels=params['n_classes'],
-	# 	channels=channels,
-	# 	strides=strides,
-	# 	kernel_size=7,
-	# 	# up_kernel_size=3,
-	# 	dropout=params["dropout"],
-	# 	padding='valid',
-	# )
+	model = monai.networks.nets.AttentionUnet(
+		spatial_dims=3,
+		in_channels=1,
+		out_channels=params['n_classes'],
+		channels=channels,
+		strides=strides,
+		kernel_size=7,
+		# up_kernel_size=3,
+		dropout=params["dropout"],
+		padding='same',
+	)
 
 	"""
 	if padding mode is valid use roisize+/-4
@@ -207,7 +208,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'heatmap_3000'
+	dataset_name = 'heatmap_3000_2'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,2999))
@@ -217,22 +218,29 @@ if __name__ == "__main__":
 
 	train_data = all_data[0:2600]
 	val_data = all_data[2600:2900]
-	test_data = test_data[:100]
+	# test_data = test_data[:100]
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'unet+SIG'
-	# save = 'output/weights/attention_unet_202206.pt'  from jup and trying to fix testing f78f094 
-	# save = 'output/weights/attention_unet_202211.pt' from trying log diameters, saving weights 7c15929
-	save = False
-	post_processing = "tp"
+	# name = '1. unet+SIG+l1+tp'
+	# name = '2. att+SIG+l1+tp'
+	# name = '3. unet+SIG+l1+log'
+	name = '6. att+SIG+l1+tp+same+affine'
+	# name = '5. att+SIG+l1+log+same'
+	#TODO test lin/sig with BCE
+	# save = 'output/weights/attention_unet_202206.pt'  #from jup and trying to fix testing f78f094 
+	# save = 'output/weights/attention_unet_202211.pt' #from trying log diameters, saving weights 7c15929
+	save = 'output/weights/attention_unet_202302.pt' #01/03/2022
+
+	# save = False
+	post_processing = "log"
 
 	config = {
 		"lr": 0.002165988,
 		"batch_size": 16,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 25,
+		"epochs": 6,
 		"start_filters": 32,
 		"activation": "SWISH",
 		"dropout": 0.2,

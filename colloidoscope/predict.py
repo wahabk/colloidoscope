@@ -238,16 +238,24 @@ def detect(input_array:np.ndarray, diameter:Union[int, list]=1, model:torch.nn.M
 		if post_processing == "tp":
 			positions = run_trackpy(result*255, diameter=diameter)
 		elif post_processing == "log":
-			if isinstance(diameter, list): diameter = np.array(diameter)
-			min_sigma = (diameter/2)/math.sqrt(3)
-			max_sigma = (diameter*2)/math.sqrt(3)
+			if isinstance(diameter, (np.ndarray, list)): 
+				this_diameter = diameter[0]
+			else:  
+				this_diameter = diameter
+			min_sigma = (this_diameter/2)/math.sqrt(3)
+			max_sigma = (this_diameter*2)/math.sqrt(3)
 			positions = blob_log(result*255, min_sigma=min_sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
 		
 		if remove_borders: 
-			if isinstance(diameter, (np.ndarray, list)): diameter = diameter[0]
-			positions = exclude_borders(positions, result.shape, pad=diameter/2)
+			if isinstance(diameter, (np.ndarray, list)): 
+				this_diameter = diameter[0]
+			else:  
+				this_diameter = diameter			
+			positions = exclude_borders(positions, result.shape, pad=this_diameter/2)
 
-		if len(positions)==0: positions = [[0,0,0]];  print("\n\n\nNOT DETECTING PARTICLES\n\n\n")
+		if len(positions)==0: 
+			positions = [[0,0,0]]
+			print("\n\n\nWARNING NOT DETECTING PARTICLES\n\n\n")
   
 		all_positions.append(positions)
 

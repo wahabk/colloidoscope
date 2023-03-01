@@ -54,9 +54,10 @@ if __name__ == '__main__':
 
 	ims = []
 	for i, h in enumerate(heatmap_rs):
+		print(h)
 		canvas, label, final_centers, final_diameters = dc.simulate(
 					canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
-					params['snr'], diameters=diameters, make_label=True, label_size=label_size, heatmap_r=h, 
+					params['snr'], diameters=diameters, make_label=True, heatmap_r=h, 
 					num_workers=num_workers, psf_kernel=psf_kernel)
 
 		if i == 0:
@@ -70,5 +71,8 @@ if __name__ == '__main__':
 		# both = np.concatenate([im_proj, lab_proj], axis=0)
 		ims.append(lab_proj)
 	
-	all_ims = np.concatenate(ims, axis=1)
-	plt.imsave("output/figs/sim_labels.png", all_ims)
+	img = ims[0]
+	labels = np.concatenate(ims[1:], axis=1)
+	plt.imsave("output/figs/sim_labels.png", labels, cmap='gist_heat')
+	plt.imsave("output/figs/sim_labels_img.png", img)
+

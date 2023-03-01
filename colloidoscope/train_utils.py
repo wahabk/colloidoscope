@@ -385,6 +385,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 
 			# pred_positions.sort()
 			this_pos = list(pred_positions[len(pred_positions)//2])
+			print(this_pos)
 			zoom_in = dc.crop3d(label, (32,32,32), center=this_pos)
 			zoom_in_proj = np.max(zoom_in, 0)*255
 			axs[i,2].set_title("Prediction zoom", fontsize=fs)
@@ -393,14 +394,14 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			axs[i,2].set_yticks([])
 
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
-			plot_gr(x, y, int_diameter, label=f'TP n ={len(trackpy_pos)}(~{tp_frac_detected*100:.0f}%)', color='gray', axs=axs[i,3], fontsize=16)
+			plot_gr(x, y, int_diameter, label=f'TP n={len(trackpy_pos)}', color='gray', axs=axs[i,3], fontsize=16)
 			x, y = dc.get_gr(pred_positions, 100, 100)
-			plot_gr(x, y, int_diameter, label=f'U-net n ={len(pred_positions)}(~{unet_frac_detected*100:.0f}%)', color='red', axs=axs[i,3], fontsize=16)
+			plot_gr(x, y, int_diameter, label=f'U-net n={len(pred_positions)}', color='red', axs=axs[i,3], fontsize=16)
 			if i != real_len-1:
 				axs[i,3].set_xlabel("")
 				axs[i,3].set_xticks([])
-			axs[i,3].legend(loc='lower right', fontsize='large')
-			axs[i,3].set_title("$g(r)$", fontsize=fs)
+			axs[i,3].legend(loc='lower right', fontsize=14)
+			axs[i,3].set_title(f"$g(r)$ TP (~{tp_frac_detected*100:.0f}%) U-net (~{unet_frac_detected*100:.0f}%)", fontsize=fs)
 
 
 		else:

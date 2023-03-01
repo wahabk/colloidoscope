@@ -169,9 +169,10 @@ if __name__ == '__main__':
 		print("SNR", snr)
 
 		axs[i].hist(x=[foreground, background], bins=50, label=[f'F={f_mean:.0f}±{f_std:.1f}', f'B={b_mean:.0f}±{b_std:.1f}'], density=True)
-		axs[i].set_title(f'{name}, cnr = {cnr:.1f}, snr = {snr:.1f}', fontsize=10, rotation=7.5)
+		axs[i].set_title(f'CNR = {cnr:.1f}, SNR = {snr:.1f}', fontsize=12)
 		axs[i].set_xlabel("Brightness")
-		axs[i].set_xlabel("Freq.")
+		axs[i].set_ylabel("Frequency")
+		axs[i].set_yticks([])
 		axs[i].legend(fontsize=8)
 	fig.set_figwidth(12)
 	fig.set_figheight(2)

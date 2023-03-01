@@ -84,7 +84,7 @@ if __name__ == '__main__':
  
 	real_len = len(real_dict)
 	fig, axs = plt.subplots(1, real_len)
-	plt.tight_layout()
+	plt.tight_layout(pad=0)
  
 	for i, (name, d) in enumerate(real_dict.items()):
 		array = d['array']
@@ -98,8 +98,9 @@ if __name__ == '__main__':
 		axs[i].hist(array, bins=50)
 		axs[i].set_xlabel('Brightness', fontsize=12)
 		axs[i].set_ylabel('Frequency', fontsize=12)
+		axs[i].set_yticks([])
 		axs[i].set_xlim(0,255)
-		axs[i].set_title(f'{name} SNR = {snr:.2f}', fontsize=10, rotation=7.5)
+		axs[i].set_title(f'SNR = {snr:.2f}', fontsize=12)
 		# ax.legend(loc='upper left')
 	fig.set_figwidth(12)
 	fig.set_figheight(2)
