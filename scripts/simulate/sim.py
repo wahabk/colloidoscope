@@ -45,12 +45,12 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(64,64,64)
-	label_size=(64,64,64)
+	canvas_size=(100,100,100)
+	label_size=(100,100,100)
 	
-	dataset_name = 'heatmap_3000_2' # with sqrt 3
+	dataset_name = 'heatmap_3000_3'
 	num_workers = 16
-	heatmap_r = 'radius'
+	heatmap_r = 'radius' #'seg-1'
 	n_samples_per_volfrac = 300
 	n_per_type = 100 # for testing
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 			types = {
 			'very small' 	: {'r' : randrange(4,6), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
 			'medium' 		: {'r' : randrange(7,8), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
-			'large' 		: {'r' : randrange(8,16), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
+			'large' 		: {'r' : randrange(8,14), 	'particle_size' : uniform(0.01,1), 'cnr' : uniform(2, 10),  'brightness' : random.randrange(30, 200), 'snr' : uniform(2,10)},
 			}
 
 			keys = list(types.keys())
@@ -159,8 +159,8 @@ if __name__ == '__main__':
 	dc.write_hdf5(test_dataset_name, 10000, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
 
 	# Sim for testing
-	canvas_size=(64,64,64)
-	label_size=(64,64,64)
+	canvas_size=(100,100,100)
+	label_size=(100,100,100)
 
 	test_params = ['volfrac','particle_size','r','brightness','cnr','snr',]
 	test_list = [[s]*n_per_type for s in test_params]
@@ -179,7 +179,7 @@ if __name__ == '__main__':
 			index = (n_per_type*i)+n
 
 			types = {
-				'r' 			: {'r' : randrange(4,16), 	'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
+				'r' 			: {'r' : randrange(4,14), 	'particle_size' : 1, 				'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'particle_size' : {'r' : 10, 				'particle_size' : uniform(0.1,1), 	'cnr' : 5,							'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'cnr' 			: {'r' : 10, 				'particle_size' : 1, 				'cnr' : uniform(0.1, 10),			'brightness' : 255, 						'snr' : 5, 						'volfrac' : 0.3},
 				'brightness' 	: {'r' : 10, 				'particle_size' : 1, 				'cnr' : 5,							'brightness' : randrange(10, 255), 			'snr' : 5, 						'volfrac' : 0.3},

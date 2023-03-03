@@ -800,16 +800,16 @@ def read_real_examples():
 	d["C - PMMA (315nm 0.58Φ)"]['diameter'] = [15,11,11]
 	d["C - PMMA (315nm 0.58Φ)"]['volfrac'] = 0.58
 	d["C - PMMA (315nm 0.58Φ)"]['array'] = io.imread('examples/Data/levke.tiff')
-	d["D - Emulsion (3μm 0.64Φ)"] = {}
-	d["D - Emulsion (3μm 0.64Φ)"]['diameter'] = 15
-	d["D - Emulsion (3μm 0.64Φ)"]['volfrac'] = 0.64
-	array = io.imread('examples/Data/abraham.tiff') 
-	d["D - Emulsion (3μm 0.64Φ)"]['array'] = ndimage.zoom(array, 2.25)
-	d["E - Silica (1.2μm 0.2Φ)"] = {}
-	d["E - Silica (1.2μm 0.2Φ)"]['diameter'] = 15
-	d["E - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
+	# d["D - Emulsion (3μm 0.64Φ)"] = {}
+	# d["D - Emulsion (3μm 0.64Φ)"]['diameter'] = 15
+	# d["D - Emulsion (3μm 0.64Φ)"]['volfrac'] = 0.64
+	# array = io.imread('examples/Data/abraham.tiff') 
+	# d["D - Emulsion (3μm 0.64Φ)"]['array'] = ndimage.zoom(array, 2.25)
+	d["D - Silica (1.2μm 0.2Φ)"] = {}
+	d["D - Silica (1.2μm 0.2Φ)"]['diameter'] = 15
+	d["D - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
 	array  = io.imread('examples/Data/katherine.tiff')
-	d["E - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(array, 2)
+	d["D - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(array, 2)
 
 	return d
 

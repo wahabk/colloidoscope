@@ -225,7 +225,7 @@ if __name__ == "__main__":
 	# name = '1. unet+SIG+l1+tp'
 	# name = '2. att+SIG+l1+tp'
 	# name = '3. unet+SIG+l1+log'
-	name = '6. att+SIG+l1+tp+same+affine'
+	name = '7. att+SIG+l1+tp+same+save'
 	# name = '5. att+SIG+l1+log+same'
 	#TODO test lin/sig with BCE
 	# save = 'output/weights/attention_unet_202206.pt'  #from jup and trying to fix testing f78f094 
