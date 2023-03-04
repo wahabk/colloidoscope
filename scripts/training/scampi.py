@@ -40,7 +40,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 		api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIzMzZlNGZhMi1iMGVkLTQzZDEtYTI0MC04Njk1YmJmMThlYTQifQ==",
 	)
 	params = dict(
-		roiSize = (64,64,64),
+		roiSize = (100,100,100),
 		train_data = train_data,
 		val_data = val_data,
 		test_data = test_data,
@@ -64,8 +64,8 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
 	# label_size = params['roiSize']
-	# label_size = [60,60,60]
-	label_size = [64,64,64]
+	label_size = [100,100,100]
+	# label_size = [64,64,64]
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
@@ -208,7 +208,7 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'heatmap_3000_2'
+	dataset_name = 'heatmap_3000_3'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
 	all_data = list(range(1,2999))
@@ -222,17 +222,17 @@ if __name__ == "__main__":
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	# name = '1. unet+SIG+l1+tp'
+	name = '3. att+log'
 	# name = '2. att+SIG+l1+tp'
 	# name = '3. unet+SIG+l1+log'
-	name = '7. att+SIG+l1+tp+same+save'
+	# name = '7. att+SIG+l1+tp+same+save'
 	# name = '5. att+SIG+l1+log+same'
 	#TODO test lin/sig with BCE
+	save = False
 	# save = 'output/weights/attention_unet_202206.pt'  #from jup and trying to fix testing f78f094 
 	# save = 'output/weights/attention_unet_202211.pt' #from trying log diameters, saving weights 7c15929
-	save = 'output/weights/attention_unet_202302.pt' #01/03/2022
+	# save = 'output/weights/attention_unet_202302.pt' #01/03/2022
 
-	# save = False
 	post_processing = "log"
 
 	config = {
@@ -240,9 +240,9 @@ if __name__ == "__main__":
 		"batch_size": 16,
 		"n_blocks": 2,
 		"norm": 'INSTANCE',
-		"epochs": 6,
+		"epochs": 5,
 		"start_filters": 32,
-		"activation": "SWISH",
+		"activation": "RELU",
 		"dropout": 0.2,
 		"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
 	}
