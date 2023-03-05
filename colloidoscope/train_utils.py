@@ -384,7 +384,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 			#TODO add zoom in co
 
 			# pred_positions.sort()
-			this_pos = list(pred_positions[len(pred_positions)//2])
+			this_pos = list(pred_positions[len(pred_positions)//4])
 			print(this_pos)
 			zoom_in = dc.crop3d(label, (32,32,32), center=this_pos)
 			zoom_in_proj = np.max(zoom_in, 0)*255

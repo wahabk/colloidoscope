@@ -13,6 +13,7 @@ import copy
 import monai
 import math
 from pathlib2 import Path
+from functools import partial
 
 print(os.cpu_count())
 print ('Current cuda device ', torch.cuda.current_device())
@@ -222,7 +223,7 @@ if __name__ == "__main__":
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = '3. att+log'
+	name = 'search att unet'
 	# name = '2. att+SIG+l1+tp'
 	# name = '3. unet+SIG+l1+log'
 	# name = '7. att+SIG+l1+tp+same+save'
@@ -235,20 +236,61 @@ if __name__ == "__main__":
 
 	post_processing = "log"
 
+	# config = {
+	# 	"lr": 0.002165988,
+	# 	"batch_size": 16,
+	# 	"n_blocks": 2,
+	# 	"norm": 'INSTANCE',
+	# 	"epochs": 5,
+	# 	"start_filters": 32,
+	# 	"activation": "RELU",
+	# 	"dropout": 0.2,
+	# 	"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+	# }
+
+	# work_dir = Path().parent.resolve()
+
+	# train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+	# 			train_data=train_data, val_data=val_data, test_data=test_data, 
+	# 			save=save, tuner=False, device_ids=[0,], work_dir=work_dir, post_processing=post_processing)
+
+
+
 	config = {
-		"lr": 0.002165988,
-		"batch_size": 16,
+		"lr": tune.loguniform(0.01, 0.0001),
+		"batch_size": tune.choice([2,4,8,16,32]),
 		"n_blocks": 2,
-		"norm": 'INSTANCE',
+		"norm": "BATCH",
 		"epochs": 5,
 		"start_filters": 32,
 		"activation": "RELU",
-		"dropout": 0.2,
-		"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+		"dropout": tune.choice([0,0.1,0.2]),
+		"loss_function": torch.nn.L1Loss()#tune.choice([torch.nn.L1Loss()]) #BinaryFocalLoss(alpha=1.5, gamma=0.5), 
 	}
 
+	device_ids = [0,]
+	num_samples = 24
+	max_num_epochs = 10
+	gpus_per_trial = 1
+
+	# the scheduler will terminate badly performing trials
+	# scheduler = ASHAScheduler(
+	# 	metric="val_loss",
+	# 	mode="min",
+	# 	max_t=max_num_epochs,
+	# 	grace_period=1,
+	# 	reduction_factor=2)
+
+	# print(f"LOCAL PATH {Path().parent.resolve()} \n\n")
 	work_dir = Path().parent.resolve()
 
-	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+	result = tune.run(
+		partial(train, name=name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, 
-				save=save, tuner=False, device_ids=[0,], work_dir=work_dir, post_processing=post_processing)
+				save=save, tuner=False, device_ids=[0,], work_dir=work_dir, post_processing=post_processing),
+		resources_per_trial={"cpu": 16, "gpu": 1},
+		config=config,
+		num_samples=num_samples,
+		scheduler=None,
+		checkpoint_at_end=False,
+		local_dir=f'{dataset_path}/ray_results/') # Path().parent.resolve()/'ray_results'
