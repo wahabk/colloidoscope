@@ -4,7 +4,7 @@ The hdf5 file contains all 1000 64x64x64 scans (x’s), labels, true positions o
 To read this data we recommend using DeepColloid.read_hdf5()
 The metadata parameters are as follows:
     • volfrac: volume fraction or density of spheres in the volume (usually between 0.1 and 0.5)
-    • r: radius in pixels in the image
+    • r: apparent radius in pixels in the image
     • particle_size: we use this to define how small the particles would look through the microscope 
       (between 0.1 and 0.5 micrometers), this determines how bad the point spread function is in the simulation.
 	  This combined with `r` provides the nm/pixel of the image
