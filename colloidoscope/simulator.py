@@ -85,7 +85,7 @@ def draw_spheres_sliced(canvas, centers, radii, brightnesses=None, is_label=Fals
 		is_seg = False
 		if heatmap_r == 'radius'			: heatmap_radii = radii 
 		elif isinstance(heatmap_r, int)		: heatmap_radii = [heatmap_r for i in radii]
-		elif 'seg' in heatmap_r 			: heatmap_radii = [heatmap_r[-1] for i in radii]; is_seg = True
+		elif 'seg' in heatmap_r 			: heatmap_radii = [int(heatmap_r[-1]) for i in radii]; is_seg = True
 		else: raise Exception('invalid heatmap type')
 		args = [(s, z, heatmap_radii, centers, is_seg) for z, s in enumerate(canvas)]
 
@@ -181,6 +181,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	particle size in um
 
 	heatmap_r can be 'radius' to equal the particle or can be a constant int
+	or 'seg-<n>' where n is pixels mask smaller than particle
 
 	This will only work for a perfect cube eg 64x64x64 not cuboids
 

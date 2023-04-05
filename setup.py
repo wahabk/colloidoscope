@@ -3,12 +3,16 @@ from setuptools import setup, find_packages
 setup(
        # the name must match the folder name 'verysimplemodule'
         name="colloidoscope", 
-        version='0.1.0',
+        version='0.1.1',
         author="Abdelwahab Kawafi",
         author_email="<akawafi3@gmail.com>",
         description='My PhD project to track colloids using confocal and deep learning.',
         # long_description=LONG_DESCRIPTION,
         packages=find_packages(),
+        include_package_data=True,
+        package_dir={'colloidoscope': 'colloidoscope'},
+        package_data={'colloidoscope': ['attention_unet_202302.pt']},
+        # data_files=[('colloidoscope', ['colloidoscope/attention_unet_202302.pt'])],
         install_requires=[
                 'numpy==1.20.0',
                 'numba',

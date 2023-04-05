@@ -27,7 +27,7 @@ class DeepColloid:
 		"""Detect 3d spheres from confocal microscopy
 
 		Args:
-			array (np.ndarray): Image for particles to be detected from.
+			array (np.ndarray): Image for particles to be detected from. The shape can be 3 for a single volume (X,Y,Z) or 4 for a time series (T,X,Y,Z). Make sure the time axis is first.
 			diameter (Union[int, list], optional): Diameter of particles to feed to TrackPy, can be int or list the same length as image dimensions. Defaults to 5. If post_processing == str(max) this has to be int it will be min_distance.
 			model (torch.nn.Module, optional): Pytorch model. Defaults to None.
 			weights_path (Union[str, Path], optional): Path to model weights file. Defaults to None.
@@ -183,7 +183,7 @@ class DeepColloid:
 		return volfrac
 
 	def round_up_to_odd(self, f):
-		return int(np.ceil(f) // 2 * 2 + 1) # // is floor division
+		return int(f // 2 * 2 + 1) # // is floor division
 
 	def get_gr(self, positions, cutoff, bins, minimum_gas_number=1e4):
 		# from yushi yang
@@ -368,7 +368,7 @@ class DeepColloid:
 			if title is None: pass
 			else: plt.title(title)
 			plt.xlabel("Recall")
-			plt.ylabel("Recall")
+			plt.ylabel("Precision")
 			plt.xlim([-0.1,1.1])
 			plt.ylim([-0.1,1.1])
 			plt.legend()
@@ -379,7 +379,7 @@ class DeepColloid:
 			if title is None: pass
 			else: axs.set_title(title)
 			axs.set_xlabel("Recall")
-			axs.set_ylabel("Recall")
+			axs.set_ylabel("Precision")
 			axs.set_xlim([-0.1,1.1])
 			axs.set_ylim([-0.1,1.1])
 			axs.legend()

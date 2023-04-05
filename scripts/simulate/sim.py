@@ -4,7 +4,7 @@ The hdf5 file contains all 1000 64x64x64 scans (x’s), labels, true positions o
 To read this data we recommend using DeepColloid.read_hdf5()
 The metadata parameters are as follows:
     • volfrac: volume fraction or density of spheres in the volume (usually between 0.1 and 0.5)
-    • r: radius in pixels in the image
+    • r: apparent radius in pixels in the image
     • particle_size: we use this to define how small the particles would look through the microscope 
       (between 0.1 and 0.5 micrometers), this determines how bad the point spread function is in the simulation.
 	  This combined with `r` provides the nm/pixel of the image
@@ -30,8 +30,6 @@ import math
 from scipy.signal import convolve2d
 from pathlib2 import Path
 
-
-
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
 	side_projection = np.max(scan, axis=1)
@@ -47,15 +45,14 @@ if __name__ == '__main__':
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(64,64,64)
-	label_size=(64,64,64)
+	canvas_size=(100,100,100)
+	label_size=(100,100,100)
 	
-	dataset_name = 'heatmap_3400' # with sqrt 3
+	dataset_name = 'heatmap_3000_3'
 	num_workers = 16
-	heatmap_r = 'radius'
-	n_samples_per_volfrac = 490
+	heatmap_r = 'radius' #'seg-1'
+	n_samples_per_volfrac = 300
 	n_per_type = 100 # for testing
-
 
 	# psf_kernel = 'standard' #TODO make this change psf
 	# read huygens psf
@@ -65,7 +62,7 @@ if __name__ == '__main__':
 	psf_kernel = psf_kernel/psf_kernel.max()
 
 	# each volfrac has 500, make 200 for training and validation and rest for testing
-	phis = np.array([[round(x, 2)]*n_samples_per_volfrac for x in np.linspace(0.25,0.55,7)])
+	phis = np.array([[round(x, 2)]*n_samples_per_volfrac for x in np.linspace(0.1,0.55,10)])
 	print(phis.shape)
 
 	index = 1
@@ -96,10 +93,10 @@ if __name__ == '__main__':
 				'params' : params,
 			}
 
-			path = f'{dataset_path}/Positions/big/phi{volfrac*1000:.0f}.gsd'
-			print(f'Reading: {path} at {n+1} ...')
+			path = f'{dataset_path}/Positions/old/phi{volfrac*1000:.0f}.gsd'
+			print(f'Reading: {path} at {n+n_per_type} ...')
 
-			hoomd_positions, diameters = read_gsd(path, n+1)
+			hoomd_positions, diameters = read_gsd(path, n+n_per_type)
 
 			canvas, label, final_centers, final_diameters = dc.simulate(canvas_size, hoomd_positions, params['r'], params['particle_size'], params['brightness'], params['cnr'],
 										params['snr'], diameters=diameters, make_label=True, heatmap_r=heatmap_r, num_workers=num_workers, psf_kernel=psf_kernel)
@@ -129,12 +126,12 @@ if __name__ == '__main__':
 	label_size=(256,256,256)
 
 	params = dict(
-		r=10,
-		particle_size=0.25,
-		snr=3,
-		cnr=3,
-		volfrac=0.55,
-		brightness=100,
+		r=6,
+		particle_size=1,
+		snr=4,
+		cnr=4,
+		volfrac=0.5,
+		brightness=200,
 	)
 
 	metadata = {
@@ -160,7 +157,6 @@ if __name__ == '__main__':
 
 	final_diameters = final_diameters*params['r']*2
 	dc.write_hdf5(test_dataset_name, 10000, canvas, metadata=metadata, positions=final_centers, label=label, diameters=final_diameters, dtype='uint8')
-
 
 	# Sim for testing
 	canvas_size=(100,100,100)

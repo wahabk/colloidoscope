@@ -26,24 +26,32 @@ def read_real_examples():
 
 	d = {}
 
-	d['abraham'] = {}
-	d['abraham']['diameter'] = [13,11,11]
-	d['abraham']['array'] = io.imread('examples/Data/abraham.tiff')
-	d['emily'] = {}
-	d['emily']['diameter'] = [15,9,9]
-	d['emily']['array'] = io.imread('examples/Data/emily.tiff')
-	d['katherine'] = {}
-	d['katherine']['diameter'] = [7,7,7]
-	d['katherine']['array'] = io.imread('examples/Data/katherine.tiff')
-	d['levke'] = {}
-	d['levke']['diameter'] = [15,11,11]
-	d['levke']['array'] = io.imread('examples/Data/levke.tiff')
-	d['james'] = {}
-	d['james']['diameter'] = [17,15,15]
-	d['james']['array'] = io.imread('examples/Data/james.tiff')
-	d['jamesdecon'] = {}
-	d['jamesdecon']['diameter'] = [17,15,15]
-	d['jamesdecon']['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d["A - Silica (560nm 0.55Φ)"] = {}
+	d["A - Silica (560nm 0.55Φ)"]['diameter'] = [17,15,15]
+	d["A - Silica (560nm 0.55Φ)"]['volfrac'] = 0.55
+	d["A - Silica (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/james.tiff')
+	d["B - Silica Decon (560nm 0.55Φ)"] = {}
+	d["B - Silica Decon (560nm 0.55Φ)"]['diameter'] = [17,15,15]
+	d["B - Silica Decon (560nm 0.55Φ)"]['volfrac'] = 0.55
+	d["B - Silica Decon (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	# d["E - Silica (500nm 0.50Φ) "] = {}
+	# d["E - Silica (500nm 0.50Φ) "]['diameter'] = 13
+	# d["E - Silica (500nm 0.50Φ) "]['volfrac'] = 0.5
+	# d["E - Silica (500nm 0.50Φ) "]['array'] = io.imread('examples/Data/emily.tiff')
+	d["C - PMMA (315nm 0.58Φ)"] = {}
+	d["C - PMMA (315nm 0.58Φ)"]['diameter'] = [15,11,11]
+	d["C - PMMA (315nm 0.58Φ)"]['volfrac'] = 0.58
+	d["C - PMMA (315nm 0.58Φ)"]['array'] = io.imread('examples/Data/levke.tiff')
+	d["D - Emulsion (3μm 0.64Φ)"] = {}
+	d["D - Emulsion (3μm 0.64Φ)"]['diameter'] = 15
+	d["D - Emulsion (3μm 0.64Φ)"]['volfrac'] = 0.64
+	array = io.imread('examples/Data/abraham.tiff') 
+	d["D - Emulsion (3μm 0.64Φ)"]['array'] = ndimage.zoom(array, 2.25)
+	d["E - Silica (1.2μm 0.2Φ)"] = {}
+	d["E - Silica (1.2μm 0.2Φ)"]['diameter'] = 15
+	d["E - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
+	array  = io.imread('examples/Data/katherine.tiff')
+	d["E - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(array, 2)
 
 	return d
 
@@ -59,9 +67,6 @@ def run_trackpy(self, array, diameter=5, *args, **kwargs) -> np.ndarray: #, pd.D
 		tp_predictions = np.array(f, dtype='float32')
 
 		return tp_predictions, df
-
-def make_mask(canvas_size, positions, diameter):
-	pass
 
 @njit()
 def draw_mask_slice(args):
@@ -81,7 +86,7 @@ def draw_mask_slice(args):
 					new_slice[i,j] = 1
 	return new_slice
 
-def make_mask(array, centers, diameter, num_workers=10):
+def make_mask(array, centers, diameter, num_workers=16):
 	r = np.min(diameter)/2
 	canvas = np.zeros(array.shape)
 	args = [(s, z, r, centers) for z, s in enumerate(canvas)]
@@ -117,34 +122,29 @@ if __name__ == '__main__':
 	dc = DeepColloid(dataset_path)
 
 	real_dict = read_real_examples()
+ 
+	real_len = len(real_dict)
+	fig, axs = plt.subplots(1, real_len)
+	plt.tight_layout(pad=0)
 
-	for (name, d) in real_dict.items():
-
-		print(name)
+	for i, (name, d) in enumerate(real_dict.items()):
 		array = d['array']
-
-		if name == 'emily': 
-			array = dc.crop3d(array, (128,128,128))
-
-		print(array.shape)
+		# array = dc.crop3d(array, (100,100,100))
+		array = np.array((array/array.max())*255,dtype='uint8')
+		print(name, array.shape)
 
 		positions, df = dc.run_trackpy(array, diameter = d['diameter'])
 		print(positions.shape)
-		dc.view(array, positions=positions)
 
-		x, y = dc.get_gr(positions, 100, 100)
-		plt.plot(x, y)
-		plt.show()
+		# dc.view(array, positions=positions)
+		# x, y = dc.get_gr(positions, 100, 100)
+		# plt.plot(x, y)
+		# plt.show()
 
 		print('n_particles', positions.shape[0])
-		# print(df)
-
-
 		
-
 		# label to find CNR of foreground and backgreound
-		mask = make_mask(array.shape, positions, diameter=d['diameter'])
-		# dc.view(array, positions=positions, label=mask) # check tp preds
+		mask = make_mask(array, positions, diameter=d['diameter'])
 
 		foreground = array[mask == 1]
 		background = array[mask == 0]
@@ -165,29 +165,28 @@ if __name__ == '__main__':
 		noise = np.array([estimate_noise(s) for s in array])
 		snr = f_mean / noise.mean()
 
-
 		print("NOISE", name, noise.mean(), noise.std())
 		print("SNR", snr)
 
-		plt.hist(x=[foreground, background], bins=50, label=[f'foreground {f_mean:.2f}±{f_std:.2f}', f'background {b_mean:.2f}±{b_std:.2f}'], density=True)
-		plt.title(f'{name}, cnr = {cnr:.2f}, snr = {snr:.2f}')
-		plt.legend()
-		plt.show()
-		# plt.savefig(f'output/figs/cnr/{name}_cnr.png')
-		plt.clf()
+		axs[i].hist(x=[foreground, background], bins=50, label=[f'F={f_mean:.0f}±{f_std:.1f}', f'B={b_mean:.0f}±{b_std:.1f}'], density=True)
+		axs[i].set_title(f'CNR = {cnr:.1f}, SNR = {snr:.1f}', fontsize=12)
+		axs[i].set_xlabel("Brightness")
+		axs[i].set_ylabel("Frequency")
+		axs[i].set_yticks([])
+		axs[i].legend(fontsize=8)
+	fig.set_figwidth(12)
+	fig.set_figheight(2)
+	plt.savefig(f'output/figs/real_data/real_cnr.png', bbox_inches="tight")
 
 
 
-		# exit()
+		# emily zoom in rows
 
 		# point = [63, 85, 106]
 		# particle = dc.crop3d(array, roiSize=[2,24,24], center=point)[1]
 		# print(particle.shape)
-
 		# dc.view(particle)
-
 		# rows = [particle[:,i] for i in range(8,15)]
-
 		# [plt.plot(row, label=str(i)) for i, row in enumerate(rows)]
 		# plt.xlim((0,23))
 		# plt.legend()

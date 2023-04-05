@@ -13,7 +13,7 @@ import copy
 import monai
 import math
 from pathlib2 import Path
-from monai.networks.layers.factories import Act, Norm
+from functools import partial
 
 print(os.cpu_count())
 print ('Current cuda device ', torch.cuda.current_device())
@@ -64,8 +64,9 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	#TODO find a way to precalculate this - should i only unpad the first block?
 	# if config['n_blocks'] == 2: label_size = (48,48,48)
 	# if config['n_blocks'] == 3: label_size = (24,24,24)
-	label_size = params['roiSize']
-	# label_size = [96,96,96]
+	# label_size = params['roiSize']
+	label_size = [100,100,100]
+	# label_size = [64,64,64]
 
 	transforms_affine = tio.Compose([
 		tio.RandomFlip(axes=(0,1,2), flip_probability=0.5),
@@ -84,7 +85,7 @@ def train(config, name, dataset_path, dataset_name, train_data, val_data,
 	])
 
 	# create a training data loader
-	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=None, label_size=label_size) 
+	train_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['train_data'], transform=transforms_img, label_transform=transforms_affine, label_size=label_size) 
 	train_loader = torch.utils.data.DataLoader(train_ds, batch_size=params['batch_size'], shuffle=True, num_workers=params['num_workers'], pin_memory=torch.cuda.is_available())
 	# create a validation data loader
 	val_ds = ColloidsDatasetSimulated(dataset_path, params['dataset_name'], params['val_data'], label_size=label_size) 
@@ -208,41 +209,88 @@ if __name__ == "__main__":
 	# dataset_path = '/user/home/ak18001/scratch/ak18001/Colloids' #bp1
 	dc = DeepColloid(dataset_path)
 
-	dataset_name = 'heatmap_1400'
+	dataset_name = 'heatmap_3000_3'
 	n_samples = dc.get_hdf5_keys(dataset_name)
 	print(len(n_samples))
-	all_data = list(range(1,1400))
-	test_data =	list(range(1,599))
+	all_data = list(range(1,2999))
+	test_data =	list(range(0,599))
 	random.shuffle(all_data)
 	random.shuffle(test_data)
 
-	train_data = all_data[0:1200]
-	val_data = all_data[1200:1400]
-	test_data = test_data[:]
+	train_data = all_data[0:2600]
+	val_data = all_data[2600:2900]
+	# test_data = test_data[:100]
 	# train_data = all_data[0:10]
 	# val_data = all_data[10:15]
 	# test_data = test_data[:20]
-	name = 'att! unet+log same'
-	# save = 'output/weights/attention_unet_202211.pt'
-	# save = '/user/home/ak18001/scratch/Colloids/attention_unet_20220524.pt'
+	name = 'search att unet'
+	# name = '2. att+SIG+l1+tp'
+	# name = '3. unet+SIG+l1+log'
+	# name = '7. att+SIG+l1+tp+same+save'
+	# name = '5. att+SIG+l1+log+same'
+	#TODO test lin/sig with BCE
 	save = False
+	# save = 'output/weights/attention_unet_202206.pt'  #from jup and trying to fix testing f78f094 
+	# save = 'output/weights/attention_unet_202211.pt' #from trying log diameters, saving weights 7c15929
+	# save = 'output/weights/attention_unet_202302.pt' #01/03/2022
+
 	post_processing = "log"
+
+	# config = {
+	# 	"lr": 0.002165988,
+	# 	"batch_size": 16,
+	# 	"n_blocks": 2,
+	# 	"norm": 'INSTANCE',
+	# 	"epochs": 5,
+	# 	"start_filters": 32,
+	# 	"activation": "RELU",
+	# 	"dropout": 0.2,
+	# 	"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+	# }
+
+	# work_dir = Path().parent.resolve()
+
+	# train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+	# 			train_data=train_data, val_data=val_data, test_data=test_data, 
+	# 			save=save, tuner=False, device_ids=[0,], work_dir=work_dir, post_processing=post_processing)
+
 
 
 	config = {
-		"lr": 0.002165988,
-		"batch_size": 16,
+		"lr": tune.loguniform(0.01, 0.0001),
+		"batch_size": tune.choice([2,4,8,16,32]),
 		"n_blocks": 2,
-		"norm": 'INSTANCE',
-		"epochs": 10,
+		"norm": "BATCH",
+		"epochs": 5,
 		"start_filters": 32,
-		"activation": "SWISH",
-		"dropout": 0.1,
-		"loss_function": torch.nn.L1Loss(), #torch.nn.BCEWithLogitsLoss() #BinaryFocalLoss(alpha=1.5, gamma=0.5),
+		"activation": "RELU",
+		"dropout": tune.choice([0,0.1,0.2]),
+		"loss_function": torch.nn.L1Loss()#tune.choice([torch.nn.L1Loss()]) #BinaryFocalLoss(alpha=1.5, gamma=0.5), 
 	}
 
+	device_ids = [0,]
+	num_samples = 24
+	max_num_epochs = 10
+	gpus_per_trial = 1
+
+	# the scheduler will terminate badly performing trials
+	# scheduler = ASHAScheduler(
+	# 	metric="val_loss",
+	# 	mode="min",
+	# 	max_t=max_num_epochs,
+	# 	grace_period=1,
+	# 	reduction_factor=2)
+
+	# print(f"LOCAL PATH {Path().parent.resolve()} \n\n")
 	work_dir = Path().parent.resolve()
 
-	train(config, name, dataset_path=dataset_path, dataset_name=dataset_name, 
+	result = tune.run(
+		partial(train, name=name, dataset_path=dataset_path, dataset_name=dataset_name, 
 				train_data=train_data, val_data=val_data, test_data=test_data, 
-				save=save, tuner=False, device_ids=[0,], work_dir=work_dir, post_processing=post_processing)
+				save=save, tuner=False, device_ids=[0,], work_dir=work_dir, post_processing=post_processing),
+		resources_per_trial={"cpu": 16, "gpu": 1},
+		config=config,
+		num_samples=num_samples,
+		scheduler=None,
+		checkpoint_at_end=False,
+		local_dir=f'{dataset_path}/ray_results/') # Path().parent.resolve()/'ray_results'
