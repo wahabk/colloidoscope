@@ -173,8 +173,7 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
 
     if weights_path is None:
         weights_path = Path(__file__).parent / "attention_unet_202302.pt"
-        print(weights_path)
-        model_weights = torch.load(weights_path, map_location=device) # read trained weights
+        model_weights = torch.load(str(weights_path), map_location=device) # read trained weights
         model.load_state_dict(model_weights) # add weights to model
 
     else:
