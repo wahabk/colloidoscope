@@ -15,7 +15,6 @@ setup(
         # data_files=[('colloidoscope', ['colloidoscope/attention_unet_202302.pt'])],
         install_requires=[
                 'numpy',
-                'numba',
                 'torch',
                 'matplotlib',
                 'pathlib2',
