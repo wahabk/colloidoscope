@@ -168,6 +168,19 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
             # up_kernel_size=3,
             padding='valid',
         )
+    
+    if 'attention_unet_202206' in weights_path:
+        model = monai.networks.nets.AttentionUnet(
+                spatial_dims=3,
+                in_channels=1,
+                out_channels=1,
+                channels=[32, 64, 128],
+                strides=[2,2],
+                # act=params['activation'],
+                # norm=params["norm"],
+                padding='valid',
+            )
+    
 
     model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
 
