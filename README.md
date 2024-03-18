@@ -92,6 +92,6 @@ If you want to launch the container on a custom hard drive use:
 
 ## Contributions
 
-Thanks to yushi yang for contributing the position simulations and helping me with the entire project in general.
+Thanks to [Yushi Yang @yangyushi](https://github.com/yangyushi) for contributing the position simulations and helping me with the entire project in general.
 
 This project wraps explore_lif which is written by Mathieu Leocmach and C. Ybert.
