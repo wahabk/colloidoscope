@@ -1,34 +1,25 @@
-from sklearn.inspection import plot_partial_dependence
 from colloidoscope import DeepColloid
-from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
-from colloidoscope.simulator import crop_positions_for_label
+from colloidoscope.hoomd_sim_positions import read_gsd
 import numpy as np
 import matplotlib.pyplot as plt
-import napari
-from random import randrange, uniform, triangular
 import numpy as np
-import random
-import psf
-from scipy import ndimage
-import math
-from scipy.signal import convolve2d
 from pathlib2 import Path
 
 
 
 if __name__ == '__main__':
-	dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/data/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
-	canvas_size=(64,64,64)
-	label_size=(64,64,64)
+	canvas_size=(128,128,128)
+	label_size=(128,128,128)
 	num_workers = 16
 
 	params = dict(
-		r=6,
+		r=12,
 		particle_size=0.25,
 		snr=4,
 		cnr=4,
@@ -50,7 +41,7 @@ if __name__ == '__main__':
 
 	hoomd_positions, diameters = read_gsd(path, n+1)
 
-	heatmap_rs = ["radius", 2, 4, "seg-2", "seg-4"]
+	heatmap_rs = ["radius", 4, 8, "seg-4", "seg-8"]
 
 	ims = []
 	for i, h in enumerate(heatmap_rs):
@@ -73,6 +64,7 @@ if __name__ == '__main__':
 	
 	img = ims[0]
 	labels = np.concatenate(ims[1:], axis=1)
-	plt.imsave("output/figs/sim_labels.png", labels, cmap='gist_heat')
-	plt.imsave("output/figs/sim_labels_img.png", img)
-
+	plt.imsave("output/Paper/sim_labels.png", labels, cmap='bone')
+	plt.imsave("output/Paper/sim_labels_img.png", img, cmap='gist_heat')
+	all_ims = np.concatenate([labels, img], axis=1)
+	plt.imsave("output/Paper/sim_labels_all.png", all_ims)

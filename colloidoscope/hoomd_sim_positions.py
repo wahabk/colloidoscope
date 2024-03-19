@@ -256,7 +256,7 @@ def convert_hoomd_positions(positions, canvas_size, diameters, diameter=10):
 def read_gsd(file_name:str, i:int):
 	import gsd.hoomd
 
-	gsd_iter = gsd.hoomd.open(file_name, 'rb')
+	gsd_iter = gsd.hoomd.open(file_name, 'r')
 
 	num_frames = len(gsd_iter)
 	if i >= num_frames:

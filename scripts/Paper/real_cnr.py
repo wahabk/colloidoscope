@@ -100,9 +100,9 @@ def estimate_noise(I):
 
 if __name__ == '__main__':
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
-	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/Data/HDD/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
-	dataset_path = '/media/wahab/SeagateExp/Data/colloids/'
+	# dataset_path = '/media/wahab/SeagateExp/Data/colloids/'
 	dc = DeepColloid(dataset_path)
 
 	real_dict = read_real_examples()
