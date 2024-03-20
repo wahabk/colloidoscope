@@ -10,6 +10,16 @@ from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 from scipy.signal import convolve2d
 
+from matplotlib.colors import LinearSegmentedColormap
+
+# Define the colors for the custom colormap (black to green)
+colors = [(0, 0, 0), (0, 1, 0)]  # Black to Green
+n_bins = 100  # Use 100 bins for the colormap
+
+# Create the colormap
+global GFP_CMAP
+GFP_CMAP = LinearSegmentedColormap
+
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
 	side_projection = np.max(scan, axis=1)

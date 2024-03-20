@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 
-from scripts.Paper.real_cnr import read_real_examples
+from scripts.Paper.real_cnr import read_real_examples, GFP_CMAP
+
 
 if __name__ == '__main__':
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
@@ -25,7 +26,7 @@ if __name__ == '__main__':
 		print(name, array.shape, i)
   
 		projection = np.max(array, axis=0)
-		axs[0,i].imshow(projection)
+		axs[0,i].imshow(projection, cmap=GFP_CMAP)
 		axs[0,i].set_title(name,fontsize=11)
 		axs[0,i].set_xticks([])
 		axs[0,i].set_yticks([])
@@ -33,7 +34,7 @@ if __name__ == '__main__':
 		if i == 0: axs[0,i].set_ylabel("Y")
 
 		projection = np.max(array, axis=1)
-		axs[1,i].imshow(projection)
+		axs[1,i].imshow(projection, cmap=GFP_CMAP)
 		axs[1,i].set_title("")
 		axs[1,i].set_xticks([])
 		axs[1,i].set_yticks([])
@@ -41,5 +42,5 @@ if __name__ == '__main__':
 		if i == 0: axs[1,i].set_ylabel("Z")
 	fig.set_figwidth(12)
 	fig.set_figheight(4)
-	plt.savefig("output/paper/real.png", bbox_inches="tight")
+	plt.savefig("output/Paper/real.png", bbox_inches="tight")
   

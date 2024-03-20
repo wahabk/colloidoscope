@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib2 import Path
 
+from scripts.Paper.real_cnr import read_real_examples, GFP_CMAP
+
+from matplotlib.colors import LinearSegmentedColormap
 
 
 if __name__ == '__main__':
@@ -64,7 +67,7 @@ if __name__ == '__main__':
 	
 	img = ims[0]
 	labels = np.concatenate(ims[1:], axis=1)
+	plt.imsave("output/Paper/sim_labels_img.png", img, cmap=GFP_CMAP)
 	plt.imsave("output/Paper/sim_labels.png", labels, cmap='bone')
-	plt.imsave("output/Paper/sim_labels_img.png", img, cmap='gist_heat')
 	all_ims = np.concatenate([labels, img], axis=1)
 	plt.imsave("output/Paper/sim_labels_all.png", all_ims)

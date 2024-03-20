@@ -4,8 +4,6 @@ import numpy as np
 from scipy.signal import convolve2d
 import math 
 
-from scripts.Paper.real_cnr import read_real_examples
-
 def signaltonoise(a, axis=None, ddof=0):
     a = np.asanyarray(a)
     m = a.mean(axis)

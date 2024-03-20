@@ -11,6 +11,17 @@ from random import randrange, uniform, triangular
 from pathlib2 import Path
 import copy
 
+from scripts.Paper.real_cnr import read_real_examples, GFP_CMAP
+
+def plot_with_side_view(scan, path, cmap='gray'):
+	projection = np.max(scan, axis=0)
+	side_projection = np.max(scan, axis=1)
+	# side_projection = np.rot90(side_projection)
+	sidebyside = np.concatenate((projection, side_projection), axis=0)
+	plt.imsave(path, sidebyside, cmap=cmap)
+	plt.clf()
+
+
 def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 			particle_size:float, f_mean:float, cnr:float,
 			snr:float, f_sigma:float=10, b_sigma:float=10, diameters=np.ndarray([]), make_label:bool=True, 
@@ -52,7 +63,7 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	print(canvas.max(), canvas.min(), b_mean)
 	canvas = np.array(canvas, dtype="uint8")
 	print(canvas.max(), canvas.min())
-	plot_with_side_view(canvas, f'output/figs/sim2/steps/1.png')
+	plot_with_side_view(canvas, f'output/Paper/sim_steps/1.png', cmap=GFP_CMAP)
 
 	
 	# convert centers to zoom out size
@@ -79,23 +90,23 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 	# draw spheres slice by slice
 	print('Simulating scan...')
 	canvas = draw_spheres_sliced(canvas, zoom_out_centers, zoom_out_radii, brightnesses = brightnesses, is_label=False, num_workers=num_workers)
-	plot_with_side_view(canvas, f'output/figs/sim2/steps/2.png')
+	plot_with_side_view(canvas, f'output/figs/sim2/steps/2.png', cmap=GFP_CMAP)
 	canvas = ndimage.gaussian_filter(canvas, gauss_kernel) # blur with gaussian filter
-	plot_with_side_view(canvas, f'output/figs/sim2/steps/3.png')
+	plot_with_side_view(canvas, f'output/figs/sim2/steps/3.png', cmap=GFP_CMAP)
 	print(this_kernel.max(), this_kernel.min())
 	print(canvas.max(), canvas.min())
 	canvas = convolve(canvas, this_kernel, mode='same') # apply psf
-	plot_with_side_view(canvas, f'output/figs/sim2/steps/4.png')
+	plot_with_side_view(canvas, f'output/figs/sim2/steps/4.png', cmap=GFP_CMAP)
 	print(canvas.max(), canvas.min())
 	canvas = np.array((canvas/canvas.max())*255, dtype='uint8') # reconvert to 8 bit
 	canvas = crop3d(canvas, zoom_out_size) # crop to selected size to remove padding
 	canvas = ndimage.zoom(canvas, zoom)# zoom back in to original size for aliasing
 	print(canvas.max(), canvas.min())
-	plot_with_side_view(canvas, f'output/figs/sim2/steps/5.png')
+	plot_with_side_view(canvas, f'output/figs/sim2/steps/5.png', cmap=GFP_CMAP)
 	
 	canvas = [random_noise(img, mode='gaussian', var=noise_std**2)*255 for img in canvas] # Add noise
 	canvas = np.array(canvas, dtype='uint8')
-	plot_with_side_view(canvas, f'output/figs/sim2/steps/6.png')
+	plot_with_side_view(canvas, f'output/figs/sim2/steps/6.png', cmap=GFP_CMAP)
 	
 	# centers=[]
 	# for c in zoom_out_centers:
@@ -118,14 +129,6 @@ def simulate(canvas_size:list, hoomd_positions:np.ndarray, r:int,
 		return canvas, label, centers, diameters
 	else:
 		return canvas, centers, diameters
-
-def plot_with_side_view(scan, path):
-	projection = np.max(scan, axis=0)
-	side_projection = np.max(scan, axis=1)
-	# side_projection = np.rot90(side_projection)
-	sidebyside = np.concatenate((projection, side_projection), axis=0)
-	plt.imsave(path, sidebyside, cmap='gray')
-	plt.clf()
 
 
 if __name__ == '__main__':
@@ -170,5 +173,5 @@ if __name__ == '__main__':
 														params['snr'], diameters=diameters, make_label=False, heatmap_r=heatmap_r, 
 														num_workers=num_workers, psf_kernel=psf_kernel)
 
-	plot_with_side_view(canvas, f'output/figs/sim2/steps/7.png')
+	plot_with_side_view(canvas, f'output/figs/sim2/steps/7.png', cmap=GFP_CMAP)
 	
