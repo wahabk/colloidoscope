@@ -18,7 +18,7 @@ n_bins = 100  # Use 100 bins for the colormap
 
 # Create the colormap
 global GFP_CMAP
-GFP_CMAP = LinearSegmentedColormap
+GFP_CMAP = LinearSegmentedColormap.from_list("CustomCmap", colors, N=n_bins)
 
 def plot_with_side_view(scan, path):
 	projection = np.max(scan, axis=0)
