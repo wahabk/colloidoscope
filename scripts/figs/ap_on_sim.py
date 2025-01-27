@@ -1,4 +1,3 @@
-from sklearn.inspection import plot_partial_dependence
 from colloidoscope import DeepColloid
 from colloidoscope.hoomd_sim_positions import read_gsd, convert_hoomd_positions
 from colloidoscope.simulator import crop_positions_for_label
@@ -17,9 +16,10 @@ from pathlib2 import Path
 
 
 if __name__ == '__main__':
-	dataset_path = '/mnt/scratch/ak18001/Colloids/'
+	# dataset_path = '/mnt/scratch/ak18001/Colloids/'
 	# dataset_path = '/home/ak18001/Data/HDD/Colloids'
 	# dataset_path = '/home/wahab/Data/HDD/Colloids'
+	dataset_path = '/home/wahab/data/Colloids'
 	# dataset_path = '/mnt/storage/home/ak18001/scratch/Colloids'
 	dc = DeepColloid(dataset_path)
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 	pred_pos = true_pos
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_pos, pred_pos, diameters=diameters)
-	dc.plot_pr(ap, precisions, recalls, thresholds, name='True', tag='o-', color='black', axs=axs[0,0], title='True positions')
+	dc.plot_pr(ap, precisions, recalls, thresholds, name='True', tag='o-', color='black', axs=axs[0,0], title='A - True positions')
 	# ap, precisions, recalls, thresholds = dc.average_precision(true_pos, pred_pos, diameters=diameters)
 	# fig = dc.plot_pr(ap, precisions, recalls, thresholds, name='Prediction', tag='x-', color='gray', axs=axs[0,0])
 	x, y = dc.get_gr(pred_pos, 100, 100)
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 	pred_pos = true_pos[:len(true_pos)//2]
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_pos, pred_pos, diameters=diameters)
-	dc.plot_pr(ap, precisions, recalls, thresholds, name='Pred', tag='o-', color='red', axs=axs[0,1], title='Half missing')
+	dc.plot_pr(ap, precisions, recalls, thresholds, name='Pred', tag='o-', color='red', axs=axs[0,1], title='B - Half missing')
 	x, y = dc.get_gr(pred_pos, 100, 100)
 	dc.plot_gr(x, y, diameter, label=f'Pred', color='red', axs=axs[1,1])
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 	pred_pos = np.concatenate([pred_pos, anomalies], axis=0)
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_pos, pred_pos, diameters=diameters)
-	dc.plot_pr(ap, precisions, recalls, thresholds, name='Pred', tag='o-', color='green', axs=axs[0,2], title='Half added')
+	dc.plot_pr(ap, precisions, recalls, thresholds, name='Pred', tag='o-', color='green', axs=axs[0,2], title='C - Half added')
 	x, y = dc.get_gr(pred_pos, 100, 100)
 	dc.plot_gr(x, y, diameter, label=f'Pred', color='green', axs=axs[1,2])
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 	pred_pos = np.concatenate([pred_pos, anomalies], axis=0)
 
 	ap, precisions, recalls, thresholds = dc.average_precision(true_pos, pred_pos, diameters=diameters)
-	dc.plot_pr(ap, precisions, recalls, thresholds, name='Pred', tag='o-', color='blue', axs=axs[0,3], title='Half missing/added')
+	dc.plot_pr(ap, precisions, recalls, thresholds, name='Pred', tag='o-', color='blue', axs=axs[0,3], title='D - Half missing/added')
 	x, y = dc.get_gr(pred_pos, 100, 100)
 	dc.plot_gr(x, y, diameter, label=f'Pred', color='blue', axs=axs[1,3])
 

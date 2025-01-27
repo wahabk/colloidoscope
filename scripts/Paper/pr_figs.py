@@ -29,11 +29,20 @@ def add_model(this_df, this_axs, i, p, y="tp_precision", marker="r"):
 
 def plot_pr(losses:pd.DataFrame, title="str"):
     plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
-    titles		= ['Density $\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
+    titles		= ['Density $\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', r'$f_{\bar{x}}$ (0-255)', 'Radius (pxls)']
+    xticks = [
+        [0.1, 0.25, 0.4, 0.55],
+        [0, 1, 5, 10],
+        [0, 1, 5, 10],
+        [0.1, 0.5, 1],
+        [0, 125, 255],
+        [4, 9, 14],
+    ]
 
     fig,axs = plt.subplots(2,len(plot_params),  sharey=True)
     plt.tight_layout(pad=0)
 
+    # Plot precision row
     this_axs = axs[0,:].flatten()
     for i, p in enumerate(plot_params):
         this_df = losses[losses['type'].isin([p])]
@@ -49,8 +58,10 @@ def plot_pr(losses:pd.DataFrame, title="str"):
             this_axs[i].set_ylabel("Precision", fontsize='large')
             this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
             this_axs[i].set_ylim(-0.1,1.1)
+        if i == 5: 
             this_axs[i].legend(["TP", "U-net"])
 
+    # Plot recall row
     this_axs = axs[1,:].flatten()
     for i, p in enumerate(plot_params):
         this_df = losses[losses['type'].isin([p])]
@@ -62,6 +73,7 @@ def plot_pr(losses:pd.DataFrame, title="str"):
         this_axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<', alpha=0.5)
         this_axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>', alpha=0.5)
         this_axs[i].set_xlabel(titles[i], fontsize='large')
+        this_axs[i].set_xticks(xticks[i])
         if i == 0: 
             this_axs[i].set_ylabel("Recall", fontsize='large')
 
