@@ -29,22 +29,22 @@ def plot_with_side_view(scan, path):
 def read_real_examples():
 	d = {}
 
-	d["A - Silica (560nm 0.55Φ)"] = {}
-	d["A - Silica (560nm 0.55Φ)"]['diameter'] = [17,15,15]
-	d["A - Silica (560nm 0.55Φ)"]['volfrac'] = 0.55
-	d["A - Silica (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/james.tiff')
-	d["B - Silica Decon. (560nm 0.55Φ)"] = {}
-	d["B - Silica Decon. (560nm 0.55Φ)"]['diameter'] = [17,15,15]
-	d["B - Silica Decon. (560nm 0.55Φ)"]['volfrac'] = 0.55
-	d["B - Silica Decon. (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
-	d["C - PMMA (315nm 0.58Φ)"] = {}
-	d["C - PMMA (315nm 0.58Φ)"]['diameter'] = [15,11,11]
-	d["C - PMMA (315nm 0.58Φ)"]['volfrac'] = 0.58
-	d["C - PMMA (315nm 0.58Φ)"]['array'] = io.imread('examples/Data/levke.tiff')
-	d["D - Silica (1.2μm 0.2Φ)"] = {}
-	d["D - Silica (1.2μm 0.2Φ)"]['diameter'] = 15
-	d["D - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
-	d["D - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(io.imread('examples/Data/katherine.tiff'), 2)
+	d["A - Silica (560nm, Φ = 0.55)"] = {}
+	d["A - Silica (560nm, Φ = 0.55)"]['diameter'] = [17,15,15]
+	d["A - Silica (560nm, Φ = 0.55)"]['volfrac'] = 0.55
+	d["A - Silica (560nm, Φ = 0.55)"]['array'] = io.imread('examples/Data/james.tiff')
+	d["B - Silica Decon. (560nm, Φ = 0.55)"] = {}
+	d["B - Silica Decon. (560nm, Φ = 0.55)"]['diameter'] = [17,15,15]
+	d["B - Silica Decon. (560nm, Φ = 0.55)"]['volfrac'] = 0.55
+	d["B - Silica Decon. (560nm, Φ = 0.55)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d["C - PMMA (315nm, Φ = 0.58)"] = {}
+	d["C - PMMA (315nm, Φ = 0.58)"]['diameter'] = [15,11,11]
+	d["C - PMMA (315nm, Φ = 0.58)"]['volfrac'] = 0.58
+	d["C - PMMA (315nm, Φ = 0.58)"]['array'] = io.imread('examples/Data/levke.tiff')
+	d["D - Silica (1.2μm, Φ = 0.2)"] = {}
+	d["D - Silica (1.2μm, Φ = 0.2)"]['diameter'] = 15
+	d["D - Silica (1.2μm, Φ = 0.2)"]['volfrac'] = 0.2
+	d["D - Silica (1.2μm, Φ = 0.2)"]['array'] = ndimage.zoom(io.imread('examples/Data/katherine.tiff'), 2)
 
 	return d
 

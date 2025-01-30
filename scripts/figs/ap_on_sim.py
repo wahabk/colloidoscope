@@ -36,6 +36,9 @@ if __name__ == '__main__':
 
 	true_positions, diameters = convert_hoomd_positions(hoomd_positions, canvas_size=canvas_size, diameters=diameters, diameter=diameter)
 
+	print(true_positions.shape)
+	import pdb; pdb.set_trace()
+
 	fig, axs = plt.subplots(2,4,  sharey='row')
 	plt.tight_layout()
 
