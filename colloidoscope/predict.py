@@ -154,7 +154,7 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
 
     # model
     if model is None:
-        n_blocks=2
+        n_blocks = 2
         start = int(math.sqrt(32))
         channels = [2**n for n in range(start, start + n_blocks)]
         strides = [2 for n in range(1, n_blocks)]
@@ -169,7 +169,7 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
             padding='valid',
         )
     
-    if 'attention_unet_202206' in weights_path:
+    if isinstance(weights_path, str) and ('attention_unet_202206' in weights_path):
         model = monai.networks.nets.AttentionUnet(
                 spatial_dims=3,
                 in_channels=1,
@@ -188,8 +188,7 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
         weights_path = Path(__file__).parent / "attention_unet_202302.pt"
         model_weights = torch.load(str(weights_path), map_location=device) # read trained weights
         model.load_state_dict(model_weights) # add weights to model
-
-    else:
+    elif weights_path != "preloaded":
         model_weights = torch.load(weights_path, map_location=device) # read trained weights
         model.load_state_dict(model_weights) # add weights to model
     

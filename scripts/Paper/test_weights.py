@@ -27,11 +27,11 @@ if __name__ == "__main__":
 	dc = DeepColloid(dataset_path)
 
 	dataset_name = 'heatmap_1400'
-	num_workers=16
-	test_data =	list(range(1,599))
+	num_workers = 16
+	test_data =	list(range(1, 599))
 	random.shuffle(test_data)
 	test_data = test_data[:50]
-	name="new TW: tp"
+	name="new TW"
 	weights_path = 'output/weights/attention_unet_202206.pt'
 
 	post_processing = 'tp'
@@ -118,5 +118,5 @@ if __name__ == "__main__":
 	losses = test(model, dataset_path, dataset_name, test_data, canvas_size=params['roiSize'], label_size=params['label_size'],
 				post_processing=post_processing, criterion=torch.nn.L1Loss(), device=device, work_dir=work_dir, run=run)
 
-	run['test/df'].upload(File.as_html(losses))
+	# run['test/df'].upload(File.as_html(losses))
 	run.stop()

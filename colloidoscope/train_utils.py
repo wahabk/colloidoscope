@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import scipy
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
 from tqdm import tqdm, trange
 import math
 import os
@@ -341,7 +342,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	real_dict = read_real_examples()
 
 	real_len = len(real_dict)
-	fig, axs = plt.subplots(real_len,4,)
+	fig, axs = plt.subplots(real_len,5,)
 	plt.tight_layout(pad=0)
 
 	for i, (name, d) in enumerate(real_dict.items()):
@@ -356,7 +357,7 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		df, pred_positions, label = dc.detect(d['array'], diameter = detection_diameter, model=model, 
 									roiSize=canvas_size, label_size=label_size,
 									debug=True, post_processing=post_processing, run_on="cuda", 
-									remove_borders=True)
+									remove_borders=True, weights_path="preloaded")
 
 
 		if isinstance(detection_diameter, (list, tuple)):
@@ -373,42 +374,70 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 		if len(pred_positions)>0:
 			array_projection = np.max(d['array'], axis=0)
 			label_projection = np.max(label, axis=0)*255
-			axs[i,0].imshow(array_projection)
+			size_nm = d['size']
+			size_pixels = d['diameter']
+			if isinstance(size_pixels, (list, tuple)):
+				size_pixels = size_pixels[-1]
+			# imshow with black to green colormap
+			from matplotlib.colors import LinearSegmentedColormap
+			color_min    = "#000000"
+			color_max    = "#00FF00"
+			cmap = LinearSegmentedColormap.from_list(
+				"cmap_name",
+				[color_min, color_max]
+			)
+			axs[i,0].imshow(array_projection, cmap=cmap)
 			axs[i,0].set_xticks([])
 			axs[i,0].set_yticks([])
 			axs[i,0].set_title(name, fontsize=fs)
+			add_scale_bar(axs[i,0], size_pixels, size_nm)
+
+
+			this_pos = list(pred_positions[len(pred_positions)//4])
+			print(this_pos)
+			zoom_in = dc.crop3d(d['array'], (32,32,32), center=this_pos)
+			zoom_in_projection = np.max(zoom_in, axis=0)
+			z=10
+			zoom_in_projection = ndimage.zoom(zoom_in_projection, z, order=0)
+			axs[i,2].imshow(zoom_in_projection, cmap=cmap)
+			axs[i,2].set_xticks([])
+			axs[i,2].set_yticks([])
+			axs[i,2].set_title("Zoom", fontsize=fs)
+			print(f"size after zoom: {zoom_in_projection.shape}")
+			add_scale_bar(axs[i,2], size_pixels*z, size_nm, 100, unit="nm")
+
+
 			axs[i,1].set_title("Prediction", fontsize=fs)
-			axs[i,1].imshow(label_projection, cmap='gist_heat')
+			axs[i,1].imshow(label_projection, cmap='gray')
 			axs[i,1].set_xticks([])
 			axs[i,1].set_yticks([])
-			#TODO add zoom in co
 
 			# pred_positions.sort()
 			this_pos = list(pred_positions[len(pred_positions)//4])
 			print(this_pos)
 			zoom_in = dc.crop3d(label, (32,32,32), center=this_pos)
 			zoom_in_proj = np.max(zoom_in, 0)*255
-			axs[i,2].set_title("Prediction zoom", fontsize=fs)
-			axs[i,2].imshow(zoom_in_proj, cmap='gist_heat')
-			axs[i,2].set_xticks([])
-			axs[i,2].set_yticks([])
+			axs[i,3].set_title("Prediction zoom", fontsize=fs)
+			axs[i,3].imshow(zoom_in_proj, cmap='gray')
+			axs[i,3].set_xticks([])
+			axs[i,3].set_yticks([])
 
 			x, y = dc.get_gr(trackpy_pos, 100, 100)
-			plot_gr(x, y, int_diameter, label=f'TP n={len(trackpy_pos)}', color='gray', axs=axs[i,3], fontsize=16)
+			plot_gr(x, y, int_diameter, label=f'TP n={len(trackpy_pos)}', color='gray', axs=axs[i,4], fontsize=16)
 			x, y = dc.get_gr(pred_positions, 100, 100)
-			plot_gr(x, y, int_diameter, label=f'U-net n={len(pred_positions)}', color='red', axs=axs[i,3], fontsize=16)
+			plot_gr(x, y, int_diameter, label=f'U-net n={len(pred_positions)}', color='red', axs=axs[i,4], fontsize=16)
 			if i != real_len-1:
-				axs[i,3].set_xlabel("")
-				axs[i,3].set_xticks([])
-			axs[i,3].legend(loc='lower right', fontsize=14)
-			axs[i,3].set_title(f"$g(r)$ TP (~{tp_frac_detected*100:.0f}%) U-net (~{unet_frac_detected*100:.0f}%)", fontsize=fs)
+				axs[i,4].set_xlabel("")
+				axs[i,4].set_xticks([])
+			axs[i,4].legend(loc='upper right', fontsize=14)
+			axs[i,4].set_title(f"$g(r)$ TP (~{tp_frac_detected*100:.0f}%) U-net (~{unet_frac_detected*100:.0f}%)", fontsize=fs)
 
 
 		else:
 			print('\n\n\nNOT DETECTING PARTICLES\n\n\n')
 
-	fig.set_figwidth(4*4)
-	fig.set_figheight(real_len*4)
+	fig.set_figwidth(5*5)
+	fig.set_figheight(real_len*5)
 	if run: run['grs'].upload(fig)
 	plt.clf()
 
@@ -486,140 +515,141 @@ def test(model, dataset_path, dataset_name, test_set, threshold=0.5,
 	# if run: run['AP'] = ap
 	# if run: run['bigGR'].upload(fig)
 
-	test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, roi_size=canvas_size, transform=None) 
-	test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
+	# test_ds = ColloidsDatasetSimulated(dataset_path, dataset_name, test_set, label_size=label_size, roi_size=canvas_size, transform=None) 
+	# test_loader = torch.utils.data.DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=torch.cuda.is_available())
 
-	losses = []
-	model.eval()
-	with torch.no_grad():
-		for batch_idx, batch in enumerate(test_loader):
-			print(batch_idx, "/", int(len(test_set)/batch_size))
+	# losses = []
+	# model.eval()
+	# with torch.no_grad():
+	# 	for batch_idx, batch in enumerate(test_loader):
+	# 		print(batch_idx, "/", int(len(test_set)/batch_size))
 			
-			x, y = batch
-			inputs = x.clone()
-			x, y = x.to(device), y.to(device)
+	# 		x, y = batch
+	# 		inputs = x.clone()
+	# 		x, y = x.to(device), y.to(device)
 
-			out = model(x)  # send through model/network
-			if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
-				out = torch.sigmoid(out)
-				loss = criterion(out, y)
-			else:
-				# TODO raise Exception("Figure out how to run sigmoid for other LFs than BCEWithLogits?")
-				loss = criterion(out, y)
-				out = torch.sigmoid(out)
-			loss = loss.cpu().numpy()
-			# post process to numpy array
-			results = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
-			inputs = inputs.cpu().numpy()
+	# 		out = model(x)  # send through model/network
+	# 		if isinstance(criterion, torch.nn.BCEWithLogitsLoss) == False:
+	# 			out = torch.sigmoid(out)
+	# 			loss = criterion(out, y)
+	# 		else:
+	# 			# TODO raise Exception("Figure out how to run sigmoid for other LFs than BCEWithLogits?")
+	# 			loss = criterion(out, y)
+	# 			out = torch.sigmoid(out)
+	# 		loss = loss.cpu().numpy()
+	# 		# post process to numpy array
+	# 		results = out.cpu().numpy()  # send to cpu and transform to numpy.ndarray
+	# 		inputs = inputs.cpu().numpy()
 
-			for test_idx, [result, for_tp] in tqdm(enumerate(zip(results, inputs))):
-				i = test_idx + ((batch_idx)*(batch_size))
-				index = test_set[i]
-				metadata, true_positions, diameters = dc.read_metadata(dataset_name, index)
-				result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
+	# 		for test_idx, [result, for_tp] in tqdm(enumerate(zip(results, inputs))):
+	# 			i = test_idx + ((batch_idx)*(batch_size))
+	# 			index = test_set[i]
+	# 			metadata, true_positions, diameters = dc.read_metadata(dataset_name, index)
+	# 			result = np.squeeze(result)  # remove batch dim and channel dim -> [H, W]
 
-				if heatmap_r == "radius":
-					detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
-				else:
-					detection_diameter = heatmap_r
-				if post_processing == "tp":
-					pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
-				elif post_processing == "max":
-					max_diameter = int((metadata['params']['r']*2))
-					pred_positions = peak_local_max(result*255, min_distance=max_diameter)
-				if post_processing == "log":
-					# result[result<threshold] = 0
-					diameter = metadata['params']['r']*2
-					sigma = (diameter/2)/math.sqrt(3)
-					max_sigma = (diameter*2)/math.sqrt(3)
-					pred_positions = blob_log(result*255, min_sigma=sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
+	# 			if heatmap_r == "radius":
+	# 				detection_diameter = dc.round_up_to_odd(metadata['params']['r']*2)
+	# 			else:
+	# 				detection_diameter = heatmap_r
+	# 			if post_processing == "tp":
+	# 				pred_positions, _ = dc.run_trackpy(result, diameter=detection_diameter)
+	# 			elif post_processing == "max":
+	# 				max_diameter = int((metadata['params']['r']*2))
+	# 				pred_positions = peak_local_max(result*255, min_distance=max_diameter)
+	# 			if post_processing == "log":
+	# 				# result[result<threshold] = 0
+	# 				diameter = metadata['params']['r']*2
+	# 				sigma = (diameter/2)/math.sqrt(3)
+	# 				max_sigma = (diameter*2)/math.sqrt(3)
+	# 				pred_positions = blob_log(result*255, min_sigma=sigma, max_sigma=max_sigma, overlap=0)[:,:-1]
 				
-				array = dc.crop3d(np.squeeze(for_tp), roiSize=label_size)
-				detection_diameter  =  dc.round_up_to_odd(metadata['params']['r']*2)
-				tp_positions, _ = dc.run_trackpy(array, diameter=detection_diameter)
+	# 			array = dc.crop3d(np.squeeze(for_tp), roiSize=label_size)
+	# 			detection_diameter  =  dc.round_up_to_odd(metadata['params']['r']*2)
+	# 			tp_positions, _ = dc.run_trackpy(array, diameter=detection_diameter)
 
-				true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
-															pad=metadata['params']['r']*1, diameters=diameters)
-				pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']*1)
-				tp_positions = exclude_borders(tp_positions, label_size, pad=metadata['params']['r']*1)
+	# 			true_positions, diameters = exclude_borders(true_positions, canvas_size=canvas_size, label_size=label_size,
+	# 														pad=metadata['params']['r']*1, diameters=diameters)
+	# 			pred_positions = exclude_borders(pred_positions, label_size, pad=metadata['params']['r']*1)
+	# 			tp_positions = exclude_borders(tp_positions, label_size, pad=metadata['params']['r']*1)
 				
 
-				prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
-				tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
+	# 			prec, rec = dc.get_precision_recall(true_positions, pred_positions, diameters, 0.5,)
+	# 			tp_prec, tp_rec = dc.get_precision_recall(true_positions, tp_positions, diameters, 0.5,)
 
 
-				m = {
-					'dataset'		: metadata['dataset'],
-					'n' 	 		: metadata['n'],
-					'idx'	 		: index,
-					'volfrac'		: metadata['volfrac'],
-					'n_particles'	: metadata['n_particles'],
-					'type'			: metadata['type'],
-					**metadata['params'],
-					'loss'	 		: float(loss),
-					'precision'	 	: float(prec),
-					'recall'	 	: float(rec),
-					'tp_precision'	: float(tp_prec),
-					'tp_recall'	 	: float(tp_rec),
-				}
+	# 			m = {
+	# 				'dataset'		: metadata['dataset'],
+	# 				'n' 	 		: metadata['n'],
+	# 				'idx'	 		: index,
+	# 				'volfrac'		: metadata['volfrac'],
+	# 				'n_particles'	: metadata['n_particles'],
+	# 				'type'			: metadata['type'],
+	# 				**metadata['params'],
+	# 				'loss'	 		: float(loss),
+	# 				'precision'	 	: float(prec),
+	# 				'recall'	 	: float(rec),
+	# 				'tp_precision'	: float(tp_prec),
+	# 				'tp_recall'	 	: float(tp_rec),
+	# 			}
 
-				losses.append(m)
+	# 			losses.append(m)
 
-	losses = pd.DataFrame(losses)
-	print(losses)
+	# losses = pd.DataFrame(losses)
+	# print(losses)
 
-	plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
-	titles		= ['Density $\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
+	# plot_params = ['volfrac', 'snr', 'cnr', 'particle_size', 'brightness', 'r']
+	# titles		= ['Density $\phi$', 'SNR', 'CNR', 'Size ($\mu m$)', '$f_\mu$ (0-255)', 'Radius (pxls)']
 
-	fig,axs = plt.subplots(2,len(plot_params),  sharey=True)
-	plt.tight_layout(pad=0)
+	# fig,axs = plt.subplots(2,len(plot_params),  sharey=True)
+	# plt.tight_layout(pad=0)
 
-	this_axs = axs[0,:].flatten()
-	for i, p in enumerate(plot_params):
-		this_df = losses[losses['type'].isin([p])]
-		this_axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
-		this_axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
-		this_axs[i].set_xticks([])
-		if i == 0: 
-			this_axs[i].set_ylabel("Precision", fontsize='large')
-			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
-			this_axs[i].set_ylim(-0.1,1.1)
-			this_axs[i].legend(["TP", "U-net"])
+	# this_axs = axs[0,:].flatten()
+	# for i, p in enumerate(plot_params):
+	# 	this_df = losses[losses['type'].isin([p])]
+	# 	this_axs[i].scatter(x=p, 		y = 'tp_precision', data=this_df, color='black', marker='<')
+	# 	this_axs[i].scatter(x=p, 		y = 'precision', 	data=this_df, color='red', marker='>')
+	# 	this_axs[i].set_xticks([])
+	# 	if i == 0: 
+	# 		this_axs[i].set_ylabel("Precision", fontsize='large')
+	# 		this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
+	# 		this_axs[i].set_ylim(-0.1,1.1)
+	# 		this_axs[i].legend(["TP", "U-net"])
 
-	this_axs = axs[1,:].flatten()
-	for i, p in enumerate(plot_params):
-		this_df = losses[losses['type'].isin([p])]
-		this_axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
-		this_axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
-		this_axs[i].set_xlabel(titles[i], fontsize='large')
-		if i == 0: 
-			this_axs[i].set_ylabel("Recall", fontsize='large')
+	# this_axs = axs[1,:].flatten()
+	# for i, p in enumerate(plot_params):
+	# 	this_df = losses[losses['type'].isin([p])]
+	# 	this_axs[i].scatter(x=p, 		y = 'tp_recall', data=this_df, color='black', marker='<')
+	# 	this_axs[i].scatter(x=p, 		y = 'recall', 	data=this_df, color='red', marker='>')
+	# 	this_axs[i].set_xlabel(titles[i], fontsize='large')
+	# 	if i == 0: 
+	# 		this_axs[i].set_ylabel("Recall", fontsize='large')
 
-	fig.set_figwidth(13)
-	fig.suptitle("Precisions and Recalls", fontsize='xx-large', y=1.05)
-	if run: run['test/params_vs_PR'].upload(fig)
+	# fig.set_figwidth(13)
+	# fig.suptitle("Precisions and Recalls", fontsize='xx-large', y=1.05)
+	# if run: run['test/params_vs_PR'].upload(fig)
 
-	fig, axs = plt.subplots(1,len(plot_params), sharey="row")
-	fig.tight_layout(pad=0)
-	axs = axs.flatten()
-	for i, p in enumerate(plot_params):
-		this_df = losses[losses['type'].isin([p])]
-		sns.scatterplot(x=p, 		y = 'loss', data=this_df, ax=axs[i])
-		axs[i].scatter(x=p, 		y = 'loss', data=this_df, color='blue')
-		axs[i].set_xlabel(titles[i], fontsize='large')
-		if i == 0: 
-			this_axs[i].set_ylabel("Loss", fontsize='large')
-			this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
-		else:
-			this_axs[i].set_yticks([])
-	plt.yscale('log')
-	plt.ylim(pow(10,-2),pow(10,0))
-	fig.suptitle("Loss", y=1.1, fontsize='xx-large')
-	fig.set_figheight(2)
-	fig.set_figwidth(13)
-	if run: run['test/params_vs_loss'].upload(fig)
+	# fig, axs = plt.subplots(1,len(plot_params), sharey="row")
+	# fig.tight_layout(pad=0)
+	# axs = axs.flatten()
+	# for i, p in enumerate(plot_params):
+	# 	this_df = losses[losses['type'].isin([p])]
+	# 	sns.scatterplot(x=p, 		y = 'loss', data=this_df, ax=axs[i])
+	# 	axs[i].scatter(x=p, 		y = 'loss', data=this_df, color='blue')
+	# 	axs[i].set_xlabel(titles[i], fontsize='large')
+	# 	if i == 0: 
+	# 		this_axs[i].set_ylabel("Loss", fontsize='large')
+	# 		this_axs[i].set_yticks([0,0.25,0.5,0.75,1])
+	# 	else:
+	# 		this_axs[i].set_yticks([])
+	# plt.yscale('log')
+	# plt.ylim(pow(10,-2),pow(10,0))
+	# fig.suptitle("Loss", y=1.1, fontsize='xx-large')
+	# fig.set_figheight(2)
+	# fig.set_figwidth(13)
+	# if run: run['test/params_vs_loss'].upload(fig)
 
-	return losses
+	# return losses
+	return
 
 def myRound(n):
 	answer = round(n)
@@ -780,36 +810,75 @@ def find_positions(result, threshold) -> np.ndarray:
 	positions = scipy.ndimage.center_of_mass(result, resultLabel[0], index=range(1,resultLabel[1]))
 	return np.array(positions)
 
+def add_scale_bar(ax, size_pixels, size_nm, scale_length_nm=1000, fontsize=24, color='white', unit='μm'):
+    # Calculate the pixels per nm
+    scale_pixels_per_nm = size_pixels / size_nm
+    
+    # Convert scale length to pixels
+    scale_bar_length_pixels = scale_length_nm * scale_pixels_per_nm
+    
+    # Get the size of the image (array_projection.shape)
+    img_width, img_height = ax.get_images()[0].get_size()
+    
+    # Define position of scale bar (bottom right corner)
+    scale_bar_x = 20  # 10px from the right edge
+    scale_bar_y = img_height - 30  # 20px from the bottom edge
+    
+    # Create the scale bar as a rectangle
+    scale_bar = patches.Rectangle(
+        (scale_bar_x, scale_bar_y), 
+        scale_bar_length_pixels, 10,  # width in pixels, height in pixels (fixed at 5)
+        linewidth=2, edgecolor=color, facecolor=color
+    )
+    
+    # Add the scale bar to the plot
+    ax.add_patch(scale_bar)
+    
+    # Convert scale length to μm if unit is 'μm'
+    if unit == 'μm':
+        scale_length_nm = scale_length_nm / 1000
+    
+    # Optionally add text label for the scale bar
+    ax.text(scale_bar_x, scale_bar_y - 5, 
+            f'{scale_length_nm} {unit}', color=color, ha='left', va='bottom', fontsize=fontsize)
+
+
 def read_real_examples():
 
 	d = {}
 
-	d["A - Silica (560nm 0.55Φ)"] = {}
-	d["A - Silica (560nm 0.55Φ)"]['diameter'] = [17,15,15]
-	d["A - Silica (560nm 0.55Φ)"]['volfrac'] = 0.55
-	d["A - Silica (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/james.tiff')
-	d["B - Silica Decon (560nm 0.55Φ)"] = {}
-	d["B - Silica Decon (560nm 0.55Φ)"]['diameter'] = [17,15,15]
-	d["B - Silica Decon (560nm 0.55Φ)"]['volfrac'] = 0.55
-	d["B - Silica Decon (560nm 0.55Φ)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
+	d["A - Silica \n(560nm Φ = 0.55)"] = {}
+	d["A - Silica \n(560nm Φ = 0.55)"]['diameter'] = [17,15,15]
+	d["A - Silica \n(560nm Φ = 0.55)"]['volfrac'] = 0.55
+	d["A - Silica \n(560nm Φ = 0.55)"]['size'] = 560
+	d["A - Silica \n(560nm Φ = 0.55)"]['array'] = io.imread('examples/Data/james.tiff')
+	d["B - Silica Decon \n(560nm Φ = 0.55)"] = {}
+	d["B - Silica Decon \n(560nm Φ = 0.55)"]['diameter'] = [17,15,15]
+	d["B - Silica Decon \n(560nm Φ = 0.55)"]['volfrac'] = 0.55
+	d["B - Silica Decon \n(560nm Φ = 0.55)"]['size'] = 560
+	d["B - Silica Decon \n(560nm Φ = 0.55)"]['array'] = io.imread('examples/Data/jamesdecon.tiff')
 	# d["E - Silica (500nm 0.50Φ) "] = {}
 	# d["E - Silica (500nm 0.50Φ) "]['diameter'] = 13
 	# d["E - Silica (500nm 0.50Φ) "]['volfrac'] = 0.5
+	# d["E - Silica (500nm 0.50Φ) "]['size'] = 0.5
 	# d["E - Silica (500nm 0.50Φ) "]['array'] = io.imread('examples/Data/emily.tiff')
-	d["C - PMMA (315nm 0.58Φ)"] = {}
-	d["C - PMMA (315nm 0.58Φ)"]['diameter'] = [15,11,11]
-	d["C - PMMA (315nm 0.58Φ)"]['volfrac'] = 0.58
-	d["C - PMMA (315nm 0.58Φ)"]['array'] = io.imread('examples/Data/levke.tiff')
-	# d["D - Emulsion (3μm 0.64Φ)"] = {}
-	# d["D - Emulsion (3μm 0.64Φ)"]['diameter'] = 15
-	# d["D - Emulsion (3μm 0.64Φ)"]['volfrac'] = 0.64
+	d["C - PMMA \n(315nm Φ = 0.58)"] = {}
+	d["C - PMMA \n(315nm Φ = 0.58)"]['diameter'] = [15,11,11]
+	d["C - PMMA \n(315nm Φ = 0.58)"]['volfrac'] = 0.58
+	d["C - PMMA \n(315nm Φ = 0.58)"]['size'] = 315
+	d["C - PMMA \n(315nm Φ = 0.58)"]['array'] = io.imread('examples/Data/levke.tiff')
+	# d["D - Emulsion (3μm Φ = 0.64)"] = {}
+	# d["D - Emulsion (3μm Φ = 0.64)"]['diameter'] = 15
+	# d["D - Emulsion (3μm Φ = 0.64)"]['volfrac'] = 0.64
+	# d["D - Emulsion (3μm Φ = 0.64)"]['size'] = 0.64
 	# array = io.imread('examples/Data/abraham.tiff') 
-	# d["D - Emulsion (3μm 0.64Φ)"]['array'] = ndimage.zoom(array, 2.25)
-	d["D - Silica (1.2μm 0.2Φ)"] = {}
-	d["D - Silica (1.2μm 0.2Φ)"]['diameter'] = 15
-	d["D - Silica (1.2μm 0.2Φ)"]['volfrac'] = 0.2
+	# d["D - Emulsion (3μm Φ = 0.64)"]['array'] = ndimage.zoom(array, 2.25)
+	d["D - Silica \n(1.2μm Φ = 0.2)"] = {}
+	d["D - Silica \n(1.2μm Φ = 0.2)"]['diameter'] = 15
+	d["D - Silica \n(1.2μm Φ = 0.2)"]['volfrac'] = 0.2
+	d["D - Silica \n(1.2μm Φ = 0.2)"]['size'] = 1200
 	array  = io.imread('examples/Data/katherine.tiff')
-	d["D - Silica (1.2μm 0.2Φ)"]['array'] = ndimage.zoom(array, 2)
+	d["D - Silica \n(1.2μm Φ = 0.2)"]['array'] = ndimage.zoom(array, 2)
 
 	return d
 
