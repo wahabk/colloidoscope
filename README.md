@@ -1,6 +1,6 @@
 # Colloidoscope!
 
-<a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> 
+<a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/master/Colloidoscope_tutorial.ipynb"> 
 <img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
 
 <img src="examples/Challenge/figWebsiteLittle.png" alt="paddyfig1"/>
@@ -23,7 +23,7 @@ pip3 install git+https://github.com/wahabk/colloidoscope
 I have provided custom jupyter notebooks in ```examples/```.
 
 You can run colloidoscope in google colab: 
-<a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/dev/Colloidoscope_tutorial.ipynb"> 
+<a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/master/Colloidoscope_tutorial.ipynb"> 
 <img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
 
 Colloidoscope centers around the class ```DeepColloid```. This contains all the functions you will need.
