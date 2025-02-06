@@ -176,8 +176,6 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
                 out_channels=1,
                 channels=[32, 64, 128],
                 strides=[2,2],
-                # act=params['activation'],
-                # norm=params["norm"],
                 padding='valid',
             )
     
@@ -185,7 +183,15 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
     model = torch.nn.DataParallel(model, device_ids=None) # parallelise model
 
     if weights_path is None:
-        weights_path = Path(__file__).parent / "attention_unet_202302.pt"
+        model = monai.networks.nets.AttentionUnet(
+            spatial_dims=3,
+            in_channels=1,
+            out_channels=1,
+            channels=[32, 64, 128],
+            strides=[2,2],
+            padding='valid',
+        )
+        weights_path = Path(__file__).parent / "attention_unet_202206.pt"
         model_weights = torch.load(str(weights_path), map_location=device) # read trained weights
         model.load_state_dict(model_weights) # add weights to model
     elif weights_path != "preloaded":

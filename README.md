@@ -9,7 +9,7 @@ A project to track colloids using confocal and deep learning.
 
 Colloidoscope is essentially a U-net trained on simulated data. This is designed to to improve tracking on very small colloids (~200nm) with a very bad point spread function, that is anisotropic and has high z blur.
 
-Pretrained weights and hyperparameter training history available upon request.
+Pretrained weights are included by default. Hyperparameter training history available upon request.
 
 # Installation
 
@@ -43,7 +43,7 @@ Reader = dc.ExploreLifReader(args, kwargs)
 Then simply use ```dc.detect()``` to track your image, this will return a pandas DataFrame just like TrackPy.
 
 ```Python
-df = dc.detect(image, weights_path='path/to/model_weights.pt')
+df = dc.detect(image)
 ```
 
 Please check `examples/` for scripts and jupyter notebooks.
@@ -95,3 +95,7 @@ If you want to launch the container on a custom hard drive use:
 Thanks to [Yushi Yang @yangyushi](https://github.com/yangyushi) for contributing the position simulations and helping me with the entire project in general.
 
 This project wraps explore_lif which is written by Mathieu Leocmach and C. Ybert.
+
+## Citation
+
+Incoming! 🚧

@@ -2,14 +2,14 @@ from setuptools import setup, find_packages
 
 setup(
         name="colloidoscope", 
-        version='0.1.1',
+        version='0.2.0',
         author="Abdelwahab Kawafi",
         author_email="<akawafi3@gmail.com>",
         description='My PhD project to track colloids using confocal and deep learning.',
         packages=find_packages(),
         include_package_data=True,
         package_dir={'colloidoscope': 'colloidoscope'},
-        package_data={'colloidoscope': ['attention_unet_202302.pt']},
+        package_data={'colloidoscope': ['attention_unet_202302.pt', 'attention_unet_202206.pt']},
         install_requires=[
                 'numpy',
                 'torch',
