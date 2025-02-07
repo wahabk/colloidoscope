@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
         name="colloidoscope", 
-        version='0.2.0',
+        version='0.2.1',
         author="Abdelwahab Kawafi",
         author_email="<akawafi3@gmail.com>",
         description='My PhD project to track colloids using confocal and deep learning.',

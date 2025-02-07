@@ -191,6 +191,7 @@ def detect(input_array:np.ndarray, diameter:Union[int, list], model:torch.nn.Mod
             strides=[2,2],
             padding='valid',
         )
+        model = torch.nn.DataParallel(model, device_ids=None)
         weights_path = Path(__file__).parent / "attention_unet_202206.pt"
         model_weights = torch.load(str(weights_path), map_location=device) # read trained weights
         model.load_state_dict(model_weights) # add weights to model
