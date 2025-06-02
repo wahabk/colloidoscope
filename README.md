@@ -98,4 +98,21 @@ This project wraps explore_lif which is written by Mathieu Leocmach and C. Ybert
 
 ## Citation
 
-Incoming! 🚧
+The article for Colloidoscope is available on [The Royal Society of Chemistry website](https://pubs.rsc.org/en/content/articlelanding/2025/sm/d4sm01307g).
+
+Please cite this paper if Colloidoscope has been helpful for your research.
+
+```
+@Article{D4SM01307G,
+	author ="Kawafi, Abdelwahab and Kuerten, Lars and Ortlieb, Levke and Yang, Yushi and Mauleon Amieva, Abraham and Hallett, James and Royall, Paddy",
+	title  ="Colloidoscope: Detecting Dense Colloids in 3d with Deep Learning",
+	journal  ="Soft Matter",
+	year  ="2025",
+	pages  ="-",
+	publisher  ="The Royal Society of Chemistry",
+	doi  ="10.1039/D4SM01307G",
+	url  ="http://dx.doi.org/10.1039/D4SM01307G",
+	abstract  ="Colloidoscope is a deep learning pipeline employing a 3D residual \unet architecture{,} designed to enhance the tracking of dense colloidal suspensions through confocal microscopy. This methodology uses a simulated training dataset that reflects a wide array of real-world imaging conditions{,} specifically targeting high colloid volume fraction and low-contrast scenarios where traditional detection methods struggle. Central to our approach is the use of experimental signal-to-noise ratio (SNR){,} contrast-to-noise ratio (CNR){,} and point-spread-functions (PSFs) to accurately quantify and simulate the experimental data. Our findings reveal that Colloidoscope achieves superior recall in particle detection (it finds more particles) compared to conventional heuristic methods. Simultaneously{,} high precision is maintained (high fraction of true positives.) The model demonstrates a notable robustness to photobleached samples{,} thereby prolonging the imaging time and number of frames than may be acquired. Furthermore{,} Colloidoscope maintains small scale resolution sufficient to classify local structural motifs. Evaluated across both simulated and experimental datasets{,} Colloidoscope brings the advancements in computer vision offered by deep learning to particle tracking at high volume fractions. We offer a promising tool for researchers in the soft matter community. This model is deployed and available to use pretrained \url{https://github.com/wahabk/colloidoscope}."
+}
+```
+
