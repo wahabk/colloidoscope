@@ -1,5 +1,9 @@
 # Colloidoscope!
 
+> [!WARNING]
+> This project was a chapter of my PhD published in Soft Matter as below.
+> I have left the code available but I no longer maintain this repository.
+
 <a href="https://colab.research.google.com/github/wahabk/colloidoscope/blob/master/Colloidoscope_tutorial.ipynb"> 
 <img src="https://colab.research.google.com/assets/colab-badge.svg"> </a>
 
